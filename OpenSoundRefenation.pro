@@ -32,3 +32,8 @@ HEADERS += \
 
 FORMS += \
         OSRMainWindow.ui
+
+DISTFILES += \
+    MainUI.qml \
+    QMainUIPreviewForm.ui.qml \
+    QMainUIPreview.qml

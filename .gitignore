@@ -3,3 +3,10 @@
 ################################################################################
 
 /.vs
+/debug
+/osrDecoder/x64/Release
+/osrDecoder/x64/Debug
+/osrKernel/x64
+/osrMixer/x64
+/release
+/x64

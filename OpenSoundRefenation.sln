@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenSoundRefenation", "OpenSoundRefenation.vcxproj", "{3BCAFC30-1810-3BA9-9FDB-0C781F1F4E7F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{AE802C47-E948-4269-ADE3-C4F1E76EC5A0} = {AE802C47-E948-4269-ADE3-C4F1E76EC5A0}
+		{6E43CD6F-6AD0-4544-A368-05359BFE7813} = {6E43CD6F-6AD0-4544-A368-05359BFE7813}
+		{ECE873F6-28C2-4865-B409-0BA07CCC6D64} = {ECE873F6-28C2-4865-B409-0BA07CCC6D64}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "osrMixer", "osrMixer\osrMixer.vcxproj", "{AE802C47-E948-4269-ADE3-C4F1E76EC5A0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{6E43CD6F-6AD0-4544-A368-05359BFE7813} = {6E43CD6F-6AD0-4544-A368-05359BFE7813}
+		{ECE873F6-28C2-4865-B409-0BA07CCC6D64} = {ECE873F6-28C2-4865-B409-0BA07CCC6D64}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "osrDecoder", "osrDecoder\osrDecoder.vcxproj", "{6E43CD6F-6AD0-4544-A368-05359BFE7813}"
+	ProjectSection(ProjectDependencies) = postProject
+		{ECE873F6-28C2-4865-B409-0BA07CCC6D64} = {ECE873F6-28C2-4865-B409-0BA07CCC6D64}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "osrKernel", "osrKernel\osrKernel.vcxproj", "{ECE873F6-28C2-4865-B409-0BA07CCC6D64}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3BCAFC30-1810-3BA9-9FDB-0C781F1F4E7F}.Debug|x64.ActiveCfg = Debug|x64
+		{3BCAFC30-1810-3BA9-9FDB-0C781F1F4E7F}.Debug|x64.Build.0 = Debug|x64
+		{3BCAFC30-1810-3BA9-9FDB-0C781F1F4E7F}.Release|x64.ActiveCfg = Release|x64
+		{3BCAFC30-1810-3BA9-9FDB-0C781F1F4E7F}.Release|x64.Build.0 = Release|x64
+		{AE802C47-E948-4269-ADE3-C4F1E76EC5A0}.Debug|x64.ActiveCfg = Debug|x64
+		{AE802C47-E948-4269-ADE3-C4F1E76EC5A0}.Debug|x64.Build.0 = Debug|x64
+		{AE802C47-E948-4269-ADE3-C4F1E76EC5A0}.Release|x64.ActiveCfg = Release|x64
+		{AE802C47-E948-4269-ADE3-C4F1E76EC5A0}.Release|x64.Build.0 = Release|x64
+		{6E43CD6F-6AD0-4544-A368-05359BFE7813}.Debug|x64.ActiveCfg = Debug|x64
+		{6E43CD6F-6AD0-4544-A368-05359BFE7813}.Debug|x64.Build.0 = Debug|x64
+		{6E43CD6F-6AD0-4544-A368-05359BFE7813}.Release|x64.ActiveCfg = Release|x64
+		{6E43CD6F-6AD0-4544-A368-05359BFE7813}.Release|x64.Build.0 = Release|x64
+		{ECE873F6-28C2-4865-B409-0BA07CCC6D64}.Debug|x64.ActiveCfg = Debug|x64
+		{ECE873F6-28C2-4865-B409-0BA07CCC6D64}.Debug|x64.Build.0 = Debug|x64
+		{ECE873F6-28C2-4865-B409-0BA07CCC6D64}.Release|x64.ActiveCfg = Release|x64
+		{ECE873F6-28C2-4865-B409-0BA07CCC6D64}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {06B8714A-EC61-4E5C-926A-C5A955DED76A}
+	EndGlobalSection
+EndGlobal
