@@ -43,7 +43,7 @@ WCSTRToMBCSTR(
 	if (StringSize)
 	{
 		// allocate new string at kernel heap
-		lpNewString = (LPSTR)HeapAlloc(GetKernelHeap(), HEAP_ZERO_MEMORY, StringSize++);
+		lpNewString = (LPSTR)FastAlloc(StringSize++);
 		if (!WideCharToMultiByte(CP_UTF8, 0, lpString, -1, lpNewString, StringSize, NULL, NULL)) { DEBUG_BREAK; }
 	}
 	return lpNewString;
@@ -79,6 +79,26 @@ OpenFileDialog(
 	return OSR_SUCCESS;
 }
 
+BOOL 
+GetDiskUsage(
+	LARGE_INTEGER largeSize,
+	LPCWSTR lpPath 
+)
+{
+	// get current disk
+	WCHAR szCurrentDisk[4] = { lpPath[0], ':', '\\', '\0' };
+	ULARGE_INTEGER freeBytesToCaller = { NULL };
+
+	// get free disk space 
+	GetDiskFreeSpaceExW(szCurrentDisk, &freeBytesToCaller, nullptr, nullptr);
+
+	if (freeBytesToCaller.QuadPart < (UINT64)largeSize.QuadPart)
+	{
+		if (!THROW4(L"This file is bigger then free space on your drive. Continue?")) { return FALSE; }
+	}
+	return TRUE;
+}
+
 OSRCODE 
 ReadAudioFile(
 	LPCWSTR lpPath,
@@ -92,7 +112,7 @@ ReadAudioFile(
 	DWORD dwSize = GetFileSize(hFile, NULL);
 
 	// allocate pointer and get data to it
-	*lpData = HeapAlloc(GetKernelHeap(), HEAP_ZERO_MEMORY, dwSize);
+	*lpData = FastAlloc(dwSize);
 	ASSERT1(*lpData, L"Can't alloc pointer");
 	if (!ReadFile(hFile, *lpData, dwSize, dwSizeWritten, NULL)) { return FS_OSR_BAD_ALLOC; }
 
@@ -115,43 +135,33 @@ ReadAudioFileEx(
 	size_t sizeWritten = NULL;
 
 	GetFileSizeEx(hFile, &largeSize);
-	
+	*uSize = largeSize.QuadPart;
+
 	// if file smaller then 4GB
 	if (largeSize.QuadPart < DWORD(-1))
 	{
 		// allocate pointer and get data to it
-		*lpData = HeapAlloc(GetKernelHeap(), HEAP_ZERO_MEMORY, (UINT64)largeSize.QuadPart);
+		*lpData = FastAlloc((UINT64)largeSize.QuadPart);
 		ASSERT1(*lpData, L"Can't alloc pointer");
 
 		if (!ReadFile(hFile, *lpData, (DWORD)((UINT64)largeSize.QuadPart), (DWORD*)&sizeWritten, NULL)) { return FS_OSR_BAD_ALLOC; }
 	}
 	else
 	{
+		if (GetDiskUsage(largeSize, lpPath))
 		{
-			// get current disk
-			WCHAR szCurrentDisk[4] = { lpPath[0], ':', '\\', '\0' };
-			ULARGE_INTEGER freeBytesToCaller = { NULL };
-			// get free disk space 
-			ASSERT2(GetDiskFreeSpaceExW(szCurrentDisk, &freeBytesToCaller, nullptr, nullptr), L"Can't get free disk space");
+			DWORD dwTempWritten = NULL;
+			LARGE_INTEGER largeInt = {};
+			largeInt.QuadPart = DWORD(-1);
+			DWORD dwSizeFinal = (DWORD)(*uSize - DWORD(-2));
 
-			if (freeBytesToCaller.QuadPart < (UINT64)largeSize.QuadPart)
-			{
-				if (!THROW4(L"This file is bigger then free space on your drive. Continue?")) { return FS_OSR_NO_SPACE; }
-			}
+			ASSERT1(VirtualAlloc(*lpData, largeSize.QuadPart, MEM_RESERVE, PAGE_READWRITE), L"Can't allocate pointer");
+
+			if (!ReadFile(hFile, *lpData, DWORD(-2), &dwTempWritten, NULL)) { return FS_OSR_BAD_PTR; }
+			if (!SetFilePointerEx(hFile, largeInt, NULL, FILE_BEGIN)) { return FS_OSR_BAD_PTR; }
+			if (!ReadFile(hFile, *lpData, dwSizeFinal, &dwTempWritten, NULL)) { return FS_OSR_BAD_PTR; }
 		}
-
-		DWORD dwTempWritten = NULL;
-		LARGE_INTEGER largeInt = {};
-		largeInt.QuadPart = DWORD(-1);
-		DWORD dwSizeFinal = (DWORD)(uSize - DWORD(-2));
-
-		ASSERT1(VirtualAlloc(*lpData, largeSize.QuadPart, MEM_RESERVE, PAGE_READWRITE), L"Can't allocate pointer");
-
-		if (!ReadFile(hFile, *lpData, DWORD(-2), &dwTempWritten, NULL)) { return FS_OSR_BAD_PTR; }
-		if (!SetFilePointerEx(hFile, largeInt, NULL, FILE_BEGIN)) { return FS_OSR_BAD_PTR; }
-		if (!ReadFile(hFile, *lpData, dwSizeFinal, &dwTempWritten, NULL)) { return FS_OSR_BAD_PTR; }	
 	}
-	*uSize = largeSize.QuadPart;
 
 	CloseHandle(hFile);
 	return OSR_SUCCESS;
@@ -263,54 +273,47 @@ WriteFileFromBuffer(
 		if (!THROW4(L"Application can't save this file because file handle is invalid. Continue?")) { return FS_OSR_BAD_HANDLE; }
 	}
 
+	LARGE_INTEGER largeSize = { NULL };
+	largeSize.QuadPart = dwSize;
+
+	if (GetDiskUsage(largeSize, lpPath))
 	{
-		// get current disk
-		WCHAR szCurrentDisk[4] = { lpPath[0], ':', '\\', '\0' };
-		ULARGE_INTEGER freeBytesToCaller = { NULL };
-		// get free disk space 
-		ASSERT2(GetDiskFreeSpaceExW(szCurrentDisk, &freeBytesToCaller, nullptr, nullptr), L"Can't get free disk space");
+		DWORD dwFileWritten = NULL;
+		DWORD dwHeaderSize = NULL;
 
-		if (freeBytesToCaller.QuadPart < (UINT64)dwSize)
-		{
-			if (!THROW4(L"This file is bigger then free space on your drive. Continue?")) { return FS_OSR_NO_SPACE; }
-		}
+		// set header
+		DWORD dwHead[] = { FOURCC_RIFF_TAG, NULL, FOURCC_WAVE_FILE_TAG, FOURCC_FORMAT_TAG, sizeof(WAVEFORMATEX) };
+		DWORD dwHeadData[] = { FOURCC_DATA_TAG, NULL };
+
+		// write first data
+		if (!WriteFile(hFile, dwHead, sizeof(dwHead), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
+		if (!WriteFile(hFile, waveFormat, sizeof(WAVEFORMATEX), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
+		if (!WriteFile(hFile, dwHeadData, sizeof(dwHeadData), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
+
+		// get size of header 
+		dwHeaderSize = sizeof(dwHead) + sizeof(WAVEFORMATEX) + sizeof(dwHeadData);
+
+		// write full audio data
+		if (!WriteFile(hFile, pFile, dwSize, &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
+
+		// get size of header
+		LARGE_INTEGER largeInt = { NULL };
+		largeInt.QuadPart = dwHeaderSize - sizeof(DWORD);
+
+		// set pointer pos to write file size
+		if (!SetFilePointerEx(hFile, largeInt, NULL, FILE_BEGIN)) { return FS_OSR_BAD_PTR; }
+		if (!WriteFile(hFile, &dwSize, sizeof(DWORD), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
+
+		DWORD dwRIFFFileSize = dwHeaderSize + dwSize - 8;
+		largeInt.QuadPart = sizeof(FOURCC);
+
+		// finally write a file
+		if (!SetFilePointerEx(hFile, largeInt, NULL, FILE_BEGIN)) { return FS_OSR_BAD_PTR; }
+		if (!WriteFile(hFile, &dwRIFFFileSize, sizeof(dwRIFFFileSize), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
+
+		// clode file handle
+		CloseHandle(hFile);
 	}
-
-	DWORD dwFileWritten = NULL;
-	DWORD dwHeaderSize = NULL;
-
-	// set header
-	DWORD dwHead[] = { FOURCC_RIFF_TAG, NULL, FOURCC_WAVE_FILE_TAG, FOURCC_FORMAT_TAG, sizeof(WAVEFORMATEX) };
-	DWORD dwHeadData[] = { FOURCC_DATA_TAG, NULL };
-
-	// write first data
-	if (!WriteFile(hFile, dwHead, sizeof(dwHead), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
-	if (!WriteFile(hFile, waveFormat, sizeof(WAVEFORMATEX), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
-	if (!WriteFile(hFile, dwHeadData, sizeof(dwHeadData), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
-
-	// get size of header 
-	dwHeaderSize = sizeof(dwHead) + sizeof(WAVEFORMATEX) + sizeof(dwHeadData);
-
-	// write full audio data
-	if (!WriteFile(hFile, pFile, dwSize, &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
-
-	// get size of header
-	LARGE_INTEGER largeInt = { NULL };
-	largeInt.QuadPart = dwHeaderSize - sizeof(DWORD);
-
-	// set pointer pos to write file size
-	if (!SetFilePointerEx(hFile, largeInt, NULL, FILE_BEGIN)) { return FS_OSR_BAD_PTR; }
-	if (!WriteFile(hFile, &dwSize, sizeof(DWORD), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
-
-	DWORD dwRIFFFileSize = dwHeaderSize + dwSize - 8;
-	largeInt.QuadPart = sizeof(FOURCC);
-
-	// finally write a file
-	if (!SetFilePointerEx(hFile, largeInt, NULL, FILE_BEGIN)) { return FS_OSR_BAD_PTR; }
-	if (!WriteFile(hFile, &dwRIFFFileSize, sizeof(dwRIFFFileSize), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
-
-	// clode file handle
-	CloseHandle(hFile);
 
 	return OSR_SUCCESS;
 }

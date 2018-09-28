@@ -9,8 +9,9 @@
 * WIN32 kernel implementation
 *********************************************************/
 #include "stdafx.h"
+#include <DbgHelp.h>
 
-std::wstring szPathTemp;
+DLL_API UnhandledExceptionFilterType *previous_filter = nullptr;
 
 BOOL
 IsAdminUser()
@@ -104,6 +105,14 @@ RunWithAdminPrivilege()
 	}
 }
 
+std::wstring szPathTemp;
+
+LPCWSTR
+GetTempDirectory()
+{
+	return szPathTemp.c_str();
+}
+
 VOID
 CreateTempDirectory()
 {
@@ -111,15 +120,13 @@ CreateTempDirectory()
 	// get programm directory to create 'temp' directory
 	ASSERT1(GetCurrentDirectoryW(sizeof(WSTRING_PATH), szFullPath), L"Can't get proccess directory");
 
-	std::wstring szTempPath = szFullPath;
-	szTempPath += L"\\Temp";
+	szPathTemp = szFullPath;
+	szPathTemp += L"\\Temp";
 
-	szPathTemp = szTempPath;
-
-	DWORD dwGetDir = GetFileAttributesW(szTempPath.c_str());
+	DWORD dwGetDir = GetFileAttributesW(szPathTemp.c_str());
 	if (dwGetDir == INVALID_FILE_ATTRIBUTES || !(dwGetDir & FILE_ATTRIBUTE_DIRECTORY))
 	{
-		if (!CreateDirectoryW(szTempPath.c_str(), NULL))
+		if (!CreateDirectoryW(szPathTemp.c_str(), NULL))
 		{
 			DWORD dwError = GetLastError();
 			if (!IsProcessWithAdminPrivilege() && dwError == ERROR_ACCESS_DENIED)
@@ -137,8 +144,91 @@ CreateTempDirectory()
 	}
 }
 
-LPCWSTR 
-GetTempDirectory()
+VOID
+GetTimeString(
+	LPCWSTR lpString
+)
 {
-	return szPathTemp.c_str();
+	if (!lpString) { return; }
+
+	SYSTEMTIME sysTime = { NULL };
+	GetSystemTime(&sysTime);
+	
+	std::wstring szTime = std::to_wstring(sysTime.wYear) + std::to_wstring(sysTime.wMonth) + std::to_wstring(sysTime.wDay)
+		+ std::to_wstring(sysTime.wHour) + std::to_wstring(sysTime.wMinute);
+
+	lpString = szTime.c_str();
+}
+
+LONG 
+CreateMinidump(
+	_EXCEPTION_POINTERS* pExceptionInfo
+)
+{
+	std::wstring szFullPath = { NULL };
+	std::wstring szTemp = { NULL };
+	WSTRING_PATH szPath = { NULL };
+
+	// get current working directory
+	GetCurrentDirectoryW(sizeof(WSTRING_PATH), szPath);
+	szTemp = szPath;
+	szTemp += L"\\Dump";
+
+	// create new path "dump"
+	DWORD dwGetDir = GetFileAttributesW(szTemp.c_str());
+	if (dwGetDir == INVALID_FILE_ATTRIBUTES || !(dwGetDir & FILE_ATTRIBUTE_DIRECTORY))
+	{
+		// we can't create temp directory at kernel paths or "Program files"
+		if (!CreateDirectoryW(szTemp.c_str(), NULL))
+		{
+			DWORD dwError = GetLastError();
+			THROW1(L"Can't create temp directory. Please, change working directory");
+		}
+	}
+
+	WSTRING128 szName = { NULL };
+	DWORD dwNameSize = sizeof(WSTRING128);
+	GetUserNameW(szName, &dwNameSize);
+
+	WSTRING128 szTime = { NULL };
+	GetTimeString(szTime);
+
+	// create minidump file handle
+	szFullPath = szTemp + L"\\" + L"OpenSoundRefenation_" + szName + L"_" + szTime + L".mdmp";
+	HANDLE hFile = CreateFileW(szFullPath.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		szFullPath = szPath + std::wstring(L"\\") + L"OpenSoundRefenation_" + szName + L"_" + szTime + L".mdmp";
+		CreateFileW(szFullPath.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	}
+
+	if (hFile != INVALID_HANDLE_VALUE)
+	{
+		MINIDUMP_EXCEPTION_INFORMATION ExInfo = { NULL };
+		MINIDUMP_TYPE dump_flags = MINIDUMP_TYPE(MiniDumpNormal | MiniDumpFilterMemory | MiniDumpScanMemory);
+
+		ExInfo.ThreadId = GetCurrentThreadId();
+		ExInfo.ExceptionPointers = pExceptionInfo;
+		ExInfo.ClientPointers = NULL;
+
+		// write the dump
+		if (MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile, dump_flags, &ExInfo, NULL, NULL))
+		{
+			szTemp = L"Minidump saved at (" + szFullPath + L")";
+			MessageBoxW(NULL, szTemp.c_str(), L"Minidump saved", MB_OK | MB_ICONINFORMATION);
+			return EXCEPTION_EXECUTE_HANDLER;
+		}
+	}
+
+	return EXCEPTION_CONTINUE_SEARCH;
+}
+
+LONG 
+WINAPI
+UnhandledFilter(
+	struct _EXCEPTION_POINTERS* pExceptionInfo
+)
+{
+	return CreateMinidump(pExceptionInfo);
 }

@@ -10,6 +10,8 @@
 *********************************************************/
 #include "stdafx.h"
 
+DLL_API HANDLE hPlay;
+
 VOID
 XEngine::CreateXEngine()
 {

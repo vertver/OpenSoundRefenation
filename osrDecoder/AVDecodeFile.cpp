@@ -59,7 +59,7 @@ DecodeFrame(
 				// write file
 				DWORD dwSizeTemp = 0;
 				WriteFile(hFile, pFrame->data[iChannel] + iDataSize*i, iDataSize, &dwSizeTemp, NULL);
-				Sleep(0);	
+				YieldProcessor();
 			}
 		}
 	}
@@ -85,7 +85,7 @@ AVReader::OpenFileToBuffer(
 	HANDLE hTempFile = CreateFileW(lpTempFile.c_str(), GENERIC_WRITE, NULL, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (!hTempFile || hTempFile == (HANDLE)LONG_PTR(-1))
 	{
-		if (!THROW4(L"Application can't save this file because file handle is invalid. Continue?")) { return; }
+		if (!THROW3(L"Application can't save this file because file handle is invalid. Continue?")) { return; }
 	}
 
 	*lpTempPath = lpTempFile.c_str();
@@ -94,7 +94,7 @@ AVReader::OpenFileToBuffer(
 	HANDLE hFile = CreateFileW(lpPath, GENERIC_READ, NULL, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (!hTempFile || hTempFile == (HANDLE)LONG_PTR(-1))
 	{
-		if (!THROW4(L"Application can't open this file because file handle is invalid. Continue?")) { return; }
+		if (!THROW3(L"Application can't open this file because file handle is invalid. Continue?")) { return; }
 	}
 
 	DWORD dwWrittenTemp = NULL;

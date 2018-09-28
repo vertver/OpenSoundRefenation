@@ -12,7 +12,7 @@
 
 int argc;
 char* argv[MAX_NUM_ARGVS];
-DLL_API OSREngine osr;
+//DLL_API OSREngine osr;
 
 BOOL
 WINAPI
@@ -24,9 +24,10 @@ WinMain(
 )
 {
 	if (strstr(lpCmdLine, "-admin") || strstr(lpCmdLine, "-a") || strstr(lpCmdLine, "-adm")) { RunWithAdminPrivilege(); }
-	
+
 	// critical section
 	InitApplication();
+
 
 	//OpenFileDialog(&lpPath);
 	//if (lpPath)
@@ -45,5 +46,9 @@ WinMain(
 	//QApplication a(argc, argv);
 	//OSR w;
 	//w.show();
-	//return a.exec();
+	//return a.exec();	
+	while (true)
+	{
+
+	}
 }

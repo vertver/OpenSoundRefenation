@@ -105,16 +105,20 @@ using STRING512					= CHAR[512];
 using STRING1024				= CHAR[1024];
 
 using WSTRING_PATH				= WCHAR[MAX_PATH];
+using WSTRING64					= WCHAR[64];
 using WSTRING128				= WCHAR[128];
 using WSTRING256				= WCHAR[256];
 using WSTRING512				= WCHAR[512];
 using WSTRING1024				= WCHAR[1024];
 
+using UnhandledExceptionFilterType = LONG WINAPI(struct _EXCEPTION_POINTERS *pExceptionInfo);
+extern DLL_API UnhandledExceptionFilterType *previous_filter;
+
 #define FAILEDX1(X)	\
 if (FAILED(X)) \
 { \
 WSTRING1024 szError = { NULL }; \
-FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, X, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), szError, NULL, NULL); \
+FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, X, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), szError, 2047, NULL); \
 THROW1(szError); \
 }
 
@@ -122,7 +126,7 @@ THROW1(szError); \
 if (FAILED(X)) \
 { \
 WSTRING1024 szError = { NULL }; \
-FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, X, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), szError, NULL, NULL); \
+FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, X, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), szError, 2047, NULL); \
 if (!THROW2(szError)) { ExitProcess(X); } \
 }
 
@@ -132,6 +136,7 @@ DLL_API VOID DestroyKernelHeap();
 DLL_API HANDLE GetKernelHeap();
 DLL_API LPWSTR FormatError(LONG dwErrorCode);
 DLL_API VOID UnloadFile(LPVOID pFile);
+DLL_API BOOL GetDiskUsage(LARGE_INTEGER largeSize, LPCWSTR lpPath);
 
 DLL_API VOID InitApplication();
 DLL_API VOID DestroyApplication();
@@ -141,6 +146,27 @@ DLL_API OSRCODE ReadAudioFile(LPCWSTR lpPath, VOID** lpData, DWORD* dwSizeWritte
 DLL_API OSRCODE ReadAudioFileEx(LPCWSTR lpPath, VOID** lpData, LONGLONG* uSize);
 DLL_API OSRCODE WriteFileFromBuffer(LPCWSTR lpPath, BYTE* pFile, DWORD dwSize, WAVEFORMATEX* waveFormat);
 DLL_API OSRCODE GetWaveFormatExtented(BYTE* lpWaveFile, DWORD dwFileSize, WAVEFORMATEX* waveFormat);
+
+template <class T>
+inline T* AllocateClass()
+{
+	return (T*)HeapAlloc(GetKernelHeap(), HEAP_ZERO_MEMORY, sizeof(T));
+}
+
+template <typename T>
+inline T* AllocatePointer()
+{
+	return (T*)HeapAlloc(GetKernelHeap(), HEAP_ZERO_MEMORY, sizeof(T));
+}
+
+__forceinline
+LPVOID
+FastAlloc(
+	size_t uSize
+)
+{
+	return HeapAlloc(GetKernelHeap(), HEAP_ZERO_MEMORY, uSize);
+}
 
 typedef struct
 {
@@ -206,19 +232,12 @@ typedef struct
 	UINT	        samplerData;
 } RIFFMIDISample;
 
-static_assert(sizeof(RIFFChunk)			== 8, "structure size mismatch");
-static_assert(sizeof(RIFFChunkHeader)	== 12, "structure size mismatch");
-static_assert(sizeof(DLSLoop)			== 16, "structure size mismatch");
-static_assert(sizeof(RIFFDLSSample)		== 20, "structure size mismatch");
-static_assert(sizeof(MIDILoop)			== 24, "structure size mismatch");
-static_assert(sizeof(RIFFMIDISample)	== 36, "structure size mismatch");
-
-const UINT FOURCC_RIFF_TAG				= MAKEFOURCC('R', 'I', 'F', 'F');
-const UINT FOURCC_FORMAT_TAG			= MAKEFOURCC('f', 'm', 't', ' ');
-const UINT FOURCC_DATA_TAG				= MAKEFOURCC('d', 'a', 't', 'a');
-const UINT FOURCC_WAVE_FILE_TAG			= MAKEFOURCC('W', 'A', 'V', 'E');
-const UINT FOURCC_XWMA_FILE_TAG			= MAKEFOURCC('X', 'W', 'M', 'A');
-const UINT FOURCC_DLS_SAMPLE			= MAKEFOURCC('w', 's', 'm', 'p');
-const UINT FOURCC_MIDI_SAMPLE			= MAKEFOURCC('s', 'm', 'p', 'l');
-const UINT FOURCC_XWMA_DPDS				= MAKEFOURCC('d', 'p', 'd', 's');
-const UINT FOURCC_XMA_SEEK				= MAKEFOURCC('s', 'e', 'e', 'k');
+constexpr UINT FOURCC_RIFF_TAG				= MAKEFOURCC('R', 'I', 'F', 'F');
+constexpr UINT FOURCC_FORMAT_TAG			= MAKEFOURCC('f', 'm', 't', ' ');
+constexpr UINT FOURCC_DATA_TAG				= MAKEFOURCC('d', 'a', 't', 'a');
+constexpr UINT FOURCC_WAVE_FILE_TAG			= MAKEFOURCC('W', 'A', 'V', 'E');
+constexpr UINT FOURCC_XWMA_FILE_TAG			= MAKEFOURCC('X', 'W', 'M', 'A');
+constexpr UINT FOURCC_DLS_SAMPLE			= MAKEFOURCC('w', 's', 'm', 'p');
+constexpr UINT FOURCC_MIDI_SAMPLE			= MAKEFOURCC('s', 'm', 'p', 'l');
+constexpr UINT FOURCC_XWMA_DPDS				= MAKEFOURCC('d', 'p', 'd', 's');
+constexpr UINT FOURCC_XMA_SEEK				= MAKEFOURCC('s', 'e', 'e', 'k');

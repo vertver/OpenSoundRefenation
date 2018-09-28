@@ -25,6 +25,9 @@
     <Filter Include="Sound list">
       <UniqueIdentifier>{17b52a31-0624-4e8d-aca7-93d607b3140c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Mixer\WASAPI">
+      <UniqueIdentifier>{d44054e4-f9d0-45e9-b53d-205aaeddf312}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -38,6 +41,9 @@
     </ClInclude>
     <ClInclude Include="SoundList.h">
       <Filter>Sound list</Filter>
+    </ClInclude>
+    <ClInclude Include="IMWASAPI.h">
+      <Filter>Mixer\WASAPI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -58,6 +64,9 @@
     </ClCompile>
     <ClCompile Include="SoundList.cpp">
       <Filter>Sound list</Filter>
+    </ClCompile>
+    <ClCompile Include="IMWASAPIKernel.cpp">
+      <Filter>Mixer\WASAPI</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

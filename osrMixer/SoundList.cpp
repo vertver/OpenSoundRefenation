@@ -52,7 +52,7 @@ SoundList::WriteWaveFile(
 )
 {
 	HANDLE hFile = CreateFileW(lpFullpath, GENERIC_WRITE, NULL, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (!hFile || hFile == (HANDLE)LONG_PTR(-1)) { THROW4(L"Application can't save this file because file handle is invalid."); return FS_OSR_BAD_HANDLE; }
+	if (!hFile || hFile == (HANDLE)LONG_PTR(-1)) { THROW3(L"Application can't save this file because file handle is invalid."); return FS_OSR_BAD_HANDLE; }
 
 	{
 		// get current disk

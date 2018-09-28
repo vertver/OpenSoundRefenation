@@ -13,6 +13,8 @@
 
 #define SAMPLE_RATE 44100
 
+extern DLL_API HANDLE hPlay;
+
 class SoundList : public MWFReader
 {
 public:

@@ -20,24 +20,27 @@ XMixer::InitMixer(
 	audioEngine = engine;
 }
 
-VOID 
+VOID
 XMixer::PlaySimpleWave()
 {
-	if (audioEngine.audioBuffer.AudioBytes)
+	MSG msg = { NULL };
+
+	if (audioEngine.audioBuffer.AudioBytes) { return; }
+	HRESULT hr = audioEngine.pSourceVoice->Start();
+
+	XAUDIO2_VOICE_STATE voiceState;
+	BOOL isRunning = TRUE;
+	BOOL bRet = FALSE;
+
+	while (SUCCEEDED(hr) && isRunning)
 	{
-		HRESULT hr = audioEngine.pSourceVoice->Start();
+		//if (msg.message == WM_QUIT) { break; }
+		audioEngine.pSourceVoice->GetState(&voiceState);
+		if (!voiceState.BuffersQueued) { break; }
 
-		XAUDIO2_VOICE_STATE voiceState;
-		BOOL isRunning = TRUE;
-		while (SUCCEEDED(hr) && isRunning)
-		{
-			audioEngine.pSourceVoice->GetState(&voiceState);
-			if (!voiceState.BuffersQueued) { break; }
+		isRunning = (voiceState.BuffersQueued > 0) != 0;
 
-			isRunning = (voiceState.BuffersQueued > 0) != 0;
-
-			if (GetAsyncKeyState(VK_SPACE)) { break; }
-			Sleep(10);
-		}
+		if (GetAsyncKeyState(VK_SPACE)) { break; }
+		Sleep(10);
 	}
 }
