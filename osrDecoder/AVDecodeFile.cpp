@@ -215,6 +215,6 @@ AVReader::OpenFileToBuffer(
 	av_frame_free(&decoded_frame);
 	av_packet_free(&pkt);
 
-	//#NOTE: if MP3 - float 32/little endian
+	// #NOTE: if MP3 - float 32/little endian
 	// WMF use 16 bit/little endian
 }

@@ -95,8 +95,7 @@ RunWithAdminPrivilege()
 			shellInfo.hwnd = NULL;
 			shellInfo.nShow = SW_NORMAL;
 
-			ShellExecuteExW(&shellInfo);
-			ExitProcess(GetCurrentProcessId());
+			if (ShellExecuteExW(&shellInfo)) { ExitProcess(GetCurrentProcessId()); }
 		}
 	}
 	else
@@ -117,7 +116,7 @@ VOID
 CreateTempDirectory()
 {
 	WSTRING_PATH szFullPath = { NULL };
-	// get programm directory to create 'temp' directory
+	// get program directory to create 'temp' directory
 	ASSERT1(GetCurrentDirectoryW(sizeof(WSTRING_PATH), szFullPath), L"Can't get proccess directory");
 
 	szPathTemp = szFullPath;
@@ -231,4 +230,16 @@ UnhandledFilter(
 )
 {
 	return CreateMinidump(pExceptionInfo);
+}
+
+VOID
+WINAPI
+GetCurrentPeb(VOID** pPeb)
+{
+	___PROCESS_BASIC_INFORMATION processInformation = { NULL };
+	DWORD cbLength = NULL;
+
+	NtQueryInformationProcessEx(GetCurrentProcess(), ProcessBasicInformation, &processInformation, sizeof(___PROCESS_BASIC_INFORMATION), &cbLength);
+
+	*pPeb = processInformation.PebBaseAddress;
 }

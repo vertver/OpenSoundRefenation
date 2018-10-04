@@ -36,9 +36,6 @@
     <ClInclude Include="targetver.h">
       <Filter>Other\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MWFDecoder.h">
-      <Filter>Decoders\WMF</Filter>
-    </ClInclude>
     <ClInclude Include="SoundFile.h">
       <Filter>Decoders\libsndfile</Filter>
     </ClInclude>
@@ -51,6 +48,9 @@
     <ClInclude Include="AVCodecHeader.h">
       <Filter>Decoders\ffmpeg</Filter>
     </ClInclude>
+    <ClInclude Include="WMFDecoder.h">
+      <Filter>Decoders\WMF</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -62,14 +62,14 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>Other\Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MFWMain.cpp">
-      <Filter>Decoders\WMF</Filter>
-    </ClCompile>
     <ClCompile Include="sndfileOpen.cpp">
       <Filter>Decoders\libsndfile</Filter>
     </ClCompile>
     <ClCompile Include="AVDecodeFile.cpp">
       <Filter>Decoders\ffmpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="WMFMain.cpp">
+      <Filter>Decoders\WMF</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

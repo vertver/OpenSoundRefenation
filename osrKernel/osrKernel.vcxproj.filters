@@ -39,6 +39,9 @@
     <ClInclude Include="ThreadSystem.h">
       <Filter>Kernel</Filter>
     </ClInclude>
+    <ClInclude Include="ProcessManager.h">
+      <Filter>Kernel</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -60,6 +63,9 @@
       <Filter>Kernel</Filter>
     </ClCompile>
     <ClCompile Include="ThreadSystem.cpp">
+      <Filter>Kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessManager.cpp">
       <Filter>Kernel</Filter>
     </ClCompile>
   </ItemGroup>

@@ -15,7 +15,7 @@
 
 extern DLL_API HANDLE hPlay;
 
-class SoundList : public MWFReader
+class SoundList : public WMFReader
 {
 public:
 	DLL_API OSRCODE LoadSoundFile(LPCWSTR lpPath, DWORD dwFlags);

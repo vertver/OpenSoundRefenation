@@ -148,19 +148,17 @@ ReadAudioFileEx(
 	}
 	else
 	{
-		if (GetDiskUsage(largeSize, lpPath))
-		{
-			DWORD dwTempWritten = NULL;
-			LARGE_INTEGER largeInt = {};
-			largeInt.QuadPart = DWORD(-1);
-			DWORD dwSizeFinal = (DWORD)(*uSize - DWORD(-2));
+		if (!GetDiskUsage(largeSize, lpPath)) { return FS_OSR_NO_SPACE; }
+		DWORD dwTempWritten = NULL;
+		LARGE_INTEGER largeInt = {};
+		largeInt.QuadPart = DWORD(-1);
+		DWORD dwSizeFinal = (DWORD)(*uSize - DWORD(-2));
 
-			ASSERT1(VirtualAlloc(*lpData, largeSize.QuadPart, MEM_RESERVE, PAGE_READWRITE), L"Can't allocate pointer");
+		ASSERT1(VirtualAlloc(*lpData, largeSize.QuadPart, MEM_RESERVE, PAGE_READWRITE), L"Can't allocate pointer");
 
-			if (!ReadFile(hFile, *lpData, DWORD(-2), &dwTempWritten, NULL)) { return FS_OSR_BAD_PTR; }
-			if (!SetFilePointerEx(hFile, largeInt, NULL, FILE_BEGIN)) { return FS_OSR_BAD_PTR; }
-			if (!ReadFile(hFile, *lpData, dwSizeFinal, &dwTempWritten, NULL)) { return FS_OSR_BAD_PTR; }
-		}
+		if (!ReadFile(hFile, *lpData, DWORD(-2), &dwTempWritten, NULL)) { return FS_OSR_BAD_PTR; }
+		if (!SetFilePointerEx(hFile, largeInt, NULL, FILE_BEGIN)) { return FS_OSR_BAD_PTR; }
+		if (!ReadFile(hFile, *lpData, dwSizeFinal, &dwTempWritten, NULL)) { return FS_OSR_BAD_PTR; }		
 	}
 
 	CloseHandle(hFile);
@@ -255,6 +253,7 @@ GetWaveFormatExtented(
 	if (ptr + dataChunk->size > wavEnd) { return FS_OSR_BAD_PTR; }
 
 	*waveFormat = *reinterpret_cast<WAVEFORMATEX*>(wf);
+	waveFormat->cbSize = sizeof(WAVEFORMATEX);
 
 	return OSR_SUCCESS;
 }
@@ -276,45 +275,44 @@ WriteFileFromBuffer(
 	LARGE_INTEGER largeSize = { NULL };
 	largeSize.QuadPart = dwSize;
 
-	if (GetDiskUsage(largeSize, lpPath))
-	{
-		DWORD dwFileWritten = NULL;
-		DWORD dwHeaderSize = NULL;
+	if (!GetDiskUsage(largeSize, lpPath)) { return FS_OSR_NO_SPACE; }
 
-		// set header
-		DWORD dwHead[] = { FOURCC_RIFF_TAG, NULL, FOURCC_WAVE_FILE_TAG, FOURCC_FORMAT_TAG, sizeof(WAVEFORMATEX) };
-		DWORD dwHeadData[] = { FOURCC_DATA_TAG, NULL };
+	DWORD dwFileWritten = NULL;
+	DWORD dwHeaderSize = NULL;
 
-		// write first data
-		if (!WriteFile(hFile, dwHead, sizeof(dwHead), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
-		if (!WriteFile(hFile, waveFormat, sizeof(WAVEFORMATEX), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
-		if (!WriteFile(hFile, dwHeadData, sizeof(dwHeadData), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
+	// set header
+	DWORD dwHead[] = { FOURCC_RIFF_TAG, NULL, FOURCC_WAVE_FILE_TAG, FOURCC_FORMAT_TAG, sizeof(WAVEFORMATEX) };
+	DWORD dwHeadData[] = { FOURCC_DATA_TAG, NULL };
 
-		// get size of header 
-		dwHeaderSize = sizeof(dwHead) + sizeof(WAVEFORMATEX) + sizeof(dwHeadData);
+	// write first data
+	if (!WriteFile(hFile, dwHead, sizeof(dwHead), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
+	if (!WriteFile(hFile, waveFormat, sizeof(WAVEFORMATEX), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
+	if (!WriteFile(hFile, dwHeadData, sizeof(dwHeadData), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
 
-		// write full audio data
-		if (!WriteFile(hFile, pFile, dwSize, &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
+	// get size of header 
+	dwHeaderSize = sizeof(dwHead) + sizeof(WAVEFORMATEX) + sizeof(dwHeadData);
 
-		// get size of header
-		LARGE_INTEGER largeInt = { NULL };
-		largeInt.QuadPart = dwHeaderSize - sizeof(DWORD);
+	// write full audio data
+	if (!WriteFile(hFile, pFile, dwSize, &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
 
-		// set pointer pos to write file size
-		if (!SetFilePointerEx(hFile, largeInt, NULL, FILE_BEGIN)) { return FS_OSR_BAD_PTR; }
-		if (!WriteFile(hFile, &dwSize, sizeof(DWORD), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
+	// get size of header
+	LARGE_INTEGER largeInt = { NULL };
+	largeInt.QuadPart = dwHeaderSize - sizeof(DWORD);
 
-		DWORD dwRIFFFileSize = dwHeaderSize + dwSize - 8;
-		largeInt.QuadPart = sizeof(FOURCC);
+	// set pointer pos to write file size
+	if (!SetFilePointerEx(hFile, largeInt, NULL, FILE_BEGIN)) { return FS_OSR_BAD_PTR; }
+	if (!WriteFile(hFile, &dwSize, sizeof(DWORD), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
 
-		// finally write a file
-		if (!SetFilePointerEx(hFile, largeInt, NULL, FILE_BEGIN)) { return FS_OSR_BAD_PTR; }
-		if (!WriteFile(hFile, &dwRIFFFileSize, sizeof(dwRIFFFileSize), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
+	DWORD dwRIFFFileSize = dwHeaderSize + dwSize - 8;
+	largeInt.QuadPart = sizeof(FOURCC);
 
-		// clode file handle
-		CloseHandle(hFile);
-	}
+	// finally write a file
+	if (!SetFilePointerEx(hFile, largeInt, NULL, FILE_BEGIN)) { return FS_OSR_BAD_PTR; }
+	if (!WriteFile(hFile, &dwRIFFFileSize, sizeof(dwRIFFFileSize), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
 
+	// clode file handle
+	CloseHandle(hFile);
+	
 	return OSR_SUCCESS;
 }
 

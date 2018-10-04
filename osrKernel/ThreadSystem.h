@@ -55,17 +55,93 @@ typedef struct _CLIENT_ID {
 	HANDLE UniqueThread;
 } CLIENT_ID;
 
-typedef struct _PEB {
-	BYTE Reserved1[2];
-	BYTE BeingDebugged;
-	BYTE Reserved2[21];
-	PPEB_LDR_DATA LoaderData;
+typedef struct _PEB
+{
+	UCHAR InheritedAddressSpace;
+	UCHAR ReadImageFileExecOptions;
+	UCHAR BeingDebugged;
+	UCHAR BitField;
+	ULONG ImageUsesLargePages : 1;
+	ULONG IsProtectedProcess : 1;
+	ULONG IsLegacyProcess : 1;
+	ULONG IsImageDynamicallyRelocated : 1;
+	ULONG SpareBits : 4;
+	PVOID Mutant;
+	PVOID ImageBaseAddress;
+	PPEB_LDR_DATA Ldr;
 	PRTL_USER_PROCESS_PARAMETERS ProcessParameters;
-	BYTE Reserved3[520];
-	PPS_POST_PROCESS_INIT_ROUTINE PostProcessInitRoutine;
-	BYTE Reserved4[136];
+	PVOID SubSystemData;
+	PVOID ProcessHeap;
+	PRTL_CRITICAL_SECTION FastPebLock;
+	PVOID AtlThunkSListPtr;
+	PVOID IFEOKey;
+	ULONG CrossProcessFlags;
+	ULONG ProcessInJob : 1;
+	ULONG ProcessInitializing : 1;
+	ULONG ReservedBits0 : 30;
+	union
+	{
+		PVOID KernelCallbackTable;
+		PVOID UserSharedInfoPtr;
+	};
+	ULONG SystemReserved[1];
+	ULONG SpareUlong;
+	DWORD FreeList[4];
+	ULONG TlsExpansionCounter;
+	PVOID TlsBitmap;
+	ULONG TlsBitmapBits[2];
+	PVOID ReadOnlySharedMemoryBase;
+	PVOID HotpatchInformation;
+	VOID * * ReadOnlyStaticServerData;
+	PVOID AnsiCodePageData;
+	PVOID OemCodePageData;
+	PVOID UnicodeCaseTableData;
+	ULONG NumberOfProcessors;
+	ULONG NtGlobalFlag;
+	LARGE_INTEGER CriticalSectionTimeout;
+	ULONG HeapSegmentReserve;
+	ULONG HeapSegmentCommit;
+	ULONG HeapDeCommitTotalFreeThreshold;
+	ULONG HeapDeCommitFreeBlockThreshold;
+	ULONG NumberOfHeaps;
+	ULONG MaximumNumberOfHeaps;
+	VOID * * ProcessHeaps;
+	PVOID GdiSharedHandleTable;
+	PVOID ProcessStarterHelper;
+	ULONG GdiDCAttributeList;
+	PRTL_CRITICAL_SECTION LoaderLock;
+	ULONG OSMajorVersion;
+	ULONG OSMinorVersion;
+	WORD OSBuildNumber;
+	WORD OSCSDVersion;
+	ULONG OSPlatformId;
+	ULONG ImageSubsystem;
+	ULONG ImageSubsystemMajorVersion;
+	ULONG ImageSubsystemMinorVersion;
+	ULONG ImageProcessAffinityMask;
+	ULONG GdiHandleBuffer[34];
+	PVOID PostProcessInitRoutine;
+	PVOID TlsExpansionBitmap;
+	ULONG TlsExpansionBitmapBits[32];
 	ULONG SessionId;
-} PEB;
+	ULARGE_INTEGER AppCompatFlags;
+	ULARGE_INTEGER AppCompatFlagsUser;
+	PVOID pShimData;
+	PVOID AppCompatInfo;
+	UNICODE_STRING CSDVersion;
+	LPVOID ActivationContextData;
+	LPVOID ProcessAssemblyStorageMap;
+	LPVOID SystemDefaultActivationContextData;
+	LPVOID SystemAssemblyStorageMap;
+	ULONG MinimumStackCommit;
+	LPVOID FlsCallback;
+	LIST_ENTRY FlsListHead;
+	PVOID FlsBitmap;
+	ULONG FlsBitmapBits[4];
+	ULONG FlsHighIndex;
+	PVOID WerRegistrationData;
+	PVOID WerShipAssertPtr;
+} PEB, *PPEB;
 
 typedef struct __TEB {
 
@@ -140,7 +216,28 @@ typedef struct _THREAD_BASIC_INFORMATION
 	KPRIORITY BasePriority;
 } THREAD_BASIC_INFORMATION, *PTHREAD_BASIC_INFORMATION;
 
-typedef struct tagTREAD_NAME
+typedef struct PBI {
+	PVOID Reserved1;
+	PVOID PebBaseAddress;
+	PVOID Reserved2[2];
+	ULONG_PTR UniqueProcessId;
+	PVOID Reserved3;
+} ___PROCESS_BASIC_INFORMATION;
+
+typedef struct _TEB {
+	PVOID Reserved1[12];
+	PPEB  ProcessEnvironmentBlock;
+	PVOID Reserved2[399];
+	BYTE  Reserved3[1952];
+	PVOID TlsSlots[64];
+	BYTE  Reserved4[8];
+	PVOID Reserved5[26];
+	PVOID ReservedForOle;
+	PVOID Reserved6[4];
+	PVOID TlsExpansionSlots;
+} TEB, *PTEB;
+
+typedef struct tagTHREAD_NAME
 {
 	DWORD dwType;
 	LPCSTR lpName;
@@ -148,9 +245,18 @@ typedef struct tagTREAD_NAME
 	DWORD dwFlags;
 } THREAD_NAME, PTHREAD_NAME;
 
+typedef enum __PROCESSINFOCLASS {
+	ProcessBasicInformation = 0,
+	ProcessDebugPort = 7,
+	ProcessWow64Information = 26,
+	ProcessImageFileName = 27,
+	ProcessBreakOnTermination = 29
+} ___PROCESSINFOCLASS;
+
 using SETTHREADDESCRIPTION = HRESULT(WINAPI *)(HANDLE handle, PCWSTR name);
 using GETTHREADDESCRIPTION = HRESULT(WINAPI *)(HANDLE handle, PWSTR* name);
 typedef LONG(NTAPI *NTQUERYINFORMATIONTHREAD)(HANDLE, __THREAD_INFORMATION_CLASS, PVOID, ULONG, PULONG);
+typedef LONG(NTAPI *NTQUERYINFORMATIONPROCESS)(HANDLE, __PROCESSINFOCLASS, PVOID, ULONG, PULONG);
 typedef LONG(NTAPI *NTREADVIRTUALMEMORY)(HANDLE, PVOID, PVOID, ULONG, PULONG);
 typedef void ThreadFunc(void *);
 
@@ -159,7 +265,7 @@ typedef struct tagTHREAD_ENTRY
 	LPVOID pArgs;
 	ThreadFunc* pFunction;
 	LPCWSTR lpThreadName;
-	__TEB* funcTeb;
+	_TEB* funcTeb;
 } THREAD_ENTRY, PTHREAD_ENTRY;
 
 typedef struct tagTHREAD_INFO
@@ -172,6 +278,7 @@ typedef struct tagTHREAD_INFO
 } THREAD_INFO, *PTHREAD_INFO;
 
 DLL_API VOID WINAPIV UserThreadProc(LPVOID pArgs);
+LONG WINAPI NtQueryInformationThreadEx(HANDLE hThread, __THREAD_INFORMATION_CLASS threadInfo, PVOID pThreadInfo, ULONG uSize, PULONG lpSize);
 
 class DLL_API ThreadSystem
 {
@@ -179,10 +286,10 @@ public:
 	ThreadSystem() { dwNumberOfThreads = NULL; }
 
 	DWORD GetThreadsNumber() { return dwNumberOfThreads; }
-	DWORD CreateUserThread(PTHREAD_INFO pThreadInfo, ThreadFunc* pFunction, LPVOID pArgs, LPCWSTR pName);
+	DWORD CreateUserThread(THREAD_INFO* pThreadInfo, ThreadFunc* pFunction, LPVOID pArgs, LPCWSTR pName);
 	VOID GetUserThreadName(DWORD dwThreadId, LPWSTR* lpName);
 	VOID SetUserThreadName(DWORD dwThreadId, LPWSTR lpName);
-	VOID GetThreadInformation(PTHREAD_INFO pThreadInfo, DWORD dwThreadId);
+	VOID GetThreadInformation(THREAD_INFO* pThreadInfo, DWORD dwThreadId);
 
 private:
 	DWORD dwNumberOfThreads;

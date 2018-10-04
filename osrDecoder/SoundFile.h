@@ -17,7 +17,7 @@
 class SndFileReader
 {
 public:
-	DLL_API VOID OpenFileToSoundBuffer(LPCWSTR lpPath, BYTE** lpPCMData, DWORD dwSize);
+	DLL_API VOID OpenFileToSoundBuffer(LPCWSTR lpPath, BYTE** lpPCMData, LPDWORD dwSize);
 
 private:
 	SF_INFO fileInfo;

@@ -3,22 +3,22 @@
 * OpenSoundRefenation - WINAPI open-source DAW
 * MIT-License
 **********************************************************
-* Module Name: OSR entry-point
+* Module Name: WMF decoder
 **********************************************************
-* MFWMain.cpp
+* WMFMain.cpp
 * WMF decoder implementation
 *********************************************************/
 #include "stdafx.h"
 
 VOID
-MWFReader::MFWInit()
+WMFReader::WMFInit()
 {
 	FAILEDX2((MFCreateAttributes(&pAttribute, 1)));
 	FAILEDX2(pAttribute->SetUINT32(MF_LOW_LATENCY, TRUE));
 }
 
 BOOL
-MWFReader::IsSupportedByMWF(
+WMFReader::IsSupportedByMWF(
 	LPCWSTR lpPath,
 	WAVEFORMATEX** waveFormat
 )
@@ -76,7 +76,7 @@ MWFReader::IsSupportedByMWF(
 }
 
 VOID
-MWFReader::LoadFileToMediaBuffer(
+WMFReader::LoadFileToMediaBuffer(
 	std::vector<BYTE>& lpData,
 	WAVEFORMATEX** waveFormat
 )
@@ -161,7 +161,7 @@ WriteToFile(
 }
 
 VOID
-MWFReader::WriteFileFromMediaBufferEx(
+WMFReader::WriteFileFromMediaBufferEx(
 	IMFSourceReader* pSourceReader,
 	HANDLE hFile, 
 	std::vector<BYTE>& pData,
@@ -210,14 +210,8 @@ MWFReader::WriteFileFromMediaBufferEx(
 	dwHeader = sizeof(dwHead) + dwWaveFormatSize + sizeof(dwHeadData);	// get size of header 
 
 	size_t pRawDataSize = NULL;
-	if (!dwDataSize || !(*pSecondData))
-	{
-		pRawDataSize = pData.size();
-	}
-	else
-	{
-		pRawDataSize = dwDataSize;
-	}
+	if (!dwDataSize || !(*pSecondData)) { pRawDataSize = pData.size(); }
+	else { pRawDataSize = dwDataSize; }
 
 	// write full audio data
 	if (!*pSecondData)

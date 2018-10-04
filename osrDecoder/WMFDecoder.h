@@ -16,17 +16,17 @@
 #include "OSR.h"
 #include "KernCPU.h"
 
-class MWFReader
+class WMFReader
 {
 public:
-	DLL_API MWFReader() { FAILEDX1(MFStartup(MF_VERSION)); MFWInit(); }
-	DLL_API ~MWFReader() 
+	DLL_API WMFReader() { FAILEDX1(MFStartup(MF_VERSION)); WMFInit(); }
+	DLL_API ~WMFReader()
 	{
 		FAILEDX1(MFShutdown());
 		_RELEASE(pAttribute);
 	}
 
-	DLL_API VOID MFWInit();
+	DLL_API VOID WMFInit();
 	DLL_API BOOL IsSupportedByMWF(LPCWSTR lpPath, WAVEFORMATEX** waveFormat);
 	DLL_API VOID LoadFileToMediaBuffer(std::vector<BYTE>& lpData, WAVEFORMATEX** waveFormat);
 	DLL_API VOID WriteFileFromMediaBufferEx(IMFSourceReader* pSourceReader, HANDLE hFile, std::vector<BYTE>& pData, BYTE** pSecondData, DWORD dwDataSize);

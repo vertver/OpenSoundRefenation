@@ -14,6 +14,31 @@
 #pragma hdrstop
 
 DLL_API ThreadSystem threadSystem;
+LPWSTR lpNameString[4096];
+NTQUERYINFORMATIONTHREAD pNtQueryInformationThread;
+
+LONG 
+WINAPI
+NtQueryInformationThreadEx(
+	HANDLE hThread,
+	__THREAD_INFORMATION_CLASS threadInfo,
+	PVOID pThreadInfo,
+	ULONG uSize,
+	PULONG lpSize
+)
+{
+	if (!pNtQueryInformationThread 
+#ifdef DEBUG
+		|| pNtQueryInformationThread == (LPVOID)0xCCCCCCCCCCCCCCCC
+#endif
+		)
+	{
+		pNtQueryInformationThread = (NTQUERYINFORMATIONTHREAD)GetProcAddress(GetModuleHandleW(L"ntdll"), "NtQueryInformationThread");
+		if (!pNtQueryInformationThread) { return 41; }
+	}
+
+	return pNtQueryInformationThread(hThread, threadInfo, pThreadInfo, uSize, lpSize);
+}
 
 VOID
 WINAPIV
@@ -31,7 +56,7 @@ UserThreadProc(
 
 	// cast _TEB to custom _TEB type
 	_TEB* teb = NtCurrentTeb();
-	threadEntry->funcTeb = (__TEB*)teb;
+	threadEntry->funcTeb = teb;
 	
 	threadFunc(pArglist);
 }
@@ -40,7 +65,7 @@ static THREAD_ENTRY threadStruct[4096] = { NULL };
 
 DWORD
 ThreadSystem::CreateUserThread(
-	PTHREAD_INFO pThreadInfo,
+	THREAD_INFO* pThreadInfo,
 	ThreadFunc* pFunction,
 	LPVOID pArgs,
 	LPCWSTR pName
@@ -92,6 +117,7 @@ ThreadSystem::SetUserThreadName(
 	{
 		HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, dwThreadId);
 		ASSERT2(SUCCEEDED(pThreadDesc(hThread, lpName)), L"Can't set thread name");
+		CloseHandle(hThread);
 	}
 	else
 	{
@@ -123,52 +149,38 @@ ThreadSystem::GetUserThreadName(
 	{
 		HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, dwThreadId);
 		ASSERT2(SUCCEEDED(pThreadDesc(hThread, lpName)), L"Can't get thread name");
+		CloseHandle(hThread);
 	}
 }
 
 VOID
 ThreadSystem::GetThreadInformation(
-	PTHREAD_INFO pThreadInfo,
+	THREAD_INFO* pThreadInfo,
 	DWORD dwThreadId
 )
 {
 	ASSERT2(dwThreadId, L"No thread id at GetThreadInformation");
 
 	// get handle to thread 
-	__THREAD_INFORMATION_CLASS threadInfo = {};
 	HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, dwThreadId);
 	THREAD_BASIC_INFORMATION basicInfo = { NULL };
-	NT_TIB tib = { NULL };
-
-	// documented Native-API for check thread info
-	NTQUERYINFORMATIONTHREAD pNtQueryInformationThread = (NTQUERYINFORMATIONTHREAD)GetProcAddress(GetModuleHandleW(L"ntdll"), "NtQueryInformationThread");
-
-	// this is undocumented Native-API function (ReadProcessMemory eq.). 
-	NTREADVIRTUALMEMORY pNtReadVirtualMemory = (NTREADVIRTUALMEMORY)GetProcAddress(GetModuleHandleW(L"ntdll"), "NtReadVirtualMemory");
-	
-	// if functions are exists
-	if (pNtQueryInformationThread && pNtReadVirtualMemory)
-	{
-		// read basic info to our struct
-		pNtQueryInformationThread(hThread, ThreadBasicInformation, &basicInfo, sizeof(THREAD_BASIC_INFORMATION), NULL);
-
-		// we don't get a struct with info, so we read virtual memory of our process
-		pNtReadVirtualMemory(GetModuleHandleW(NULL), basicInfo.TebBaseAddress, &tib, sizeof(NT_TIB), NULL);
-	}
-
+	NT_TIB64 tib = { NULL };
 	DWORD cbSize = sizeof(THREAD_INFO);
 
+	// read basic info to our struct
+	NtQueryInformationThreadEx(hThread, ThreadBasicInformation, &basicInfo, sizeof(THREAD_BASIC_INFORMATION), NULL);
+	NtReadVirtualMemory(GetCurrentProcess(), basicInfo.TebBaseAddress, &tib, sizeof(NT_TIB64), NULL);
+
+	LPWSTR lpThreadNameString = (LPWSTR)FastAlloc(sizeof(WSTRING128));
+	GetUserThreadName(dwThreadId, &lpThreadNameString);
+
 	//#NOTE: the pThreadInfo variable must exist to delete pointer
-	if (!pThreadInfo) { pThreadInfo = (PTHREAD_INFO)FastAlloc(sizeof(THREAD_INFO)); }
-
-	LPWSTR* lpName = NULL;
-	GetUserThreadName(dwThreadId, lpName);
-
+	if (!pThreadInfo) { pThreadInfo = (PTHREAD_INFO)FastAlloc(cbSize); }
 	pThreadInfo->cbSize = cbSize;
-	pThreadInfo->dwStackSize = (DWORD)(*(DWORD64*)(tib.StackBase));	// in 64-bit system - DWORD64
+	pThreadInfo->dwStackSize = (DWORD)ptrdiff_t(tib.StackBase - tib.StackLimit);
 	pThreadInfo->dwThreadId = dwThreadId;
 	pThreadInfo->hThread = hThread;
+	pThreadInfo->lpThreadName = lpThreadNameString;
 
-	if (!lpName) { pThreadInfo->lpThreadName = NULL; }
-	else { pThreadInfo->lpThreadName = *lpName; }
+	CloseHandle(hThread);
 }

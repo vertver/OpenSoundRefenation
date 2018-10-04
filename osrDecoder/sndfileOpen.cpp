@@ -14,7 +14,7 @@ VOID
 SndFileReader::OpenFileToSoundBuffer(
 	LPCWSTR lpPath,
 	BYTE** lpPCMData,
-	DWORD dwSize
+	LPDWORD dwSize
 )
 {
 	LPCSTR lpNewPath = WCSTRToMBCSTR(lpPath);
@@ -22,4 +22,6 @@ SndFileReader::OpenFileToSoundBuffer(
 
 	sndFile = sf_open(lpNewPath, SFM_READ, &fileInfo);
 	if (!sndFile) { DEBUG_BREAK; }
+
+	UnloadFile((LPVOID)lpPath);
 }

@@ -95,7 +95,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AVCodecHeader.h" />
-    <ClInclude Include="MWFDecoder.h" />
+    <ClInclude Include="WMFDecoder.h" />
     <ClInclude Include="sndfile.h" />
     <ClInclude Include="sndfile.hh" />
     <ClInclude Include="SoundFile.h" />
@@ -105,7 +105,7 @@
   <ItemGroup>
     <ClCompile Include="AVDecodeFile.cpp" />
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="MFWMain.cpp" />
+    <ClCompile Include="WMFMain.cpp" />
     <ClCompile Include="osrDecoder.cpp" />
     <ClCompile Include="sndfileOpen.cpp" />
     <ClCompile Include="stdafx.cpp">

@@ -18,4 +18,5 @@ DLL_API VOID CreateTempDirectory();
 DLL_API LPCWSTR GetTempDirectory();
 DLL_API VOID GetTimeString(LPCWSTR lpString);
 DLL_API LONG CreateMinidump(_EXCEPTION_POINTERS* pExceptionInfo);
-LONG WINAPI UnhandledFilter(struct _EXCEPTION_POINTERS* pExceptionInfo);
+DLL_API LONG WINAPI UnhandledFilter(struct _EXCEPTION_POINTERS* pExceptionInfo);
+DLL_API VOID WINAPI GetCurrentPeb(VOID** pPeb);

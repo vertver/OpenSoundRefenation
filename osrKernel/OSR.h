@@ -113,6 +113,7 @@ using WSTRING1024				= WCHAR[1024];
 
 using UnhandledExceptionFilterType = LONG WINAPI(struct _EXCEPTION_POINTERS *pExceptionInfo);
 extern DLL_API UnhandledExceptionFilterType *previous_filter;
+extern DLL_API HANDLE hHeap;
 
 #define FAILEDX1(X)	\
 if (FAILED(X)) \
@@ -150,7 +151,7 @@ DLL_API OSRCODE GetWaveFormatExtented(BYTE* lpWaveFile, DWORD dwFileSize, WAVEFO
 template <class T>
 inline T* AllocateClass()
 {
-	return (T*)HeapAlloc(GetKernelHeap(), HEAP_ZERO_MEMORY, sizeof(T));
+	return new T;
 }
 
 template <typename T>
@@ -165,6 +166,8 @@ FastAlloc(
 	size_t uSize
 )
 {
+	ASSERT2(uSize, L"Alloc size can't be 0");
+	ASSERT2(hHeap, L"No kernel heap");
 	return HeapAlloc(GetKernelHeap(), HEAP_ZERO_MEMORY, uSize);
 }
 
