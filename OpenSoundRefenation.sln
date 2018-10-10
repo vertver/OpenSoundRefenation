@@ -23,28 +23,48 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "osrDecoder", "osrDecoder\os
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "osrKernel", "osrKernel\osrKernel.vcxproj", "{ECE873F6-28C2-4865-B409-0BA07CCC6D64}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "osrUI", "osrUI\osrUI.vcxproj", "{92DC5BF3-7050-4BBC-80E2-6F425A705850}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{3BCAFC30-1810-3BA9-9FDB-0C781F1F4E7F}.Debug|x64.ActiveCfg = Debug|x64
 		{3BCAFC30-1810-3BA9-9FDB-0C781F1F4E7F}.Debug|x64.Build.0 = Debug|x64
+		{3BCAFC30-1810-3BA9-9FDB-0C781F1F4E7F}.Debug|x86.ActiveCfg = Debug|x64
 		{3BCAFC30-1810-3BA9-9FDB-0C781F1F4E7F}.Release|x64.ActiveCfg = Release|x64
 		{3BCAFC30-1810-3BA9-9FDB-0C781F1F4E7F}.Release|x64.Build.0 = Release|x64
+		{3BCAFC30-1810-3BA9-9FDB-0C781F1F4E7F}.Release|x86.ActiveCfg = Release|x64
 		{AE802C47-E948-4269-ADE3-C4F1E76EC5A0}.Debug|x64.ActiveCfg = Debug|x64
 		{AE802C47-E948-4269-ADE3-C4F1E76EC5A0}.Debug|x64.Build.0 = Debug|x64
+		{AE802C47-E948-4269-ADE3-C4F1E76EC5A0}.Debug|x86.ActiveCfg = Debug|x64
 		{AE802C47-E948-4269-ADE3-C4F1E76EC5A0}.Release|x64.ActiveCfg = Release|x64
 		{AE802C47-E948-4269-ADE3-C4F1E76EC5A0}.Release|x64.Build.0 = Release|x64
+		{AE802C47-E948-4269-ADE3-C4F1E76EC5A0}.Release|x86.ActiveCfg = Release|x64
 		{6E43CD6F-6AD0-4544-A368-05359BFE7813}.Debug|x64.ActiveCfg = Debug|x64
 		{6E43CD6F-6AD0-4544-A368-05359BFE7813}.Debug|x64.Build.0 = Debug|x64
+		{6E43CD6F-6AD0-4544-A368-05359BFE7813}.Debug|x86.ActiveCfg = Debug|x64
 		{6E43CD6F-6AD0-4544-A368-05359BFE7813}.Release|x64.ActiveCfg = Release|x64
 		{6E43CD6F-6AD0-4544-A368-05359BFE7813}.Release|x64.Build.0 = Release|x64
+		{6E43CD6F-6AD0-4544-A368-05359BFE7813}.Release|x86.ActiveCfg = Release|x64
 		{ECE873F6-28C2-4865-B409-0BA07CCC6D64}.Debug|x64.ActiveCfg = Debug|x64
 		{ECE873F6-28C2-4865-B409-0BA07CCC6D64}.Debug|x64.Build.0 = Debug|x64
+		{ECE873F6-28C2-4865-B409-0BA07CCC6D64}.Debug|x86.ActiveCfg = Debug|x64
 		{ECE873F6-28C2-4865-B409-0BA07CCC6D64}.Release|x64.ActiveCfg = Release|x64
 		{ECE873F6-28C2-4865-B409-0BA07CCC6D64}.Release|x64.Build.0 = Release|x64
+		{ECE873F6-28C2-4865-B409-0BA07CCC6D64}.Release|x86.ActiveCfg = Release|x64
+		{92DC5BF3-7050-4BBC-80E2-6F425A705850}.Debug|x64.ActiveCfg = Debug|x64
+		{92DC5BF3-7050-4BBC-80E2-6F425A705850}.Debug|x64.Build.0 = Debug|x64
+		{92DC5BF3-7050-4BBC-80E2-6F425A705850}.Debug|x86.ActiveCfg = Debug|Win32
+		{92DC5BF3-7050-4BBC-80E2-6F425A705850}.Debug|x86.Build.0 = Debug|Win32
+		{92DC5BF3-7050-4BBC-80E2-6F425A705850}.Release|x64.ActiveCfg = Release|x64
+		{92DC5BF3-7050-4BBC-80E2-6F425A705850}.Release|x64.Build.0 = Release|x64
+		{92DC5BF3-7050-4BBC-80E2-6F425A705850}.Release|x86.ActiveCfg = Release|Win32
+		{92DC5BF3-7050-4BBC-80E2-6F425A705850}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

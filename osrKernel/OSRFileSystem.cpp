@@ -44,7 +44,7 @@ WCSTRToMBCSTR(
 	{
 		// allocate new string at kernel heap
 		lpNewString = (LPSTR)FastAlloc(StringSize++);
-		if (!WideCharToMultiByte(CP_UTF8, 0, lpString, -1, lpNewString, StringSize, NULL, NULL)) { DEBUG_BREAK; }
+		ASSERT2(WideCharToMultiByte(CP_UTF8, 0, lpString, -1, lpNewString, StringSize, NULL, NULL), L"Can't convert wchar_t to char");
 	}
 	return lpNewString;
 }
@@ -310,16 +310,8 @@ WriteFileFromBuffer(
 	if (!SetFilePointerEx(hFile, largeInt, NULL, FILE_BEGIN)) { return FS_OSR_BAD_PTR; }
 	if (!WriteFile(hFile, &dwRIFFFileSize, sizeof(dwRIFFFileSize), &dwFileWritten, NULL)) { return FS_OSR_BAD_PTR; }
 
-	// clode file handle
+	// close file handle
 	CloseHandle(hFile);
 	
 	return OSR_SUCCESS;
-}
-
-VOID
-UnloadFile(
-	LPVOID pFile
-)
-{
-	ASSERT1(HeapFree(GetKernelHeap(), NULL, pFile), L"Can't free pointer from kernel heap");
 }

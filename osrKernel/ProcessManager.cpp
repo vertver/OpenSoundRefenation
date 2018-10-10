@@ -13,8 +13,8 @@
 
 DLL_API ProcessManager processManager;
 
-NTQUERYINFORMATIONPROCESS pNtQueryInformationProcess;
-NTREADVIRTUALMEMORY pNtReadVirtualMemory;
+NTQUERYINFORMATIONPROCESS pNtQueryInformationProcess = nullptr;
+NTREADVIRTUALMEMORY pNtReadVirtualMemory = nullptr;
 
 LONG 
 WINAPI 
@@ -26,11 +26,7 @@ NtQueryInformationProcessEx(
 	PULONG lpSize
 )
 {
-	if (!pNtQueryInformationProcess 
-#ifdef DEBUG
-		|| pNtQueryInformationProcess == (LPVOID)0xCCCCCCCCCCCCCCCC
-#endif
-		)
+	if (!pNtQueryInformationProcess)
 	{
 		pNtQueryInformationProcess = (NTQUERYINFORMATIONPROCESS)GetProcAddress(GetModuleHandleW(L"ntdll"), "NtQueryInformationProcess");
 		if (!pNtQueryInformationProcess) { return 41; }
@@ -49,11 +45,7 @@ NtReadVirtualMemory(
 	PULONG lpSize
 )
 {
-	if (!pNtReadVirtualMemory 
-#ifdef DEBUG
-		|| pNtReadVirtualMemory == (LPVOID)0xCCCCCCCCCCCCCCCC
-#endif
-		)
+	if (!pNtReadVirtualMemory)
 	{
 		pNtReadVirtualMemory = (NTREADVIRTUALMEMORY)GetProcAddress(GetModuleHandleW(L"ntdll"), "NtReadVirtualMemory");
 		if (!pNtReadVirtualMemory) { return 41; }

@@ -59,14 +59,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>DEBUG;ENGINE_EXPORTS;_DEBUG;OSRMIXER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\osrKernel;$(SolutionDir)\osrDecoder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\osrKernel;$(SolutionDir)\osrDecoder;$(SolutionDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)\debug\;$(SolutionDir)\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>osrDecoder.lib;osrKernel.lib;XAudio2.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>osrDecoder.lib;osrKernel.lib;XAudio2.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;dsound.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)\osrMixer.dll</OutputFile>
     </Link>
   </ItemDefinitionGroup>
@@ -80,7 +80,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>ENGINE_EXPORTS;NDEBUG;OSRMIXER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\osrKernel;$(SolutionDir)\osrDecoder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\osrKernel;$(SolutionDir)\osrDecoder;$(SolutionDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
@@ -89,11 +89,12 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>$(OutDir)\osrMixer.dll</OutputFile>
-      <AdditionalLibraryDirectories>$(SolutionDir)\debug\;$(SolutionDir)\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)\release\;$(SolutionDir)\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>osrDecoder.lib;osrKernel.lib;XAudio2.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="DirectSoundMain.h" />
     <ClInclude Include="IMWASAPI.h" />
     <ClInclude Include="SoundList.h" />
     <ClInclude Include="stdafx.h" />
@@ -101,6 +102,8 @@
     <ClInclude Include="XAudioMain.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DirectSoundKernel.cpp" />
+    <ClCompile Include="DirectSoundMixer.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="IMWASAPIKernel.cpp" />
     <ClCompile Include="osrMixer.cpp" />

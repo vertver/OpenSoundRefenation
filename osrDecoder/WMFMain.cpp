@@ -85,9 +85,12 @@ WMFReader::LoadFileToMediaBuffer(
 	GUID SubType = { NULL };
 
 	// get GUID
-	_DEB(pMediaType->GetGUID(MF_MT_MAJOR_TYPE, &MajorType));
+	FAILEDX2(pMediaType->GetGUID(MF_MT_MAJOR_TYPE, &MajorType));
+#ifdef DEBUG
+	// Video is not supported 
 	if (MajorType != MFMediaType_Audio) { DEBUG_BREAK; }
-	_DEB(pMediaType->GetGUID(MF_MT_MAJOR_TYPE, &SubType));
+#endif
+	FAILEDX2(pMediaType->GetGUID(MF_MT_MAJOR_TYPE, &SubType));
 
 	// get info about compress
 	BOOL isCompressed = FALSE;

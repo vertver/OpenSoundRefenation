@@ -11,6 +11,7 @@
 #include "stdafx.h"
 
 DLL_API HANDLE hPlay;
+DLL_API XEngine XAudioEngine;
 
 VOID
 XEngine::CreateXEngine()
@@ -22,7 +23,7 @@ XEngine::CreateXEngine()
 VOID
 XEngine::CreateSourceBuffer()
 {
-	FAILEDX2(pXAudio->CreateSourceVoice(&pSourceVoice, waveFormat));
-	HRESULT hr = pSourceVoice->SubmitSourceBuffer(&audioBuffer);
+	FAILEDX2(pXAudio->CreateSourceVoice(&sList.pSourceVoice, sList.waveFormat));
+	HRESULT hr = sList.pSourceVoice->SubmitSourceBuffer(&sList.audioBuffer);
 	FAILEDX2(hr);
 }

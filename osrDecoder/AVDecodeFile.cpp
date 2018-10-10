@@ -143,16 +143,13 @@ AVReader::OpenFileToBuffer(
 
 	// init parser by codec id
 	parser = av_parser_init(codec->id);
-	if (!parser) { DEBUG_BREAK; }
+	ASSERT2(parser, L"Can't init parser");
 
 	// allocate codec
 	c = avcodec_alloc_context3(codec);
-	if (!c) { DEBUG_BREAK; }
+	ASSERT2(c, L"Can't alloc context");
 
-	if (avcodec_open2(c, codec, NULL) < 0)
-	{
-		DEBUG_BREAK;
-	}
+	ASSERT2(!(avcodec_open2(c, codec, NULL) < 0), L"Can't open codec");
 
 	DWORD dwWritten = 0;
 
@@ -166,19 +163,13 @@ AVReader::OpenFileToBuffer(
 		// allocate frame if 0
 		if (!decoded_frame)
 		{
-			if (!(decoded_frame = av_frame_alloc()))
-			{
-				DEBUG_BREAK;
-			}
+			ASSERT2((decoded_frame = av_frame_alloc()), L"Can't alloc file");
 		}
 
 		// parse to packet
 		ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size, data, (int)data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
 
-		if (ret < 0)
-		{
-			DEBUG_BREAK;
-		}
+		ASSERT2(!(ret < 0), L"No return");
 
 		data += ret;
 		data_size -= ret;
@@ -192,7 +183,7 @@ AVReader::OpenFileToBuffer(
 		if (data_size < AUDIO_REFILL_THRESH)
 		{
 			// move data to pointer
-			memmove_s(inbuf, sizeof(inbuf), data, data_size);
+			memmove_s(inbuf, data_size, data, data_size);
 			data = inbuf;
 			ReadFile(hFile, data + data_size, AUDIO_INBUF_SIZE - ((DWORD)data_size), &len, NULL);
 			if (len > 0) { data_size += len; }

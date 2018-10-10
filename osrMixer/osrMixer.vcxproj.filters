@@ -28,6 +28,9 @@
     <Filter Include="Mixer\WASAPI">
       <UniqueIdentifier>{d44054e4-f9d0-45e9-b53d-205aaeddf312}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Mixer\DirectSound">
+      <UniqueIdentifier>{1a60cc3a-188c-4c84-b368-34265fe823ec}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -44,6 +47,9 @@
     </ClInclude>
     <ClInclude Include="IMWASAPI.h">
       <Filter>Mixer\WASAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectSoundMain.h">
+      <Filter>Mixer\DirectSound</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -67,6 +73,12 @@
     </ClCompile>
     <ClCompile Include="IMWASAPIKernel.cpp">
       <Filter>Mixer\WASAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectSoundKernel.cpp">
+      <Filter>Mixer\DirectSound</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectSoundMixer.cpp">
+      <Filter>Mixer\DirectSound</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

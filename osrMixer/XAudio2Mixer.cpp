@@ -10,6 +10,8 @@
 *********************************************************/
 #include "stdafx.h"
 
+DLL_API XMixer XAudioMixer;
+
 VOID
 XMixer::InitMixer(
 	XEngine engine
@@ -25,8 +27,8 @@ XMixer::PlaySimpleWave()
 {
 	MSG msg = { NULL };
 
-	if (audioEngine.audioBuffer.AudioBytes) { return; }
-	HRESULT hr = audioEngine.pSourceVoice->Start();
+	if (audioEngine.sList.audioBuffer.AudioBytes) { return; }
+	HRESULT hr = audioEngine.sList.pSourceVoice->Start();
 
 	XAUDIO2_VOICE_STATE voiceState;
 	BOOL isRunning = TRUE;
@@ -35,7 +37,7 @@ XMixer::PlaySimpleWave()
 	while (SUCCEEDED(hr) && isRunning)
 	{
 		//if (msg.message == WM_QUIT) { break; }
-		audioEngine.pSourceVoice->GetState(&voiceState);
+		audioEngine.sList.pSourceVoice->GetState(&voiceState);
 		if (!voiceState.BuffersQueued) { break; }
 
 		isRunning = (voiceState.BuffersQueued > 0) != 0;

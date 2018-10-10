@@ -13,8 +13,6 @@
 
 #define SAMPLE_RATE 44100
 
-extern DLL_API HANDLE hPlay;
-
 class SoundList : public WMFReader
 {
 public:
@@ -32,7 +30,7 @@ public:
 };
 
 // AuEngine 2.1
-class XEngine : public SoundList
+class XEngine
 {
 public:	
 	DLL_API XEngine() {};
@@ -59,3 +57,7 @@ private:
 	// audio engine and source
 	XEngine audioEngine;
 };
+
+extern DLL_API HANDLE hPlay;
+extern DLL_API XMixer XAudioMixer;
+extern DLL_API XEngine XAudioEngine;
