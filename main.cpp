@@ -12,7 +12,6 @@
 
 int argc;
 char* argv[MAX_NUM_ARGVS];
-//DLL_API OSREngine osr;
 
 BOOL
 WINAPI
@@ -47,6 +46,7 @@ WinMain(
 	//OSR w;
 	//w.show();
 	//return a.exec();	
+
 	while (true)
 	{
 

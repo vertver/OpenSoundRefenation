@@ -38,7 +38,7 @@ SoundList::LoadSoundFile(
 		audioBuffer.AudioBytes = dwDataSize - 44;
 		audioBuffer.pAudioData = reinterpret_cast<BYTE*>(lpData) + 44;
 		audioBuffer.Flags = XAUDIO2_END_OF_STREAM;
-		if (!waveFormat) { waveFormat = (WAVEFORMATEX*)HeapAlloc(GetKernelHeap(), HEAP_ZERO_MEMORY, sizeof(WAVEFORMATEX)); }
+		if (!waveFormat) { waveFormat = (WAVEFORMATEX*)FastAlloc(sizeof(WAVEFORMATEX)); }
 		*waveFormat = wavFile;
 	}
 	return OSR_SUCCESS;

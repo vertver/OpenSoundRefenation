@@ -10,12 +10,13 @@
 *********************************************************/
 #include "stdafx.h"
 
+#ifdef WIN32
 DLL_API HANDLE hHeap;
 
 VOID
 CreateKernelHeap()
 {
-	// 64kb heap (if needy more - heap get to virt)
+	// 64kb heap (if needy more - heap get to virtual)
 	hHeap = HeapCreate(NULL, 0x010000, NULL); ASSERT1(hHeap, L"Can't create heap");
 }
 
@@ -30,12 +31,15 @@ GetKernelHeap()
 {
 	return hHeap;
 }
+#endif
 
+#ifndef WITHOUT_WIDECHAR
 LPCSTR 
 WCSTRToMBCSTR(
 	LPCWSTR lpString
 ) 
 {
+#ifdef WIN32
 	// we need to get size of data to allocate
 	int StringSize = WideCharToMultiByte(CP_UTF8, 0, lpString, -1, nullptr, 0, NULL, NULL);
 	LPSTR lpNewString = nullptr;
@@ -47,8 +51,22 @@ WCSTRToMBCSTR(
 		ASSERT2(WideCharToMultiByte(CP_UTF8, 0, lpString, -1, lpNewString, StringSize, NULL, NULL), L"Can't convert wchar_t to char");
 	}
 	return lpNewString;
-}
+#else
+	// we need to get size of data to allocate
+	int StringSize = wcslen(lpString);
+	int OutSize = 0;
+	LPSTR lpNewString = (LPSTR)FastAlloc(StringSize++);
 
+#ifndef SECURE_BUILD
+	wctomb(lpNewString, const_cast<wchar_t>(*lpString));
+#else
+	wctomb_s(&OutSize, lpNewString, StringSize, const_cast<wchar_t>(*lpString));
+#endif
+#endif
+}
+#endif
+
+#ifdef WIN32
 LPWSTR
 FormatError(
 	LONG dwErrorCode
@@ -58,7 +76,9 @@ FormatError(
 	FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, NULL, dwErrorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), szError, sizeof(szError) - 1, NULL);
 	return szError;
 }
+#endif
 
+#ifdef WIN32
 OSRCODE
 OpenFileDialog(
 	WSTRING_PATH* lpPath
@@ -79,10 +99,22 @@ OpenFileDialog(
 	return OSR_SUCCESS;
 }
 
-BOOL 
+#else
+OSRCODE
+OpenFileDialog(
+	STRING_PATH* lpPath
+)
+{
+	printf("Unfortunately, the open file dialog at POSIX system is N/A. Please, write here path to your file: \n");
+	scanf("%s", (char*)*lpPath);
+}
+#endif
+
+#ifdef WIN32
+BOOL
 GetDiskUsage(
 	LARGE_INTEGER largeSize,
-	LPCWSTR lpPath 
+	LPCWSTR lpPath
 )
 {
 	// get current disk
@@ -92,14 +124,36 @@ GetDiskUsage(
 	// get free disk space 
 	GetDiskFreeSpaceExW(szCurrentDisk, &freeBytesToCaller, nullptr, nullptr);
 
-	if (freeBytesToCaller.QuadPart < (UINT64)largeSize.QuadPart)
+	if ((UINT64)largeSize.QuadPart > freeBytesToCaller.QuadPart)
 	{
 		if (!THROW4(L"This file is bigger then free space on your drive. Continue?")) { return FALSE; }
 	}
+
 	return TRUE;
 }
+#else
+BOOL
+GetDiskUsage(
+	size_t FileSize,
+	const char* lpPath
+)
+{
+	statvfs fileInfo = { NULL };
 
-OSRCODE 
+	statvfs(lpPath, &fileInfo);
+	unsigned long freeSpaceSize = fileInfo.f_bsize * fileInfo.f_bfree;
+
+	if (FileSize > freeSpaceSize)
+	{
+		if (!THROW4("This file is bigger then free space on your drive. Continue?")) { return FALSE; }
+	}
+
+	return TRUE;
+}
+#endif
+
+#ifdef WIN32
+OSRCODE
 ReadAudioFile(
 	LPCWSTR lpPath,
 	VOID** lpData,
@@ -119,7 +173,29 @@ ReadAudioFile(
 	CloseHandle(hFile);
 	return OSR_SUCCESS;
 }
+#else
+OSRCODE
+ReadAudioFile(
+	const char* lpPath,
+	VOID** lpData,
+	unsigned long long* dwSizeWritten
+)
+{
+	// read-only mode
+	FILE* pFile = fopen(lpPath, "r");
+	if (!pFile) { return FS_OSR_BAD_HANDLE; }
+	*dwSizeWritten = filelength(fileno(pFile));
 
+	*lpData = FastAlloc(*dwSizeWritten);
+	if (!*lpData) { return FS_OSR_BAD_ALLOC; }
+	ASSERT2(!(fread(*lpData, dwSizeWritten, dwSizeWritten, pFile) == *dwSizeWritten), "Can't read file from disk");
+
+	fclose(pFile);
+	return OSR_SUCCESS;
+}
+#endif
+
+#ifdef WIN32
 OSRCODE
 ReadAudioFileEx(
 	LPCWSTR lpPath,
@@ -141,7 +217,7 @@ ReadAudioFileEx(
 	if (largeSize.QuadPart < DWORD(-1))
 	{
 		// allocate pointer and get data to it
-		*lpData = FastAlloc((UINT64)largeSize.QuadPart);
+		*lpData = AdvanceAlloc((UINT64)largeSize.QuadPart, VIRTUAL_MEMORY_ALLOC);
 		ASSERT1(*lpData, L"Can't alloc pointer");
 
 		if (!ReadFile(hFile, *lpData, (DWORD)((UINT64)largeSize.QuadPart), (DWORD*)&sizeWritten, NULL)) { return FS_OSR_BAD_ALLOC; }
@@ -154,7 +230,8 @@ ReadAudioFileEx(
 		largeInt.QuadPart = DWORD(-1);
 		DWORD dwSizeFinal = (DWORD)(*uSize - DWORD(-2));
 
-		ASSERT1(VirtualAlloc(*lpData, largeSize.QuadPart, MEM_RESERVE, PAGE_READWRITE), L"Can't allocate pointer");
+		*lpData = AdvanceAlloc((UINT64)largeSize.QuadPart, VIRTUAL_MEMORY_ALLOC);
+		ASSERT1(*lpData, L"Can't alloc pointer");
 
 		if (!ReadFile(hFile, *lpData, DWORD(-2), &dwTempWritten, NULL)) { return FS_OSR_BAD_PTR; }
 		if (!SetFilePointerEx(hFile, largeInt, NULL, FILE_BEGIN)) { return FS_OSR_BAD_PTR; }
@@ -164,6 +241,7 @@ ReadAudioFileEx(
 	CloseHandle(hFile);
 	return OSR_SUCCESS;
 }
+#endif
 
 RIFFChunk* FindSoundChunk(
 	_In_reads_bytes_(sizeBytes) BYTE* data,
@@ -219,7 +297,7 @@ GetWaveFormatExtented(
 	// if chunk is empty or size smaller than size of PCMWAVEFORMAT - take message
 	if (!fmtChunk || fmtChunk->size < sizeof(PCMWAVEFORMAT)) { return FS_OSR_BAD_PTR; }
 
-	// reinterpretate fmt chunk to pointer
+	// reinterpret fmt chunk to pointer
 	ptr = reinterpret_cast<BYTE*>(fmtChunk) + sizeof(RIFFChunk);
 	if (ptr + fmtChunk->size > wavEnd) { return FS_OSR_BAD_PTR; }
 
@@ -258,6 +336,7 @@ GetWaveFormatExtented(
 	return OSR_SUCCESS;
 }
 
+#ifdef WIN32
 OSRCODE
 WriteFileFromBuffer(
 	LPCWSTR lpPath,
@@ -315,3 +394,4 @@ WriteFileFromBuffer(
 	
 	return OSR_SUCCESS;
 }
+#endif

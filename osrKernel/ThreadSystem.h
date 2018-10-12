@@ -10,6 +10,8 @@
 *********************************************************/
 #pragma once
 #include "stdafx.h"
+
+#ifdef WIN32
 #include <subauth.h>
 
 typedef enum __THREAD_INFORMATION_CLASS
@@ -296,3 +298,5 @@ private:
 };
 
 extern DLL_API ThreadSystem threadSystem;
+
+#endif

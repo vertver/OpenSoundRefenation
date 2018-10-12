@@ -11,6 +11,7 @@
 #include "stdafx.h"
 #pragma once
 
+#ifdef WIN32
 typedef struct tagPROCESS_INFO
 {
 	LPVOID	lpProcessHeap;
@@ -161,3 +162,4 @@ private:
 };
 
 extern DLL_API ProcessManager processManager;
+#endif

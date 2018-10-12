@@ -11,6 +11,8 @@
 #pragma once
 #ifndef POSIX_PLATFORM
 #include <windows.h>
+#else
+#include <sys/statvfs.h>
 #endif
 #include <string>
 #include <vector>
@@ -18,16 +20,32 @@
 #define	MAX_NUM_ARGVS			128
 #define VIRTUAL_MEMORY_ALLOC	0xFF00FF00
 #define HEAP_MEMORY_ALLOC		0x00FF00FF
+#define MAPPED_MEMORY_ALLOC		0xF0F0F0F0
 
 #ifdef WIN32
 #define OSR_DECODER_NAME		L##"osrDecoder.dll"
 #define OSR_MIXER_NAME			L##"osrMixer.dll"
 #define MSG_LOG(X)				OutputDebugStringW(L##X); OutputDebugStringW(L"\n");
 #define WMSG_LOG(X)				OutputDebugStringW(X); OutputDebugStringW(L"\n");
+#else
+#define MSG_LOG(X)				printf(X); printf("\n");
+#define WMSG_LOG(X)				MSG_LOG(X)
 #endif
 
 #ifndef VOID
 #define VOID void
+#endif
+
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
+#ifndef NULL
+#define NULL 0
 #endif
 
 #ifndef WIN32
@@ -51,6 +69,17 @@ using DWORD = unsigned long;
 using LONGLONG = long long;
 using ULONGLONG = unsigned long long;
 using DWORD64 = ULONGLONG;
+
+typedef struct tWAVEFORMATEX
+{
+	WORD        wFormatTag;
+	WORD        nChannels;
+	DWORD       nSamplesPerSec;
+	DWORD       nAvgBytesPerSec;
+	WORD        nBlockAlign;
+	WORD        wBitsPerSample;
+	WORD        cbSize;
+} WAVEFORMATEX, *PWAVEFORMATEX, *LPWAVEFORMATEX;
 #endif
 
 enum OSRCODE
@@ -104,11 +133,19 @@ enum OSRCODE
 #define DLL_API					
 #endif
 
+#ifdef WIN32
 // assert levels
 VOID DLL_API ThrowCriticalError(LPCWSTR lpText);		// first level
 BOOL DLL_API ThrowApplicationError(LPCWSTR lpText);		// second level
 BOOL DLL_API ThrowDebugError(LPCWSTR lpText);			// third level
 BOOL DLL_API ThrowWarning(LPCWSTR lpText);				// fourth level
+#else
+// assert levels
+void ThrowCriticalError(const char* lpText);		// first level
+bool ThrowApplicationError(const char* lpText);		// second level
+bool ThrowDebugError(const char* lpText);			// third level
+bool ThrowWarning(const char* lpText);				// fourth level
+#endif
 
 #define OSRSUCCEDDED(X)			(X == OSR_SUCCESS)
 #define OSRFAILED(X)			(!OSRSUCCEDDED(X))
@@ -146,7 +183,9 @@ BOOL DLL_API ThrowWarning(LPCWSTR lpText);				// fourth level
 #else
 #define OSRASSERT(X)			if (!X) { ASSERT2(X, "OSRASSERT"); }
 #endif
+#ifdef WIN32
 #define _DEB(X)					if (FAILED(X)) { DEBUG_BREAK; }
+#endif
 #define _RELEASE(X)				if (X) { X->Release(); X = NULL; }
 
 using STRING_PATH				= char[MAX_PATH];
@@ -195,105 +234,65 @@ DLL_API VOID CreateKernelHeap();
 DLL_API VOID DestroyKernelHeap();
 DLL_API HANDLE GetKernelHeap();
 DLL_API LPWSTR FormatError(LONG dwErrorCode);
-
-__forceinline
-VOID
-UnloadFile(
-	LPVOID pFile
-)
-{
-	ASSERT1(HeapFree(GetKernelHeap(), NULL, pFile), L"Can't free pointer from kernel heap");
-	pFile = nullptr;
-}
-#else
-__forceinline
-void
-UnloadFile(
-	void* pFile
-)
-{
-	// #NOTE: it's must be allocated by malloc
-	free(pFile);
-	pFile = nullptr;
-}
-#endif
-
 DLL_API BOOL GetDiskUsage(LARGE_INTEGER largeSize, LPCWSTR lpPath);
+DLL_API OSRCODE ReadAudioFile(LPCWSTR lpPath, VOID** lpData, DWORD* dwSizeWritten);
+DLL_API OSRCODE ReadAudioFileEx(LPCWSTR lpPath, VOID** lpData, LONGLONG* uSize);
+DLL_API OSRCODE WriteFileFromBuffer(LPCWSTR lpPath, BYTE* pFile, DWORD dwSize, WAVEFORMATEX* waveFormat);
+DLL_API OSRCODE OpenFileDialog(WSTRING_PATH* lpPath);
+#else
+DLL_API OSRCODE ReadAudioFile(const char* lpPath, VOID** lpData, unsigned long long* dwSizeWritten);
+DLL_API BOOL GetDiskUsage(size_t FileSize, const char* lpPath);
+DLL_API OSRCODE OpenFileDialog(STRING_PATH* lpPath);
+#endif
 
 DLL_API VOID InitApplication();
 DLL_API VOID DestroyApplication(DWORD dwError);
 
-DLL_API OSRCODE OpenFileDialog(WSTRING_PATH* lpPath);
-DLL_API OSRCODE ReadAudioFile(LPCWSTR lpPath, VOID** lpData, DWORD* dwSizeWritten);
-DLL_API OSRCODE ReadAudioFileEx(LPCWSTR lpPath, VOID** lpData, LONGLONG* uSize);
-DLL_API OSRCODE WriteFileFromBuffer(LPCWSTR lpPath, BYTE* pFile, DWORD dwSize, WAVEFORMATEX* waveFormat);
 DLL_API OSRCODE GetWaveFormatExtented(BYTE* lpWaveFile, DWORD dwFileSize, WAVEFORMATEX* waveFormat);
 
-
-template <class T>
-inline T* AllocateClass()
+template 
+<class T>
+inline
+T*
+AllocateClass()
 {
 	return new T;
 }
 
 #ifdef WIN32
-template <typename T>
-__forceinline T* AllocatePointer()
+template 
+<typename T>
+__forceinline
+T* 
+AllocatePointer()
 {
 	return (T*)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, sizeof(T));
 }
 
-template <typename T, size_t Size>
-__forceinline T* AllocatePointer()
+template 
+<typename T, SIZE_T Size>
+__forceinline 
+T* 
+AllocatePointer()
 {
 	ASSERT2(Size, L"Can't alloc file with 0 size");
 	return (T*)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, Size);
 }
 
-template <typename T, size_t Size>
-__forceinline T* AllocateFile()
+template 
+<typename T, SIZE_T Size>
+__forceinline 
+T*
+AllocateFile()
 {
 	ASSERT2(Size, L"Can't alloc file with 0 size");
 	return (T*)VirtualAlloc(NULL, Size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 }
 
-#else
-template <typename T>
-inline T* AllocatePointer()
-{
-	return (T*)malloc(sizeof(T));
-}
-
-template <typename T, size_t Size>
-inline T* AllocatePointer()
-{
-	ASSERT2(Size, L"Can't alloc file with 0 size");
-	return (T*)malloc(Size);
-}
-
-template <typename T, size_t Size>
-inline T* AllocateFile()
-{
-	// map pointer by POSIX mapping
-	void* pFile = mmap(NULL, Size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	ASSERT2(pFile, "Can't map pointer");
-
-	// map fixed pointer 
-	pFile = mmap(pFile, Size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
-	ASSERT2(pFile, "Can't alloc fixed memory");
-
-	// protect mapped memory for R/W only
-	mprotect(pFile, Size, PROT_READ | PROT_WRITE);
-	return pFile;
-}
-
-#endif
-
-#ifdef WIN32
 __forceinline
 LPVOID
 FastAlloc(
-	size_t uSize
+	SIZE_T uSize
 )
 {
 	ASSERT2(uSize, L"Alloc size can't be 0");
@@ -301,8 +300,26 @@ FastAlloc(
 	return HeapAlloc(hHeap, HEAP_ZERO_MEMORY, uSize);
 }
 
+__forceinline
+LPVOID
+MapFile(
+	SIZE_T PointerSize,
+	LPCWSTR lpSharedMemoryName
+)
+{
+	LPVOID lpSharedMemory = nullptr;
+
+	// create file mapping at paging file
+	HANDLE hSharedMemory = CreateFileMappingW(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, NULL, PointerSize, lpSharedMemoryName);
+	lpSharedMemory = MapViewOfFile(hSharedMemory, FILE_MAP_ALL_ACCESS, NULL, NULL, PointerSize);
+
+	return lpSharedMemory;
+}
+
 /***********************************************************
+* WINDOWS FUNCTION
 * dwType reference:
+* MAPPED_MEMORY_ALLOC - pointer from mapped pagefile memory
 * HEAP_MEMORY_ALLOC - pointer from kernel heap
 * VIRTUAL_MEMORY_ALLOC - pointer from mapped memory
 * NULL - pointer from process heap
@@ -318,6 +335,9 @@ AdvanceAlloc(
 
 	switch (dwType)
 	{
+	case MAPPED_MEMORY_ALLOC:
+		pRet = MapFile(PointerSize, NULL);
+		break;
 	case VIRTUAL_MEMORY_ALLOC:
 		pRet = VirtualAlloc(NULL, PointerSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 		break;
@@ -342,6 +362,9 @@ FreePointer(
 {
 	switch (dwType)
 	{
+	case MAPPED_MEMORY_ALLOC:
+		if (pPointer) { ASSERT2(UnmapViewOfFile(pPointer), L"Can't free pointer. Maybe file doesn't allocated by mapped memory?"); }
+		break;
 	case VIRTUAL_MEMORY_ALLOC:
 		if (pPointer) { ASSERT2(VirtualFree(pPointer, PointerSize, MEM_RELEASE | MEM_DECOMMIT), L"Can't free pointer. Maybe file doesn't allocated by virtual memory?"); }
 		pPointer = nullptr;
@@ -359,7 +382,56 @@ FreePointer(
 		break;
 	}
 }
+
+__forceinline
+VOID
+UnloadFile(
+	LPVOID pFile
+)
+{
+	ASSERT1(HeapFree(GetKernelHeap(), NULL, pFile), L"Can't free pointer from kernel heap");
+	pFile = nullptr;
+}
+
 #else
+template 
+<typename T>
+inline 
+T*
+AllocatePointer()
+{
+	return (T*)malloc(sizeof(T));
+}
+
+template 
+<typename T, size_t Size>
+inline 
+T* 
+AllocatePointer()
+{
+	ASSERT2(Size, L"Can't alloc file with 0 size");
+	return (T*)malloc(Size);
+}
+
+template 
+<typename T, size_t Size>
+inline
+T* 
+AllocateFile()
+{
+	// map pointer by POSIX mapping
+	void* pFile = mmap(NULL, Size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	ASSERT2(pFile, "Can't map pointer");
+
+	// map fixed pointer 
+	pFile = mmap(pFile, Size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+	ASSERT2(pFile, "Can't alloc fixed memory");
+
+	// protect mapped memory for R/W only
+	mprotect(pFile, Size, PROT_READ | PROT_WRITE);
+	return pFile;
+}
+
 inline
 void*
 FastAlloc(
@@ -370,11 +442,12 @@ FastAlloc(
 	return malloc(uSize);
 }
 
-
 /***********************************************************
+* POSIX FUNCTION
 * dwType reference:
 * HEAP_MEMORY_ALLOC & NULL - pointer from kernel heap
-* VIRTUAL_MEMORY_ALLOC - pointer from mapped memory
+* VIRTUAL_MEMORY_ALLOC & MAPPED_MEMORY_ALLOC -
+* pointer from mapped memory
 *
 * #NOTE: for free pointer in POSIX systems, we must know
 * the size of it, because system doesn't know about it.
@@ -391,6 +464,7 @@ AdvanceAlloc(
 	switch (dwType)
 	{
 	case VIRTUAL_MEMORY_ALLOC:
+	case MAPPED_MEMORY_ALLOC:
 		// map pointer by POSIX mapping
 		pRet = mmap(NULL, PointerSize, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 		ASSERT2(pFile, "Can't map pointer");
@@ -412,6 +486,15 @@ AdvanceAlloc(
 }
 
 inline
+void*
+MapFile(
+	size_t PointerSize
+)
+{
+	return AdvanceAlloc(PointerSize, MAPPED_MEMORY_ALLOC);
+}
+
+inline
 void
 FreePointer(
 	void* pPointer,
@@ -422,6 +505,7 @@ FreePointer(
 	switch (dwType)
 	{
 	case VIRTUAL_MEMORY_ALLOC:
+	case MAPPED_MEMORY_ALLOC:
 		// free paged memory by POSIX
 		if (pPointer)
 		{
@@ -443,7 +527,23 @@ FreePointer(
 		break;
 	}
 }
+
+inline
+void
+UnloadFile(
+	void* pFile
+)
+{
+	// #NOTE: it's must be allocated by malloc
+	free(pFile);
+	pFile = nullptr;
+}
 #endif
+
+#define FREEPROCESSHEAP(Pointer) FreePointer(Pointer, NULL, NULL)
+#define FREEKERNELHEAP(Pointer) FreePointer(Pointer, NULL, HEAP_MEMORY_ALLOC)
+#define FREEVIRTUALMEM(Pointer, Size) FreePointer(Pointer, Size, VIRTUAL_MEMORY_ALLOC)
+#define FREEMAPPEDMEM(Pointer) FreePointer(Pointer, NULL, MAPPED_MEMORY_ALLOC)
 
 typedef struct
 {

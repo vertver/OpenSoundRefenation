@@ -10,6 +10,7 @@
 *********************************************************/
 #include "stdafx.h"
 
+#ifdef WIN32
 CPUID::CPUID()
 {
 	std::array<int, 4> iCPUArray = { };
@@ -183,3 +184,4 @@ CPUExt::SwapData(
 		*pData = (BYTE*)byteVector[0];
 	}
 }
+#endif

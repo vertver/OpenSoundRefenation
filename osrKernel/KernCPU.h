@@ -10,6 +10,8 @@
 *********************************************************/
 #pragma once
 #include "stdafx.h"
+
+#ifdef WIN32
 #include <intrin.h> 
 #include <bitset>  
 #include <array>  
@@ -54,5 +56,5 @@ public:
 
 	std::vector<BYTE> byteVector;
 };
-
+#endif
 

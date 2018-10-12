@@ -9,6 +9,8 @@
 * WIN32 kernel implementation
 *********************************************************/
 #include "stdafx.h"
+
+#ifdef WIN32
 #include <DbgHelp.h>
 
 DLL_API UnhandledExceptionFilterType *previous_filter = nullptr;
@@ -243,3 +245,5 @@ GetCurrentPeb(VOID** pPeb)
 
 	*pPeb = processInformation.PebBaseAddress;
 }
+
+#endif

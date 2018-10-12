@@ -11,6 +11,7 @@
 #include "stdafx.h"
 #pragma hdrstop
 
+#ifdef WIN32
 DLL_API ProcessManager processManager;
 
 NTQUERYINFORMATIONPROCESS pNtQueryInformationProcess = nullptr;
@@ -211,3 +212,5 @@ ProcessManager::WriteUserSharedMemory(
 		memcpy_s(lpSharedMemory, dwSharedMemorySizeToWrite, lpSharedData, dwSharedMemorySizeToWrite);
 	}
 }
+
+#endif

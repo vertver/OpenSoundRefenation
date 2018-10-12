@@ -9,9 +9,11 @@
 * thread system implementation
 *********************************************************/
 #include "stdafx.h"
-#include <process.h>
-#include "versionhelpers.h"
 #pragma hdrstop
+
+#ifdef WIN32
+#include <process.h>
+#include <versionhelpers.h>
 
 DLL_API ThreadSystem threadSystem;
 LPWSTR lpNameString[4096];
@@ -184,3 +186,4 @@ ThreadSystem::GetThreadInformation(
 
 	CloseHandle(hThread);
 }
+#endif
