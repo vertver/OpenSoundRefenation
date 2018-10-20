@@ -151,7 +151,8 @@ ProcessManager::CreateNewProcess(
 		if (ShellExecuteExW(&shellInfo))
 		{
 			processInformation.hProcess = shellInfo.hProcess;
-			if (processInformation.hProcess) { processInformation.dwProcessId = GetProcessId(processInformation.hProcess); }
+			if (!processInformation.hProcess) { return; }
+			processInformation.dwProcessId = GetProcessId(processInformation.hProcess);
 		}
 	}
 

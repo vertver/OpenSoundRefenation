@@ -17,7 +17,7 @@
 
 DLL_API ThreadSystem threadSystem;
 LPWSTR lpNameString[4096];
-NTQUERYINFORMATIONTHREAD pNtQueryInformationThread;
+NTQUERYINFORMATIONTHREAD pNtQueryInformationThread = nullptr;
 
 LONG 
 WINAPI
@@ -29,11 +29,7 @@ NtQueryInformationThreadEx(
 	PULONG lpSize
 )
 {
-	if (!pNtQueryInformationThread 
-#ifdef DEBUG
-		|| pNtQueryInformationThread == (LPVOID)0xCCCCCCCCCCCCCCCC
-#endif
-		)
+	if (!pNtQueryInformationThread)
 	{
 		pNtQueryInformationThread = (NTQUERYINFORMATIONTHREAD)GetProcAddress(GetModuleHandleW(L"ntdll"), "NtQueryInformationThread");
 		if (!pNtQueryInformationThread) { return 41; }
@@ -171,7 +167,7 @@ ThreadSystem::GetThreadInformation(
 
 	// read basic info to our struct
 	NtQueryInformationThreadEx(hThread, ThreadBasicInformation, &basicInfo, sizeof(THREAD_BASIC_INFORMATION), NULL);
-	NtReadVirtualMemory(GetCurrentProcess(), basicInfo.TebBaseAddress, &tib, sizeof(NT_TIB64), NULL);
+	NtReadVirtualMemory(hThread, basicInfo.TebBaseAddress, &tib, sizeof(NT_TIB64), NULL);
 
 	LPWSTR lpThreadNameString = (LPWSTR)FastAlloc(sizeof(WSTRING128));
 	GetUserThreadName(dwThreadId, &lpThreadNameString);

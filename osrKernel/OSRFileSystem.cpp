@@ -98,7 +98,6 @@ OpenFileDialog(
 	if (!GetOpenFileNameW(&openFile)) { return FS_OSR_BAD_PATH; }
 	return OSR_SUCCESS;
 }
-
 #else
 OSRCODE
 OpenFileDialog(
@@ -118,7 +117,7 @@ GetDiskUsage(
 )
 {
 	// get current disk
-	WCHAR szCurrentDisk[4] = { lpPath[0], ':', '\\', '\0' };
+	WCHAR szCurrentDisk[4] = { lpPath[0], L':', L'\\', L'\0' };
 	ULARGE_INTEGER freeBytesToCaller = { NULL };
 
 	// get free disk space 
@@ -200,7 +199,8 @@ OSRCODE
 ReadAudioFileEx(
 	LPCWSTR lpPath,
 	VOID** lpData,
-	LONGLONG* uSize
+	LONGLONG* uSize,
+	LPDWORD dwHeaderSize
 )
 {
 	// open handle and read audio file to buffer 
@@ -235,8 +235,29 @@ ReadAudioFileEx(
 
 		if (!ReadFile(hFile, *lpData, DWORD(-2), &dwTempWritten, NULL)) { return FS_OSR_BAD_PTR; }
 		if (!SetFilePointerEx(hFile, largeInt, NULL, FILE_BEGIN)) { return FS_OSR_BAD_PTR; }
-		if (!ReadFile(hFile, *lpData, dwSizeFinal, &dwTempWritten, NULL)) { return FS_OSR_BAD_PTR; }		
+		if (!ReadFile(hFile, *lpData, dwSizeFinal, &dwTempWritten, NULL)) { return FS_OSR_BAD_PTR; }
 	}
+
+	DWORD dwHeaderId = (*(LPDWORD)*lpData);
+	if (dwHeaderId != 0x46464952 || dwHeaderId != 0x45564157 || dwHeaderId != 0x20746d66)
+	{
+		THROW4(L"Can't open file, because this is not sound file.");
+		FreePointer(*lpData, *uSize, VIRTUAL_MEMORY_ALLOC);
+		return FS_OSR_BAD_PTR;
+	}
+
+	WAV_CHUNK_HEADER waveTemp = { NULL };
+	DWORD dwPointerToData = 0;
+
+	for (DWORD i = 0; i < 8; i++)
+	{
+		WAV_CHUNK_HEADER waveHeader = *((WAV_CHUNK_HEADER*)(*lpData) + dwPointerToData);
+
+		if (waveHeader.dwChunkId == 0x61746164) { break; }
+		dwPointerToData += waveHeader.dwFileSize;
+	}
+
+	*dwHeaderSize = dwPointerToData;
 
 	CloseHandle(hFile);
 	return OSR_SUCCESS;

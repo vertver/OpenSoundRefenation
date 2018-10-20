@@ -31,6 +31,9 @@
     <Filter Include="Mixer\DirectSound">
       <UniqueIdentifier>{1a60cc3a-188c-4c84-b368-34265fe823ec}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Loop List">
+      <UniqueIdentifier>{e16c4662-ccf5-4822-a3de-880012cdacc1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -50,6 +53,9 @@
     </ClInclude>
     <ClInclude Include="DirectSoundMain.h">
       <Filter>Mixer\DirectSound</Filter>
+    </ClInclude>
+    <ClInclude Include="LoopList.h">
+      <Filter>Loop List</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -79,6 +85,9 @@
     </ClCompile>
     <ClCompile Include="DirectSoundMixer.cpp">
       <Filter>Mixer\DirectSound</Filter>
+    </ClCompile>
+    <ClCompile Include="LoopList.cpp">
+      <Filter>Loop List</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

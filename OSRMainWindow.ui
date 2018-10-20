@@ -271,367 +271,66 @@
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>0</y>
-      <width>481</width>
-      <height>321</height>
+      <y>390</y>
+      <width>56</width>
+      <height>53</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
-      <widget class="QTabWidget" name="tabWidget">
-       <property name="palette">
-        <palette>
-         <active>
-          <colorrole role="ToolTipBase">
-           <brush brushstyle="SolidPattern">
-            <color alpha="102">
-             <red>27</red>
-             <green>27</green>
-             <blue>27</blue>
-            </color>
-           </brush>
-          </colorrole>
-          <colorrole role="ToolTipText">
-           <brush brushstyle="SolidPattern">
-            <color alpha="255">
-             <red>20</red>
-             <green>20</green>
-             <blue>20</blue>
-            </color>
-           </brush>
-          </colorrole>
-         </active>
-         <inactive>
-          <colorrole role="ToolTipBase">
-           <brush brushstyle="SolidPattern">
-            <color alpha="102">
-             <red>27</red>
-             <green>27</green>
-             <blue>27</blue>
-            </color>
-           </brush>
-          </colorrole>
-          <colorrole role="ToolTipText">
-           <brush brushstyle="SolidPattern">
-            <color alpha="255">
-             <red>20</red>
-             <green>20</green>
-             <blue>20</blue>
-            </color>
-           </brush>
-          </colorrole>
-         </inactive>
-         <disabled>
-          <colorrole role="ToolTipBase">
-           <brush brushstyle="SolidPattern">
-            <color alpha="102">
-             <red>27</red>
-             <green>27</green>
-             <blue>27</blue>
-            </color>
-           </brush>
-          </colorrole>
-          <colorrole role="ToolTipText">
-           <brush brushstyle="SolidPattern">
-            <color alpha="255">
-             <red>20</red>
-             <green>20</green>
-             <blue>20</blue>
-            </color>
-           </brush>
-          </colorrole>
-         </disabled>
-        </palette>
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>00:00:00</string>
        </property>
-       <property name="currentIndex">
-        <number>0</number>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>44100 16 2</string>
        </property>
-       <widget class="QWidget" name="tab">
-        <property name="palette">
-         <palette>
-          <active>
-           <colorrole role="WindowText">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>214</red>
-              <green>214</green>
-              <blue>214</blue>
-             </color>
-            </brush>
-           </colorrole>
-           <colorrole role="Midlight">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>20</red>
-              <green>20</green>
-              <blue>20</blue>
-             </color>
-            </brush>
-           </colorrole>
-           <colorrole role="Mid">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>20</red>
-              <green>20</green>
-              <blue>20</blue>
-             </color>
-            </brush>
-           </colorrole>
-           <colorrole role="HighlightedText">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>190</red>
-              <green>190</green>
-              <blue>190</blue>
-             </color>
-            </brush>
-           </colorrole>
-           <colorrole role="ToolTipBase">
-            <brush brushstyle="SolidPattern">
-             <color alpha="102">
-              <red>20</red>
-              <green>20</green>
-              <blue>20</blue>
-             </color>
-            </brush>
-           </colorrole>
-          </active>
-          <inactive>
-           <colorrole role="WindowText">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>214</red>
-              <green>214</green>
-              <blue>214</blue>
-             </color>
-            </brush>
-           </colorrole>
-           <colorrole role="Midlight">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>20</red>
-              <green>20</green>
-              <blue>20</blue>
-             </color>
-            </brush>
-           </colorrole>
-           <colorrole role="Mid">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>20</red>
-              <green>20</green>
-              <blue>20</blue>
-             </color>
-            </brush>
-           </colorrole>
-           <colorrole role="HighlightedText">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>190</red>
-              <green>190</green>
-              <blue>190</blue>
-             </color>
-            </brush>
-           </colorrole>
-           <colorrole role="ToolTipBase">
-            <brush brushstyle="SolidPattern">
-             <color alpha="102">
-              <red>20</red>
-              <green>20</green>
-              <blue>20</blue>
-             </color>
-            </brush>
-           </colorrole>
-          </inactive>
-          <disabled>
-           <colorrole role="WindowText">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>20</red>
-              <green>20</green>
-              <blue>20</blue>
-             </color>
-            </brush>
-           </colorrole>
-           <colorrole role="Midlight">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>20</red>
-              <green>20</green>
-              <blue>20</blue>
-             </color>
-            </brush>
-           </colorrole>
-           <colorrole role="Mid">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>20</red>
-              <green>20</green>
-              <blue>20</blue>
-             </color>
-            </brush>
-           </colorrole>
-           <colorrole role="HighlightedText">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>190</red>
-              <green>190</green>
-              <blue>190</blue>
-             </color>
-            </brush>
-           </colorrole>
-           <colorrole role="ToolTipBase">
-            <brush brushstyle="SolidPattern">
-             <color alpha="102">
-              <red>20</red>
-              <green>20</green>
-              <blue>20</blue>
-             </color>
-            </brush>
-           </colorrole>
-          </disabled>
-         </palette>
-        </property>
-        <attribute name="title">
-         <string>Tab 1</string>
-        </attribute>
-        <widget class="QLabel" name="label">
-         <property name="geometry">
-          <rect>
-           <x>9</x>
-           <y>9</y>
-           <width>176</width>
-           <height>42</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Proxima Nova</family>
-           <pointsize>26</pointsize>
-           <weight>75</weight>
-           <bold>true</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>Main menu</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="label_2">
-         <property name="geometry">
-          <rect>
-           <x>9</x>
-           <y>57</y>
-           <width>103</width>
-           <height>16</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Proxima Nova</family>
-           <pointsize>10</pointsize>
-          </font>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">font: 10pt &quot;Proxima Nova&quot;;
-color: rgb(9, 105, 231);</string>
-         </property>
-         <property name="text">
-          <string>Load latest project</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="label_3">
-         <property name="geometry">
-          <rect>
-           <x>9</x>
-           <y>80</y>
-           <width>110</width>
-           <height>16</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Proxima Nova</family>
-           <pointsize>10</pointsize>
-          </font>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">font: 10pt &quot;Proxima Nova&quot;;
-color: rgb(9, 105, 231);</string>
-         </property>
-         <property name="text">
-          <string>Record new sample</string>
-         </property>
-        </widget>
-       </widget>
-       <widget class="QWidget" name="tab_2">
-        <property name="palette">
-         <palette>
-          <active>
-           <colorrole role="Midlight">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>20</red>
-              <green>20</green>
-              <blue>20</blue>
-             </color>
-            </brush>
-           </colorrole>
-           <colorrole role="Mid">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>20</red>
-              <green>20</green>
-              <blue>20</blue>
-             </color>
-            </brush>
-           </colorrole>
-          </active>
-          <inactive>
-           <colorrole role="Midlight">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>20</red>
-              <green>20</green>
-              <blue>20</blue>
-             </color>
-            </brush>
-           </colorrole>
-           <colorrole role="Mid">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>20</red>
-              <green>20</green>
-              <blue>20</blue>
-             </color>
-            </brush>
-           </colorrole>
-          </inactive>
-          <disabled>
-           <colorrole role="Midlight">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>20</red>
-              <green>20</green>
-              <blue>20</blue>
-             </color>
-            </brush>
-           </colorrole>
-           <colorrole role="Mid">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>20</red>
-              <green>20</green>
-              <blue>20</blue>
-             </color>
-            </brush>
-           </colorrole>
-          </disabled>
-         </palette>
-        </property>
-        <attribute name="title">
-         <string>Tab 2</string>
-        </attribute>
-       </widget>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>FLAC</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QWidget" name="horizontalLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>661</width>
+      <height>391</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QOpenGLWidget" name="openGLWidget"/>
+     </item>
+     <item>
+      <widget class="QProgressBar" name="progressBar">
+       <property name="value">
+        <number>24</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QProgressBar" name="progressBar_2">
+       <property name="value">
+        <number>24</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
       </widget>
      </item>
     </layout>
@@ -643,7 +342,7 @@ color: rgb(9, 105, 231);</string>
      <x>0</x>
      <y>0</y>
      <width>1000</width>
-     <height>20</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="maximumSize">
@@ -747,12 +446,59 @@ color: rgb(9, 105, 231);</string>
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="actionCreate"/>
+    <widget class="QMenu" name="menuNew">
+     <property name="title">
+      <string>New</string>
+     </property>
+     <addaction name="actionProject"/>
+     <addaction name="actionFile"/>
+     <addaction name="separator"/>
+     <addaction name="actionDecoder_parameters"/>
+    </widget>
+    <addaction name="menuNew"/>
+    <addaction name="separator"/>
+    <addaction name="actionOpen"/>
+    <addaction name="actionOpen_files"/>
+    <addaction name="actionOpen_CD_Audio"/>
+    <addaction name="separator"/>
+    <addaction name="actionClose_file"/>
+    <addaction name="actionClose"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
      <string>Edit</string>
     </property>
+    <widget class="QMenu" name="menuAudio_tools">
+     <property name="title">
+      <string>Audio tools</string>
+     </property>
+     <addaction name="actionLow_pass_filter"/>
+     <addaction name="actionHigh_pass_filter"/>
+     <addaction name="separator"/>
+     <addaction name="actionCompare_audios"/>
+    </widget>
+    <widget class="QMenu" name="menuSelect">
+     <property name="title">
+      <string>Select</string>
+     </property>
+     <addaction name="actionAll_files"/>
+     <addaction name="actionOnly_this_file"/>
+    </widget>
+    <addaction name="actionCut"/>
+    <addaction name="actionRedo"/>
+    <addaction name="separator"/>
+    <addaction name="menuAudio_tools"/>
+    <addaction name="separator"/>
+    <addaction name="actionCopy_to_buffer"/>
+    <addaction name="actionCopy_to_next_project"/>
+    <addaction name="actionPaste_from_buffer"/>
+    <addaction name="actionPaste_to_this_project"/>
+    <addaction name="separator"/>
+    <addaction name="menuSelect"/>
+    <addaction name="separator"/>
+    <addaction name="actionPreferences"/>
    </widget>
    <widget class="QMenu" name="menuEffects">
     <property name="title">
@@ -992,12 +738,157 @@ color: rgb(9, 105, 231);</string>
     <bool>false</bool>
    </attribute>
   </widget>
-  <action name="actionCreate">
+  <action name="actionOpen">
    <property name="text">
-    <string>Create...</string>
+    <string>Open...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionOpen_files">
+   <property name="text">
+    <string>Open files...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+O</string>
+   </property>
+  </action>
+  <action name="actionOpen_CD_Audio">
+   <property name="text">
+    <string>Open CD Audio...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+O</string>
+   </property>
+  </action>
+  <action name="actionClose_file">
+   <property name="text">
+    <string>Close file</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
+   </property>
+  </action>
+  <action name="actionProject">
+   <property name="text">
+    <string>Project...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+N</string>
+   </property>
+  </action>
+  <action name="actionFile">
+   <property name="text">
+    <string>File...</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionDecoder_parameters">
+   <property name="text">
+    <string>Decoder parameters...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+K</string>
+   </property>
+  </action>
+  <action name="actionClose">
+   <property name="text">
+    <string>Close all files</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+W</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+Q</string>
+   </property>
+  </action>
+  <action name="actionCut">
+   <property name="text">
+    <string>Undo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="actionRedo">
+   <property name="text">
+    <string>Redo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+Z</string>
+   </property>
+  </action>
+  <action name="actionLow_pass_filter">
+   <property name="text">
+    <string>Low-pass filter</string>
+   </property>
+  </action>
+  <action name="actionHigh_pass_filter">
+   <property name="text">
+    <string>High-pass filter</string>
+   </property>
+  </action>
+  <action name="actionCompare_audios">
+   <property name="text">
+    <string>Compare files...</string>
+   </property>
+  </action>
+  <action name="actionCopy_to_buffer">
+   <property name="text">
+    <string>Copy to buffer</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+C</string>
+   </property>
+  </action>
+  <action name="actionCopy_to_next_project">
+   <property name="text">
+    <string>Copy to next project</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+C</string>
+   </property>
+  </action>
+  <action name="actionPaste_from_buffer">
+   <property name="text">
+    <string>Paste from buffer</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V</string>
+   </property>
+  </action>
+  <action name="actionPaste_to_this_project">
+   <property name="text">
+    <string>Paste to this project</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+V</string>
+   </property>
+  </action>
+  <action name="actionAll_files">
+   <property name="text">
+    <string>All files...</string>
+   </property>
+  </action>
+  <action name="actionOnly_this_file">
+   <property name="text">
+    <string>Only this file</string>
+   </property>
+  </action>
+  <action name="actionPreferences">
+   <property name="text">
+    <string>Preferences...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+K</string>
    </property>
   </action>
  </widget>

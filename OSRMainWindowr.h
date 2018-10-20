@@ -19,8 +19,6 @@
 #include <QtQml>
 #include "OSR.h"
 
-#define QML_MAIN_UI L"QMainUIPreview.qml"
-
 namespace Ui {
 class OSR;
 }
@@ -35,24 +33,9 @@ public:
     explicit OSR(QWidget *parent = 0);
     ~OSR();
 
+private slots:
+    void on_actionOpen_triggered();
+
 private:
     Ui::OSR *ui;
-};
-
-class BackEnd : public QObject
-{
-	Q_OBJECT
-	Q_PROPERTY(QString userName READ userName WRITE setUserName NOTIFY userNameChanged)
-
-public:
-	explicit BackEnd(QObject* pObjectParent = nullptr);
-
-	QString userName();
-	void setUserName(const QString &userName);
-
-signals:
-	void userNameChanged();
-
-private:
-	QString m_userName;
 };

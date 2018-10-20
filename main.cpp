@@ -42,10 +42,10 @@ WinMain(
 	//	DestroyApplication();
 	//}
 
-	//QApplication a(argc, argv);
-	//OSR w;
-	//w.show();
-	//return a.exec();	
+	QApplication a(argc, argv);
+	OSR w;
+	w.show();
+	return a.exec();
 
 	while (true)
 	{

@@ -23,20 +23,14 @@ OSR::~OSR()
     delete ui;
 }
 
-BackEnd::BackEnd(QObject *parent) :
-	QObject(parent)
+VOID
+OSR::on_actionOpen_triggered()
 {
-}
-
-QString BackEnd::userName()
-{
-	return m_userName;
-}
-
-void BackEnd::setUserName(const QString &userName)
-{
-	if (userName == m_userName) { return; }
-
-	m_userName = userName;
-	emit userNameChanged();
+#ifdef WIN32
+	WSTRING_PATH szPath = { NULL };
+	OpenFileDialog(&szPath);
+#else
+	STRING_PATH szPath = { NULL };
+	OpenFileDialog(&szPath);
+#endif
 }

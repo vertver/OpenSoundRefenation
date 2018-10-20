@@ -22,6 +22,10 @@
 #define HEAP_MEMORY_ALLOC		0x00FF00FF
 #define MAPPED_MEMORY_ALLOC		0xF0F0F0F0
 
+#define USE_FFMPEG				0x1
+#define USE_LIBSNDFILE			0x2
+#define USE_WMF					0x3
+
 #ifdef WIN32
 #define OSR_DECODER_NAME		L##"osrDecoder.dll"
 #define OSR_MIXER_NAME			L##"osrMixer.dll"
@@ -80,6 +84,14 @@ typedef struct tWAVEFORMATEX
 	WORD        wBitsPerSample;
 	WORD        cbSize;
 } WAVEFORMATEX, *PWAVEFORMATEX, *LPWAVEFORMATEX;
+
+typedef struct waveformat_tag {
+	WORD    wFormatTag;
+	WORD    nChannels;
+	DWORD   nSamplesPerSec; 
+	DWORD   nAvgBytesPerSec; 
+	WORD    nBlockAlign;    
+} WAVEFORMAT, *PWAVEFORMAT, *LPWAVEFORMAT;
 #endif
 
 enum OSRCODE
@@ -211,7 +223,7 @@ extern DLL_API HANDLE hHeap;
 #define FAILEDX1(X)	\
 if (FAILED(X)) \
 { \
-WSTRING1024 szError = { NULL }; \
+static WSTRING1024 szError = { NULL }; \
 FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, X, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), szError, 2047, NULL); \
 THROW1(szError); \
 }
@@ -219,7 +231,7 @@ THROW1(szError); \
 #define FAILEDX2(X)	\
 if (FAILED(X)) \
 { \
-WSTRING1024 szError = { NULL }; \
+static WSTRING1024 szError = { NULL }; \
 FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, X, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), szError, 2047, NULL); \
 if (!THROW2(szError)) { ExitProcess(X); } \
 }
@@ -233,10 +245,11 @@ DLL_API LPCSTR WCSTRToMBCSTR(LPCWSTR lpString);
 DLL_API VOID CreateKernelHeap();
 DLL_API VOID DestroyKernelHeap();
 DLL_API HANDLE GetKernelHeap();
+DLL_API BOOL IsNetworkInstalled();
 DLL_API LPWSTR FormatError(LONG dwErrorCode);
 DLL_API BOOL GetDiskUsage(LARGE_INTEGER largeSize, LPCWSTR lpPath);
 DLL_API OSRCODE ReadAudioFile(LPCWSTR lpPath, VOID** lpData, DWORD* dwSizeWritten);
-DLL_API OSRCODE ReadAudioFileEx(LPCWSTR lpPath, VOID** lpData, LONGLONG* uSize);
+DLL_API OSRCODE ReadAudioFileEx(LPCWSTR lpPath, VOID** lpData, LONGLONG* uSize, LPDWORD dwHeaderSize);
 DLL_API OSRCODE WriteFileFromBuffer(LPCWSTR lpPath, BYTE* pFile, DWORD dwSize, WAVEFORMATEX* waveFormat);
 DLL_API OSRCODE OpenFileDialog(WSTRING_PATH* lpPath);
 #else
@@ -266,7 +279,7 @@ __forceinline
 T* 
 AllocatePointer()
 {
-	return (T*)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, sizeof(T));
+	return (T*)HeapAlloc(GetKernelHeap(), HEAP_ZERO_MEMORY, sizeof(T));
 }
 
 template 
@@ -276,7 +289,7 @@ T*
 AllocatePointer()
 {
 	ASSERT2(Size, L"Can't alloc file with 0 size");
-	return (T*)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, Size);
+	return (T*)HeapAlloc(GetKernelHeap(), HEAP_ZERO_MEMORY, Size);
 }
 
 template 
@@ -296,8 +309,8 @@ FastAlloc(
 )
 {
 	ASSERT2(uSize, L"Alloc size can't be 0");
-	ASSERT2(hHeap, L"No kernel heap");
-	return HeapAlloc(hHeap, HEAP_ZERO_MEMORY, uSize);
+	ASSERT2(GetKernelHeap(), L"No kernel heap");
+	return HeapAlloc(GetKernelHeap(), HEAP_ZERO_MEMORY, uSize);
 }
 
 __forceinline
@@ -310,7 +323,7 @@ MapFile(
 	LPVOID lpSharedMemory = nullptr;
 
 	// create file mapping at paging file
-	HANDLE hSharedMemory = CreateFileMappingW(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, NULL, PointerSize, lpSharedMemoryName);
+	HANDLE hSharedMemory = CreateFileMappingW(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, NULL, (DWORD)PointerSize, lpSharedMemoryName);
 	lpSharedMemory = MapViewOfFile(hSharedMemory, FILE_MAP_ALL_ACCESS, NULL, NULL, PointerSize);
 
 	return lpSharedMemory;
@@ -342,7 +355,7 @@ AdvanceAlloc(
 		pRet = VirtualAlloc(NULL, PointerSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 		break;
 	case HEAP_MEMORY_ALLOC:
-		pRet = HeapAlloc(hHeap, HEAP_ZERO_MEMORY, PointerSize);
+		pRet = HeapAlloc(GetKernelHeap(), HEAP_ZERO_MEMORY, PointerSize);
 		break;
 	case NULL:
 		pRet = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, PointerSize);
@@ -364,13 +377,14 @@ FreePointer(
 	{
 	case MAPPED_MEMORY_ALLOC:
 		if (pPointer) { ASSERT2(UnmapViewOfFile(pPointer), L"Can't free pointer. Maybe file doesn't allocated by mapped memory?"); }
+		pPointer = nullptr;
 		break;
 	case VIRTUAL_MEMORY_ALLOC:
 		if (pPointer) { ASSERT2(VirtualFree(pPointer, PointerSize, MEM_RELEASE | MEM_DECOMMIT), L"Can't free pointer. Maybe file doesn't allocated by virtual memory?"); }
 		pPointer = nullptr;
 		break;
 	case HEAP_MEMORY_ALLOC:
-		if (pPointer) { ASSERT2(HeapFree(hHeap, NULL, pPointer), L"Can't free pointer. Maybe file doesn't allocated by kernel heap?"); }
+		if (pPointer) { ASSERT2(HeapFree(GetKernelHeap(), NULL, pPointer), L"Can't free pointer. Maybe file doesn't allocated by kernel heap?"); }
 		pPointer = nullptr;
 		break;
 	case NULL:
@@ -543,7 +557,7 @@ UnloadFile(
 #define FREEPROCESSHEAP(Pointer) FreePointer(Pointer, NULL, NULL)
 #define FREEKERNELHEAP(Pointer) FreePointer(Pointer, NULL, HEAP_MEMORY_ALLOC)
 #define FREEVIRTUALMEM(Pointer, Size) FreePointer(Pointer, Size, VIRTUAL_MEMORY_ALLOC)
-#define FREEMAPPEDMEM(Pointer) FreePointer(Pointer, NULL, MAPPED_MEMORY_ALLOC)
+#define FREEMAPPEDMEM(Pointer, Size) FreePointer(Pointer, Size, MAPPED_MEMORY_ALLOC)		// in windows set Size to NULL
 
 typedef struct
 {
@@ -608,6 +622,60 @@ typedef struct
 	unsigned int	        loopCount;
 	unsigned int	        samplerData;
 } RIFFMIDISample;
+
+
+struct WAV_RIFF_HEADER 
+{
+	DWORD	dwRIFFId;
+	DWORD	dwFileSize;
+};
+
+struct WAV_FMT_HEADER 
+{
+	DWORD	dwFMTId;
+	DWORD	dwFileSize;
+	WORD	wAudioFormat;
+	WORD	wChannels;
+	DWORD	dwSampleRate;
+	DWORD	dwByterate;
+	WORD	wBlockAlign;
+	WORD	wBits;
+};
+
+struct WAV_CHUNK_HEADER 
+{
+	DWORD	dwChunkId;
+	DWORD	dwFileSize;
+};
+
+struct MP_WAVREADER_HEADER 
+{
+	char chunkId[4];
+	unsigned long chunkSize;
+	char format[4];
+	char subchunk1Id[4];
+	unsigned long subchunk1Size;
+	unsigned short audioFormat;
+	unsigned short numChannels;
+	unsigned long sampleRate;
+	unsigned long byteRate;
+	unsigned short blockAlign;
+	unsigned short bitsPerSample;
+	char subchunk2Id[4];
+	unsigned long subchunk2Size;
+};
+
+typedef struct  
+{
+	BYTE bit1 : 1;
+	BYTE bit2 : 1;
+	BYTE bit3 : 1;
+	BYTE bit4 : 1;
+	BYTE bit5 : 1;
+	BYTE bit6 : 1;
+	BYTE bit7 : 1;
+	BYTE bit8 : 1;
+} BIT_BYTE;
 
 constexpr unsigned int FOURCC_RIFF_TAG					= MAKEFOURCC('R', 'I', 'F', 'F');
 constexpr unsigned int FOURCC_FORMAT_TAG				= MAKEFOURCC('f', 'm', 't', ' ');

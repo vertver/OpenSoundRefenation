@@ -25,13 +25,16 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-        OSRMainWindow.cpp
+        OSRMainWindow.cpp \
+    defaulscreen.cpp
 
 HEADERS += \
-        OSRMainWindowr.h
+        OSRMainWindowr.h \
+    defaulscreen.h
 
 FORMS += \
-        OSRMainWindow.ui
+        OSRMainWindow.ui \
+    defaulscreen.ui
 
 DISTFILES += \
     MainUI.qml \

@@ -184,6 +184,7 @@
     </QtUic>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="defaulscreen.cpp" />
     <ClCompile Include="OSRMainWindow.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -208,10 +209,12 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">release\moc_predefs.h;%(Outputs)</Outputs>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </CustomBuild>
+    <ClInclude Include="defaulscreen.h" />
     <ClInclude Include="OSRClasses.h" />
     <ClInclude Include="ui_OSRMainWindow.h" />
   </ItemGroup>
   <ItemGroup>
+    <QtUic Include="defaulscreen.ui" />
     <QtUic Include="OSRMainWindow.ui">
     </QtUic>
   </ItemGroup>

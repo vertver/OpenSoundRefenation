@@ -90,12 +90,13 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>$(OutDir)\osrMixer.dll</OutputFile>
       <AdditionalLibraryDirectories>$(SolutionDir)\release\;$(SolutionDir)\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>osrDecoder.lib;osrKernel.lib;XAudio2.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>osrDecoder.lib;osrKernel.lib;XAudio2.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;dsound.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="DirectSoundMain.h" />
     <ClInclude Include="IMWASAPI.h" />
+    <ClInclude Include="LoopList.h" />
     <ClInclude Include="SoundList.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -106,6 +107,7 @@
     <ClCompile Include="DirectSoundMixer.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="IMWASAPIKernel.cpp" />
+    <ClCompile Include="LoopList.cpp" />
     <ClCompile Include="osrMixer.cpp" />
     <ClCompile Include="SoundList.cpp" />
     <ClCompile Include="stdafx.cpp">

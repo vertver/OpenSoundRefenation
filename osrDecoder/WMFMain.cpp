@@ -43,6 +43,7 @@ WMFReader::IsSupportedByMWF(
 	// get file duration (100 nanosecs count)
 	FAILEDX2(pMediaSrc->CreatePresentationDescriptor(&pPresentDesc));
 	pPresentDesc->GetUINT64(MF_PD_DURATION, &uDuration);
+	if (uDuration) { uDuration /= 10000; }
 
 	// release all stuff
 	_RELEASE(pPresentDesc);
