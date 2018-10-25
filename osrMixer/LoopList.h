@@ -16,9 +16,9 @@ typedef struct
 	DWORD cbSize;					// size of struct
 	DWORD dwSampleSize;				// size of current sample
 	DWORD dwSampleNumber;			// if 0 - random sample, else - numeric sample of audio file
-	LPBYTE lpSample;				// pointer to data of sample
 	DWORD64 dwSampleDuration;		// duration of sample (in msecs)
 	WAVEFORMATEX waveFormat;		// sample format info
+	LPBYTE lpSample;				// pointer to data of sample
 } LOOP_INFO, *LPLOOP_INFO, *PLOOP_INFO;
 
 typedef struct  

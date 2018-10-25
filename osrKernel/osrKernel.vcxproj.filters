@@ -19,11 +19,17 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
+    <Filter Include="Includes">
+      <UniqueIdentifier>{37d2af8e-3b8d-4301-9f8f-d84789f2c860}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="System">
+      <UniqueIdentifier>{3adc645e-2adb-4418-a0ee-4cf69cbca9c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Includes\Math">
+      <UniqueIdentifier>{ca24362d-de9e-4389-91b3-2d4ca637ca7f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="OSR.h">
-      <Filter>Kernel</Filter>
-    </ClInclude>
     <ClInclude Include="targetver.h">
       <Filter>Other\Header Files</Filter>
     </ClInclude>
@@ -33,14 +39,26 @@
     <ClInclude Include="KernCPU.h">
       <Filter>Kernel</Filter>
     </ClInclude>
-    <ClInclude Include="OSRWin32kernel.h">
-      <Filter>Kernel</Filter>
+    <ClInclude Include="OSRSystem.h">
+      <Filter>Includes</Filter>
     </ClInclude>
-    <ClInclude Include="ThreadSystem.h">
-      <Filter>Kernel</Filter>
+    <ClInclude Include="OSRTypes.h">
+      <Filter>Includes</Filter>
+    </ClInclude>
+    <ClInclude Include="OSR.h">
+      <Filter>Includes</Filter>
     </ClInclude>
     <ClInclude Include="ProcessManager.h">
-      <Filter>Kernel</Filter>
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadSystem.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="OSRWin32kernel.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="osrMath.h">
+      <Filter>Includes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -59,14 +77,17 @@
     <ClCompile Include="KernCPU.cpp">
       <Filter>Kernel</Filter>
     </ClCompile>
-    <ClCompile Include="win32kernel.cpp">
-      <Filter>Kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="ThreadSystem.cpp">
-      <Filter>Kernel</Filter>
+    <ClCompile Include="osrMath.cpp">
+      <Filter>Includes\Math</Filter>
     </ClCompile>
     <ClCompile Include="ProcessManager.cpp">
-      <Filter>Kernel</Filter>
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="ThreadSystem.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="win32kernel.cpp">
+      <Filter>System</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

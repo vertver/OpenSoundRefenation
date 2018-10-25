@@ -16,6 +16,7 @@
 #endif
 #include <string>
 #include <vector>
+#include "OSRTypes.h"
 
 #define	MAX_NUM_ARGVS			128
 #define VIRTUAL_MEMORY_ALLOC	0xFF00FF00
@@ -60,10 +61,8 @@ using WCHAR = wchar_t;
 using CHAR = char;
 using LPCSTR = const char*;
 using PCSTR = LPCSTR;
-#ifndef WITHOUT_WIDECHAR
-using LPCWSTR = const wchar_t*;
+using LPCWSTR = const WideChar*;
 using PCWSTR = LPCWSTR;
-#endif
 using INT = int;
 using UINT = unsigned int;
 using SHORT = short;
@@ -122,7 +121,12 @@ enum OSRCODE
 	KERN_OSR_NO_LIB,
 	KERN_OSR_BAD_ALLOC,
 	KERN_OSR_BAD_MAP,
-	KERN_OSR_BAD_STR
+	KERN_OSR_BAD_STR,
+
+	DX_OSR_BAD_DEVICE,
+	DX_OSR_BAD_ARGUMENT,
+	DX_OSR_BAD_HW,
+	DX_OSR_NO_MEMORY
 };
 
 #ifdef WIN32
@@ -207,12 +211,12 @@ using STRING512					= char[512];
 using STRING1024				= char[1024];
 
 #ifndef WITHOUT_WIDECHAR
-using WSTRING_PATH				= wchar_t[MAX_PATH];
-using WSTRING64					= wchar_t[64];
-using WSTRING128				= wchar_t[128];
-using WSTRING256				= wchar_t[256];
-using WSTRING512				= wchar_t[512];
-using WSTRING1024				= wchar_t[1024];
+using WSTRING_PATH				= WideChar[MAX_PATH];
+using WSTRING64					= WideChar[64];
+using WSTRING128				= WideChar[128];
+using WSTRING256				= WideChar[256];
+using WSTRING512				= WideChar[512];
+using WSTRING1024				= WideChar[1024];
 #endif
 
 #ifdef WIN32
@@ -247,15 +251,16 @@ DLL_API VOID DestroyKernelHeap();
 DLL_API HANDLE GetKernelHeap();
 DLL_API BOOL IsNetworkInstalled();
 DLL_API LPWSTR FormatError(LONG dwErrorCode);
-DLL_API BOOL GetDiskUsage(LARGE_INTEGER largeSize, LPCWSTR lpPath);
-DLL_API OSRCODE ReadAudioFile(LPCWSTR lpPath, VOID** lpData, DWORD* dwSizeWritten);
 DLL_API OSRCODE ReadAudioFileEx(LPCWSTR lpPath, VOID** lpData, LONGLONG* uSize, LPDWORD dwHeaderSize);
 DLL_API OSRCODE WriteFileFromBuffer(LPCWSTR lpPath, BYTE* pFile, DWORD dwSize, WAVEFORMATEX* waveFormat);
+
+DLL_API OSRCODE ReadAudioFile(LPCWSTR lpPath, VOID** lpData, DWORD* dwSizeWritten);
 DLL_API OSRCODE OpenFileDialog(WSTRING_PATH* lpPath);
+DLL_API BOOL GetDiskUsage(LARGE_INTEGER largeSize, LPCWSTR lpPath);
 #else
 DLL_API OSRCODE ReadAudioFile(const char* lpPath, VOID** lpData, unsigned long long* dwSizeWritten);
-DLL_API BOOL GetDiskUsage(size_t FileSize, const char* lpPath);
 DLL_API OSRCODE OpenFileDialog(STRING_PATH* lpPath);
+DLL_API BOOL GetDiskUsage(size_t FileSize, const char* lpPath);
 #endif
 
 DLL_API VOID InitApplication();
@@ -554,10 +559,10 @@ UnloadFile(
 }
 #endif
 
-#define FREEPROCESSHEAP(Pointer) FreePointer(Pointer, NULL, NULL)
-#define FREEKERNELHEAP(Pointer) FreePointer(Pointer, NULL, HEAP_MEMORY_ALLOC)
-#define FREEVIRTUALMEM(Pointer, Size) FreePointer(Pointer, Size, VIRTUAL_MEMORY_ALLOC)
-#define FREEMAPPEDMEM(Pointer, Size) FreePointer(Pointer, Size, MAPPED_MEMORY_ALLOC)		// in windows set Size to NULL
+#define FREEPROCESSHEAP(Pointer)		if (Pointer) { FreePointer(Pointer, NULL, NULL); Pointer = nullptr; }
+#define FREEKERNELHEAP(Pointer)			if (Pointer) { FreePointer(Pointer, NULL, HEAP_MEMORY_ALLOC); Pointer = nullptr; }
+#define FREEVIRTUALMEM(Pointer, Size)	if (Pointer) { FreePointer(Pointer, Size, VIRTUAL_MEMORY_ALLOC); Pointer = nullptr; }
+#define FREEMAPPEDMEM(Pointer, Size)	if (Pointer) { FreePointer(Pointer, Size, MAPPED_MEMORY_ALLOC); Pointer = nullptr; }		// in windows set Size to NULL
 
 typedef struct
 {
@@ -664,18 +669,6 @@ struct MP_WAVREADER_HEADER
 	char subchunk2Id[4];
 	unsigned long subchunk2Size;
 };
-
-typedef struct  
-{
-	BYTE bit1 : 1;
-	BYTE bit2 : 1;
-	BYTE bit3 : 1;
-	BYTE bit4 : 1;
-	BYTE bit5 : 1;
-	BYTE bit6 : 1;
-	BYTE bit7 : 1;
-	BYTE bit8 : 1;
-} BIT_BYTE;
 
 constexpr unsigned int FOURCC_RIFF_TAG					= MAKEFOURCC('R', 'I', 'F', 'F');
 constexpr unsigned int FOURCC_FORMAT_TAG				= MAKEFOURCC('f', 'm', 't', ' ');

@@ -242,7 +242,7 @@ ReadAudioFileEx(
 	if (dwHeaderId != 0x46464952 || dwHeaderId != 0x45564157 || dwHeaderId != 0x20746d66)
 	{
 		THROW4(L"Can't open file, because this is not sound file.");
-		FreePointer(*lpData, *uSize, VIRTUAL_MEMORY_ALLOC);
+		FreePointer(*lpData, (UINT64)largeSize.QuadPart, VIRTUAL_MEMORY_ALLOC);
 		return FS_OSR_BAD_PTR;
 	}
 

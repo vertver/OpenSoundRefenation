@@ -90,6 +90,9 @@
   <ItemGroup>
     <ClInclude Include="KernCPU.h" />
     <ClInclude Include="OSR.h" />
+    <ClInclude Include="osrMath.h" />
+    <ClInclude Include="OSRSystem.h" />
+    <ClInclude Include="OSRTypes.h" />
     <ClInclude Include="OSRWin32kernel.h" />
     <ClInclude Include="ProcessManager.h" />
     <ClInclude Include="stdafx.h" />
@@ -101,6 +104,7 @@
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="OSRFileSystem.cpp" />
     <ClCompile Include="osrKernel.cpp" />
+    <ClCompile Include="osrMath.cpp" />
     <ClCompile Include="ProcessManager.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

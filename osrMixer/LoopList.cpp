@@ -56,6 +56,7 @@ LoopList::LoadAudioFile(
 	WAVEFORMATEX* waveFormat = nullptr;
 	WSTRING_PATH szString = { NULL };
 	DWORD dwHeaderSize = NULL;
+	OSRCODE sCode = OSR_SUCCESS;
 
 	lpFileInfo[dwCurrentCountOfFiles].dwSampleCount = NULL;
 	lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo = (LPLOOP_INFO)AdvanceAlloc(sizeof(LOOP_INFO), VIRTUAL_MEMORY_ALLOC);
@@ -95,7 +96,7 @@ LoopList::LoadAudioFile(
 			&dwHeaderSize
 		);
 
-		OSRCODE sCode = GetWaveFormatExtented(
+		sCode = GetWaveFormatExtented(
 			lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->lpSample,
 			lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->dwSampleSize,
 			&lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->waveFormat

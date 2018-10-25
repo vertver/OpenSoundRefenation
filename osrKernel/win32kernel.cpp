@@ -21,8 +21,8 @@ IsAdminUser()
 	BOOL isAdmin = FALSE;
 	DWORD dwTokenSize = NULL;
 	DWORD dwSecondSize = NULL;
-	HANDLE hProcessToken = NULL;
-	HANDLE hSecondToken = NULL;
+	HANDLE hProcessToken = nullptr;
+	HANDLE hSecondToken = nullptr;
 	BYTE adminSID[SECURITY_MAX_SID_SIZE];
 	TOKEN_ELEVATION_TYPE tokenValue = {};
 	ZeroMemory(&tokenValue, sizeof(TOKEN_ELEVATION_TYPE));
@@ -45,14 +45,14 @@ IsAdminUser()
 	dwSecondSize = sizeof(adminSID);
 
 	// check user token
-	ASSERT1(CreateWellKnownSid(WinBuiltinAdministratorsSid, NULL, &adminSID, &dwSecondSize), L"Can't get SID");
+	ASSERT1(CreateWellKnownSid(WinBuiltinAdministratorsSid, nullptr, &adminSID, &dwSecondSize), L"Can't get SID");
 	ASSERT1(CheckTokenMembership(hSecondToken, &adminSID, &isAdmin), L"Can't check membership token");
 
 	// clean handles
 	CloseHandle(hProcessToken);
 	CloseHandle(hSecondToken);
-	hProcessToken = NULL;
-	hSecondToken = NULL;
+	hProcessToken = nullptr;
+	hSecondToken = nullptr;
 
 	return isAdmin;
 }
@@ -61,7 +61,7 @@ BOOL
 IsProcessWithAdminPrivilege()
 {
 	SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
-	LPVOID pAdministratorsGroup = NULL;
+	LPVOID pAdministratorsGroup = nullptr;
 	BOOL bRet = FALSE;
 
 	// init SID to control privileges
@@ -71,7 +71,7 @@ IsProcessWithAdminPrivilege()
 	);
 
 	// ckeck membership
-	ASSERT1(CheckTokenMembership(NULL, pAdministratorsGroup, &bRet), L"Can't check membership token");
+	ASSERT1(CheckTokenMembership(nullptr, pAdministratorsGroup, &bRet), L"Can't check membership token");
 
 	// clean pointer
 	if (pAdministratorsGroup) { FreeSid(pAdministratorsGroup); pAdministratorsGroup = nullptr; }
@@ -89,12 +89,12 @@ RunWithAdminPrivilege()
 		if (!IsProcessWithAdminPrivilege())
 		{
 			WSTRING_PATH szPath = { NULL };
-			ASSERT1(GetModuleFileNameW(NULL, szPath, ARRAYSIZE(szPath)), L"Can't get file module");
+			ASSERT1(GetModuleFileNameW(nullptr, szPath, ARRAYSIZE(szPath)), L"Can't get file module");
 			
 			SHELLEXECUTEINFOW shellInfo = { sizeof(SHELLEXECUTEINFOW) };
 			shellInfo.lpVerb = L"runas";
 			shellInfo.lpFile = szPath;
-			shellInfo.hwnd = NULL;
+			shellInfo.hwnd = nullptr;
 			shellInfo.nShow = SW_NORMAL;
 
 			if (ShellExecuteExW(&shellInfo)) { ExitProcess(GetCurrentProcessId()); }
@@ -102,7 +102,7 @@ RunWithAdminPrivilege()
 	}
 	else
 	{
-		MessageBoxW(NULL, L"Current user can't set 'Administrator' role for this application", L"Warning", MB_ICONWARNING | MB_OK);
+		MessageBoxW(nullptr, L"Current user can't set 'Administrator' role for this application", L"Warning", MB_ICONWARNING | MB_OK);
 	}
 }
 
@@ -127,7 +127,7 @@ CreateTempDirectory()
 	DWORD dwGetDir = GetFileAttributesW(szPathTemp.c_str());
 	if (dwGetDir == INVALID_FILE_ATTRIBUTES || !(dwGetDir & FILE_ATTRIBUTE_DIRECTORY))
 	{
-		if (!CreateDirectoryW(szPathTemp.c_str(), NULL))
+		if (!CreateDirectoryW(szPathTemp.c_str(), nullptr))
 		{
 			DWORD dwError = GetLastError();
 			if (!IsProcessWithAdminPrivilege() && dwError == ERROR_ACCESS_DENIED)
@@ -180,7 +180,7 @@ CreateMinidump(
 	if (dwGetDir == INVALID_FILE_ATTRIBUTES || !(dwGetDir & FILE_ATTRIBUTE_DIRECTORY))
 	{
 		// we can't create temp directory at kernel paths or "Program files"
-		if (!CreateDirectoryW(szTemp.c_str(), NULL))
+		if (!CreateDirectoryW(szTemp.c_str(), nullptr))
 		{
 			DWORD dwError = GetLastError();
 			THROW1(L"Can't create temp directory. Please, change working directory");
@@ -196,12 +196,12 @@ CreateMinidump(
 
 	// create minidump file handle
 	szFullPath = szTemp + L"\\" + L"OpenSoundRefenation_" + szName + L"_" + szTime + L".mdmp";
-	HANDLE hFile = CreateFileW(szFullPath.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE hFile = CreateFileW(szFullPath.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
 		szFullPath = szPath + std::wstring(L"\\") + L"OpenSoundRefenation_" + szName + L"_" + szTime + L".mdmp";
-		CreateFileW(szFullPath.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		CreateFileW(szFullPath.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 	}
 
 	if (hFile != INVALID_HANDLE_VALUE)
@@ -214,10 +214,10 @@ CreateMinidump(
 		ExInfo.ClientPointers = NULL;
 
 		// write the dump
-		if (MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile, dump_flags, &ExInfo, NULL, NULL))
+		if (MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile, dump_flags, &ExInfo, nullptr, nullptr))
 		{
 			szTemp = L"Minidump saved at (" + szFullPath + L")";
-			MessageBoxW(NULL, szTemp.c_str(), L"Minidump saved", MB_OK | MB_ICONINFORMATION);
+			MessageBoxW(nullptr, szTemp.c_str(), L"Minidump saved", MB_OK | MB_ICONINFORMATION);
 			return EXCEPTION_EXECUTE_HANDLER;
 		}
 	}
@@ -238,7 +238,7 @@ VOID
 WINAPI
 GetCurrentPeb(VOID** pPeb)
 {
-	___PROCESS_BASIC_INFORMATION processInformation = { NULL };
+	___PROCESS_BASIC_INFORMATION processInformation = { nullptr };
 	DWORD cbLength = NULL;
 
 	NtQueryInformationProcessEx(GetCurrentProcess(), ProcessBasicInformation, &processInformation, sizeof(___PROCESS_BASIC_INFORMATION), &cbLength);

@@ -1,2 +1,8 @@
 ﻿  osrUI.cpp
-  osrUI.vcxproj -> I:\OSR\OpenSoundRefenation\x64\Debug\osrUI.dll
+i:\osr\opensoundrefenation\osrui\osrui.cpp(22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+i:\osr\opensoundrefenation\osrui\osrui.cpp(23): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+i:\osr\opensoundrefenation\osrui\osrui.cpp(36): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+i:\osr\opensoundrefenation\osrui\osrui.cpp(38): warning C4305: '+=': truncation from 'double' to 'float'
+i:\osr\opensoundrefenation\osrui\osrui.cpp(126): warning C4273: 'UserInterface::CreateMainWindow': inconsistent dll linkage
+  i:\osr\opensoundrefenation\osrui\osrui.h(8): note: see previous definition of 'CreateMainWindow'
+  osrUI.vcxproj -> I:\OSR\OpenSoundRefenation\\debug\osrUI.dll

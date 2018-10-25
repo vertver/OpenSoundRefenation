@@ -9,9 +9,12 @@
 * entry-point
 *********************************************************/
 #include "OSRClasses.h"
+#include "osrUI.h"
 
 int argc;
 char* argv[MAX_NUM_ARGVS];
+
+UserInterface userInterface;
 
 BOOL
 WINAPI
@@ -22,33 +25,13 @@ WinMain(
 	_In_ int nShowCmd
 )
 {
+	UNREFERENCED_PARAMETER(hInstance);
+	UNREFERENCED_PARAMETER(hPrevInstance);
+	UNREFERENCED_PARAMETER(nShowCmd);
+
 	if (strstr(lpCmdLine, "-admin") || strstr(lpCmdLine, "-a") || strstr(lpCmdLine, "-adm")) { RunWithAdminPrivilege(); }
 
 	// critical section
 	InitApplication();
-
-
-	//OpenFileDialog(&lpPath);
-	//if (lpPath)
-	//{
-	//	engine.LoadSoundFile(lpPath, FALSE);
-	//	engine.CreateXEngine();
-	//	engine.CreateSourceBuffer();
-	//	mixer.InitMixer(engine);
-	//	mixer.PlaySimpleWave();
-	//}
-	//else
-	//{
-	//	DestroyApplication();
-	//}
-
-	QApplication a(argc, argv);
-	OSR w;
-	w.show();
-	return a.exec();
-
-	while (true)
-	{
-
-	}
+	userInterface.CreateMainWindow();
 }
