@@ -16,10 +16,28 @@
 #include <intrin.h> 
 #endif
 
+typedef struct
+{
+	u32 StructSize;					// size of struct
+	u32 SampleSize;					// size of current sample
+	u32 SampleNumber;				// if 0 - random sample, else - numeric sample of audio file
+	u64 SampleDuration;				// duration of sample (in msecs)
+	WAVEFORMATEX waveFormat;		// sample format info
+	u8* pSample;					// pointer to data of sample
+} LOOP_INFO, *LPLOOP_INFO, *PLOOP_INFO;
+
+typedef struct
+{
+	u32 SampleCount;				// count of all samples in 1 file
+	u32 FileSize;					// file size (includes header information)
+	u64 FileDuration;				// final file duration (include all samples duration)
+	LPLOOP_INFO pSampleInfo;		// to count size of this struct - sizeof(LOOP_INFO) * dwSampleCount
+} AUDIO_INFO, *LPAUDIO_INFO, *PAUDIO_INFO;
+
 class OSRSample
 {
 public:
-	OSRSample() 
+	OSRSample()
 	{
 		IsFloatInput = 0;
 		IsFloatOutput = 0;
@@ -42,8 +60,8 @@ public:
 		pPreviousSample = nullptr;
 	}
 
-	OSRSample(u8 Bits, u8 Channels, u32 BufferSize, u32 SampleRate) 
-	{ 
+	OSRSample(u8 Bits, u8 Channels, u32 BufferSize, u32 SampleRate)
+	{
 		IsFloatInput = (!!(Bits >= 32));
 		IsFloatOutput = (!!(Bits >= 32));
 
@@ -55,6 +73,8 @@ public:
 		BufferSizeOutput = BufferSize;
 		SampleRateInput = SampleRate;
 		SampleRateOutput = SampleRate;
+		ToEndFileSize = NULL;
+		SamplePosition = NULL;
 
 		for (u8 i = 0; i < 8; i++)
 		{
@@ -66,83 +86,22 @@ public:
 		pPreviousSample = nullptr;
 	}
 
-	OSRSample(u8 Bits, u8 Channels, u32 BufferSize, u32 SampleRate, void* pData, u32 DataSize)
-	{
-		i8* p8 = nullptr;
-		i16* p16 = nullptr;
-		i24* p24 = nullptr;
-		f32* pf32 = nullptr;
-
-		for (u32 i = 0; i < Channels; i++)
-		{
-			if (!pOutputBuffer[i]) { pOutputBuffer[i] = (f32*)FastAlloc(BufferSize * 4); }
-		}
-
-		switch (Bits)
-		{
-		case 8:
-			p8 = (i8*)pData;
-
-			for (u32 i = 0; i < BufferSize; i++)
-			{
-				pOutputBuffer[i % Channels][i / Channels] = i16tof32((i16)p8[i]);
-			}
-			break;
-		case 16:
-			p16 = (i16*)pData;
-
-			for (u32 i = 0; i < BufferSize; i++)
-			{
-				pOutputBuffer[i % Channels][i / Channels] = i16tof32(p16[i]);
-			}
-			break;
-		case 24:
-			p24 = (i24*)pData;
-
-			for (u32 i = 0; i < BufferSize; i++)
-			{
-				pOutputBuffer[i % Channels][i / Channels] = i24tof32(p24[i]);
-			}
-			break;
-		case 32:
-			pf32 = (f32*)pData;
-
-			for (u32 i = 0; i < BufferSize; i++)
-			{
-				pOutputBuffer[i % Channels][i / Channels] = pf32[i];
-			}
-			break;
-		}
-
-		IsFloatInput = (!!(Bits >= 32));
-		IsFloatOutput = (!!(Bits >= 32));
-
-		BitsInput = Bits;
-		BitsOutput = Bits;
-		ChannelsInput = Channels;
-		ChannelsOutput = Channels;
-		BufferSizeInput = BufferSize;
-		BufferSizeOutput = BufferSize;
-		SampleRateInput = SampleRate;
-		SampleRateOutput = SampleRate;
-	}
-
 	void LoadSample(void* pData, u32 BufferSize, u8 Bits, u8 Channels, u32 SampleRate)
 	{
-		i8* p8 = nullptr;
+		u8* p8 = nullptr;
 		i16* p16 = nullptr;
 		i24* p24 = nullptr;
 		f32* pf32 = nullptr;
 
 		for (u32 i = 0; i < Channels; i++)
 		{
-			if (!pOutputBuffer[i]) { pOutputBuffer[i] = (f32*)FastAlloc(BufferSize * 4); }
+			if (!pOutputBuffer[i]) { pOutputBuffer[i] = (f32*)FastAlloc(BufferSize * sizeof(f32)); }
 		}
 
 		switch (Bits)
 		{
 		case 8:
-			p8 = (i8*)pData;
+			p8 = (u8*)pData;
 
 			for (u32 i = 0; i < BufferSize; i++)
 			{
@@ -188,30 +147,63 @@ public:
 		SampleRateOutput = SampleRate;
 	}
 
-#ifdef WIN32
-	void _loadsample(void* pData, u32 BufferSize, u8 Bits, u8 Channels, u32 SampleRate)
+	OSRSample* OnBufferEnd(LPLOOP_INFO pLoop)
 	{
-		__m128i xmmLoad;
-		__m128i xmmConvert;
+		void* pData = nullptr;
+		bool isEnd = false;
 
-		for (u32 i = 0; i < Channels; i++)
+		if (!BitsOutput)
 		{
-			if (!pOutputBuffer[i]) { pOutputBuffer[i] = (f32*)FastAlloc(BufferSize * 4); }
+			BitsOutput = (BYTE)pLoop->waveFormat.wBitsPerSample;
+			ChannelsOutput = (BYTE)pLoop->waveFormat.nChannels;
+			SampleRateOutput = pLoop->waveFormat.nSamplesPerSec;
+			BufferSizeOutput = 16384;
 		}
 
-		switch (Bits)
+		if (!pNextSample) 
+		{ 
+			pNextSample = new OSRSample(BitsOutput, ChannelsOutput, BufferSizeOutput, SampleRateOutput); 
+			pNextSample->pPreviousSample = this;
+
+			if (!ToEndFileSize && !SamplePosition)  { ToEndFileSize = pLoop->SampleSize; }
+			pNextSample->SamplePosition = SamplePosition + (BufferSizeOutput * (BitsOutput / 8));
+			pNextSample->ToEndFileSize = ToEndFileSize - (BufferSizeOutput * (BitsOutput / 8));
+		}
+
+		pData = (void*)ptrdiff_t(pLoop->pSample + pNextSample->SamplePosition);
+
+		if (pNextSample->ToEndFileSize <= 0) 
 		{
-		case 8:
-			for (u32 i = 0; i < BufferSize; i++)
+			isEnd = true;
+		}
+
+		if (pNextSample->ToEndFileSize > (BufferSizeOutput * (BitsOutput / 8)) && !isEnd)
+		{
+			pNextSample->LoadSample(pData, BufferSizeOutput, BitsOutput, ChannelsOutput, SampleRateOutput);
+		}
+		else
+		{
+			u8 bufFloat[65536] = { NULL };
+
+			if (pNextSample->ToEndFileSize > 0) { memcpy(bufFloat, pData, pNextSample->ToEndFileSize); }
+			pNextSample->LoadSample(bufFloat, BufferSizeOutput, BitsOutput, ChannelsOutput, SampleRateOutput);
+		}
+
+		return pNextSample;
+	}
+
+	void ConvertToPlay(void* pOutData)
+	{
+		f32* pOutBuf = (f32*)pOutData;
+
+		if (pOutData)
+		{
+			for (u32 i = 0; i < BufferSizeOutput; i++)
 			{
-				xmmLoad = _mm_loadu_si128(reinterpret_cast<__m128i*>((size_t*)pData + (i * sizeof(__m128i))));
+				pOutBuf[i] = pOutputBuffer[i % ChannelsOutput][i / ChannelsOutput];
 			}
-			break;
-		default:
-			break;
 		}
 	}
-#endif
 
 	void FreeSample()
 	{
@@ -224,11 +216,7 @@ public:
 
 	~OSRSample()
 	{
-		for (u32 i = 0; i < 8; i++)
-		{
-			FREEKERNELHEAP(pOutputBuffer[i]);
-			FREEKERNELHEAP(pInputBuffer[i]);
-		}
+		FreeSample();
 	}
 
 	u8 BitsInput;
@@ -241,6 +229,8 @@ public:
 	u32 BufferSizeOutput;
 	u32 SampleRateInput;
 	u32 SampleRateOutput;
+	u64 SamplePosition; 
+	i32 ToEndFileSize;
 
 	f32* pInputBuffer[8];
 	f32* pOutputBuffer[8];
@@ -249,3 +239,8 @@ public:
 	OSRSample* pPreviousSample;
 };
 
+class OSRSampleEx : public OSRSample
+{
+	u32 CurrentSystem;
+	u8 IsBigEndian;
+};

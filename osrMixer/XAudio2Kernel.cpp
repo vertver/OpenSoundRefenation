@@ -10,20 +10,11 @@
 *********************************************************/
 #include "stdafx.h"
 
-DLL_API HANDLE hPlay;
-DLL_API XEngine XAudioEngine;
-
 VOID
-XEngine::CreateXEngine()
+XEngine::CreateXEngine(XPlay inPlay)
 {
 	FAILEDX2(XAudio2Create(&pXAudio));
 	FAILEDX2(pXAudio->CreateMasteringVoice(&pMasteringVoice));
-}
 
-VOID
-XEngine::CreateSourceBuffer()
-{
-	FAILEDX2(pXAudio->CreateSourceVoice(&sList.pSourceVoice, sList.waveFormat));
-	HRESULT hr = sList.pSourceVoice->SubmitSourceBuffer(&sList.audioBuffer);
-	FAILEDX2(hr);
+	play = inPlay;
 }

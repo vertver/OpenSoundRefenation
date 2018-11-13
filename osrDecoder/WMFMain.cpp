@@ -139,7 +139,9 @@ WMFReader::LoadFileToMediaBuffer(
 		// convert data to contiguous buffer
 		FAILEDX2(pSample->ConvertToContiguousBuffer(&pBuffer));
 		FAILEDX1(pBuffer->Lock(&localAudioData, nullptr, &dwLocalAudioDataLength));
-		uSamplesLength = +dwLocalAudioDataLength;
+		uSamplesLength += dwLocalAudioDataLength;
+
+		//lpData.reserve(lpData.capacity() + dwLocalAudioDataLength);
 
 		for (DWORD i = 0; i < dwLocalAudioDataLength; i++)
 		{

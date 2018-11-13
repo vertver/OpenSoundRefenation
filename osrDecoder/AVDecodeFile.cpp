@@ -73,13 +73,11 @@ AVReader::OpenFileToBuffer(
 	DWORD dwFormat
 )
 {
-	SYSTEMTIME sysTime = { NULL };
-	GetSystemTime(&sysTime);
+	WSTRING256 szTimeString = { NULL };
+	GetTimeString(szTimeString);
 
 	// set file in temp dir
-	std::wstring lpTempFile = GetTempDirectory() + std::wstring(L"\\expdata_num") +
-		std::to_wstring(sysTime.wMonth) + std::to_wstring(sysTime.wDay) + 
-		std::to_wstring(sysTime.wHour) + std::to_wstring(sysTime.wMinute + sysTime.wSecond + sysTime.wMilliseconds) + L"m.raw";
+	std::wstring lpTempFile = GetTempDirectory() + std::wstring(L"\\expdata_num") + szTimeString;
 
 	// create it
 	HANDLE hTempFile = CreateFileW(lpTempFile.c_str(), GENERIC_WRITE, NULL, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -137,6 +135,11 @@ AVReader::OpenFileToBuffer(
 	case 7:
 		codec = avcodec_find_decoder(AV_CODEC_ID_AC3);
 		break;
+	case 8:
+		codec = avcodec_find_decoder(AV_CODEC_ID_PCM_F32LE);
+		break;
+	case 9:
+
 	default:
 		break;
 	}

@@ -12,29 +12,31 @@
 #include "stdafx.h"
 #include <dsound.h>
 
-class DEngine
+class DLL_API DEngine
 {
 public:
 	DEngine();
 	~DEngine() { _RELEASE(pDirectSound); _RELEASE(pDirectBuffer); _RELEASE(pSupportBuffer); }
 
-	OSRCODE CreateDirectEngine(HWND hwnd, WAVEFORMATEX* waveFormat);
-	OSRCODE LoadSoundBuffer(LPVOID pData, DWORD dwSize, WAVEFORMATEX* waveFormat);
+	OSRCODE CreateDirectEngine(HWND hwnd, WAVEFORMATEX* waveFormat, DWORD dwBufSize);
+	OSRCODE LoadSoundBuffer(LPVOID pData, WAVEFORMATEX* waveFormat);
 
+	DWORD dwBufferSize;
 	LPVOID pBuffer;
 	LPDIRECTSOUND pDirectSound;
 	LPDIRECTSOUNDBUFFER pDirectBuffer;
 	LPDIRECTSOUNDBUFFER pSupportBuffer;
 };
 
-class DMixer
+class DLL_API DMixer
 {
 public:
 	DMixer() {};
 	DMixer(DEngine customEngine) { engine = customEngine; }
 	~DMixer() {};
 
-	OSRCODE InitMixer(HWND hwnd, WAVEFORMATEX waveFormat, LPVOID pData, DWORD dwDataSize);
+	OSRCODE InitMixer(HWND hwnd, WAVEFORMATEX waveFormat, DWORD dwDataSize);
+	OSRCODE LoadSoundData(LPVOID lpData, WAVEFORMATEX waveFormat);
 	OSRCODE PlaySoundData();
 	OSRCODE StopSoundData();
 	

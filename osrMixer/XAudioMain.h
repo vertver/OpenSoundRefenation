@@ -9,45 +9,86 @@
 * XAudio2 decoder implementation
 *********************************************************/
 #pragma once
-#include "stdafx.h"
+#include <windows.h>
+#include <xaudio2.h>
+#include <xaudio2fx.h>
+#include "OSRSystem.h"
 
-#define SAMPLE_RATE 44100
+struct DLL_API StreamingVoiceContext : public IXAudio2VoiceCallback
+{
+	HANDLE hBufferEndEvent;
 
-class SoundList : public WMFReader
+	STDMETHOD_(void, OnVoiceProcessingPassStart)(UINT32) override { }
+	STDMETHOD_(void, OnVoiceProcessingPassEnd)() override { }
+	STDMETHOD_(void, OnStreamEnd)() override { }
+	STDMETHOD_(void, OnBufferStart)(void*) override { }
+	virtual COM_DECLSPEC_NOTHROW void STDMETHODCALLTYPE OnBufferEnd(void*) override;
+	STDMETHOD_(void, OnLoopEnd)(void*) override { }
+	STDMETHOD_(void, OnVoiceError)(void*, HRESULT) override { }
+
+	StreamingVoiceContext() { }
+
+	virtual ~StreamingVoiceContext()
+	{
+	
+	}
+};
+
+//// deprecated
+//class DLL_API SoundList : public WMFReader
+//{
+//public:
+//	SoundList() : pSourceVoice(nullptr), waveFormat(nullptr), dwDataSize(NULL), dwIndex(NULL), lpData(nullptr) { }
+//	OSRCODE LoadAsync(OSRSample Sample);
+//	OSRCODE LoadSoundFile(LPCWSTR lpPath, DWORD dwFlags);
+//	OSRCODE WriteWaveFile(LPCWSTR lpFullpath, std::vector<BYTE> pFile, DWORD dwFlags);
+//
+//	StreamingVoiceContext voiceContext;
+//	IXAudio2SourceVoice* pSourceVoice;
+//	std::vector<BYTE> audioData;
+//	XAUDIO2_BUFFER audioBuffer;
+//	WAVEFORMATEX* waveFormat;
+//	WAVEFORMATEX wavFile;
+//	DWORD dwDataSize;
+//	DWORD dwIndex;
+//	BYTE* lpData;
+//};
+
+class DLL_API XPlay
 {
 public:
-	DLL_API OSRCODE LoadSoundFile(LPCWSTR lpPath, DWORD dwFlags);
-	DLL_API OSRCODE WriteWaveFile(LPCWSTR lpFullpath, std::vector<BYTE> pFile, DWORD dwFlags);
+	XPlay() { };
+	XPlay(WAVEFORMATEX waveFormat, LOOP_INFO loop);
+	~XPlay();
 
-	IXAudio2SourceVoice* pSourceVoice;
-	std::vector<BYTE> audioData;
-	XAUDIO2_BUFFER audioBuffer;
-	WAVEFORMATEX* waveFormat;
-	WAVEFORMATEX wavFile;
-	DWORD dwDataSize;
-	DWORD dwIndex;
-	BYTE* lpData;
+	WAVEFORMATEX outFormat;
+	DWORD CurrentSampleCount;
 };
 
 // AuEngine 2.1
-class XEngine
+class DLL_API XEngine
 {
 public:	
-	DLL_API XEngine() {};
-	DLL_API ~XEngine() {};
-	DLL_API VOID CreateXEngine();
-	DLL_API VOID CreateSourceBuffer();
+	XEngine() {};
+	~XEngine() {};
+	VOID CreateXEngine(XPlay inPlay);
 
+	XPlay play;
+	StreamingVoiceContext voiceContext;
+	IXAudio2SourceVoice* lpSourceVoice;
 	IXAudio2MasteringVoice* pMasteringVoice;
 	IXAudio2* pXAudio;
-	SoundList sList;
 };
 
-class XMixer
+//extern DLL_API HANDLE hPlay;
+
+class DLL_API XMixer
 {
 public:
-	DLL_API VOID InitMixer(XEngine engine);
-	DLL_API VOID PlaySimpleWave();
+	XMixer() { /*hPlay = CreateEventEx(nullptr, nullptr, 0, EVENT_MODIFY_STATE | SYNCHRONIZE);*/ }
+	VOID InitMixer(XEngine engine);
+	VOID PlaySimpleWave();
+	VOID PlayAsync(DWORD SampleNum);
 
 private:
 	// interfaces
@@ -58,6 +99,5 @@ private:
 	XEngine audioEngine;
 };
 
-extern DLL_API HANDLE hPlay;
 extern DLL_API XMixer XAudioMixer;
 extern DLL_API XEngine XAudioEngine;

@@ -95,7 +95,14 @@ ThreadSystem::CreateUserThread(
 		dwThreadId = GetThreadId(reinterpret_cast<HANDLE>(hThread));
 	}
 
-	dwNumberOfThreads++;
+	if (dwNumberOfThreads > 4095)
+	{
+		dwNumberOfThreads = 0;
+	}
+	else
+	{
+		dwNumberOfThreads++;
+	}
 	return dwThreadId;
 }
 
@@ -105,11 +112,12 @@ ThreadSystem::SetUserThreadName(
 	LPWSTR lpName
 )
 {
+	static SETTHREADDESCRIPTION pThreadDesc = nullptr;
 	ASSERT2(dwThreadId, L"No thread id at SetUserThreadName");
 	ASSERT2(lpName, L"No thread name at SetUserThreadName");
 
 	// only from Windows 10.0.1607
-	SETTHREADDESCRIPTION pThreadDesc = (SETTHREADDESCRIPTION)GetProcAddress(GetModuleHandleW(L"kernel32"), "SetThreadDescription");
+	if (!pThreadDesc) { pThreadDesc = (SETTHREADDESCRIPTION)GetProcAddress(GetModuleHandleW(L"kernel32"), "SetThreadDescription"); }
 
 	if (pThreadDesc)
 	{
@@ -137,11 +145,12 @@ ThreadSystem::GetUserThreadName(
 	DWORD dwThreadId,
 	LPWSTR* lpName
 )
-{
+{	
+	static GETTHREADDESCRIPTION pThreadDesc = nullptr;
 	ASSERT2(dwThreadId, L"No thread id at GetUserThreadName");
 
 	// only from Windows 10.0.1607
-	GETTHREADDESCRIPTION pThreadDesc = (GETTHREADDESCRIPTION)GetProcAddress(GetModuleHandleW(L"kernel32"), "GetThreadDescription");
+	if (!pThreadDesc) { pThreadDesc = (GETTHREADDESCRIPTION)GetProcAddress(GetModuleHandleW(L"kernel32"), "GetThreadDescription"); }
 
 	if (pThreadDesc)
 	{
@@ -167,7 +176,7 @@ ThreadSystem::GetThreadInformation(
 
 	// read basic info to our struct
 	NtQueryInformationThreadEx(hThread, ThreadBasicInformation, &basicInfo, sizeof(THREAD_BASIC_INFORMATION), NULL);
-	NtReadVirtualMemory(hThread, basicInfo.TebBaseAddress, &tib, sizeof(NT_TIB64), NULL);
+	NtReadVirtualMemory(GetCurrentProcess(), basicInfo.TebBaseAddress, &tib, sizeof(NT_TIB64), NULL);
 
 	LPWSTR lpThreadNameString = (LPWSTR)FastAlloc(sizeof(WSTRING128));
 	GetUserThreadName(dwThreadId, &lpThreadNameString);

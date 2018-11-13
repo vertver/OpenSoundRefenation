@@ -15,12 +15,20 @@ OSRCODE
 DMixer::InitMixer(
 	HWND hwnd,
 	WAVEFORMATEX waveFormat,
-	LPVOID pData,
 	DWORD dwDataSize
 )
 {
-	OSRFAIL2(engine.CreateDirectEngine(hwnd, &waveFormat), L"Can't create DirectSound engine");
-	OSRFAIL2(engine.LoadSoundBuffer(pData, dwDataSize, &waveFormat), L"Can't load sound buffer");
+	OSRFAIL2(engine.CreateDirectEngine(hwnd, &waveFormat, dwDataSize), L"Can't create DirectSound engine");
+	return OSR_SUCCESS;
+}
+
+OSRCODE 
+DMixer::LoadSoundData(
+	LPVOID lpData,
+	WAVEFORMATEX waveFormat
+)
+{
+	OSRFAIL2(engine.LoadSoundBuffer(lpData, &waveFormat), L"Can't load data to buffer");
 
 	return OSR_SUCCESS;
 }

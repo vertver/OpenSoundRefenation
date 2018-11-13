@@ -21,7 +21,7 @@ LONG
 WINAPI 
 NtQueryInformationProcessEx(
 	HANDLE hProcess,
-	__PROCESSINFOCLASS processInfo,
+	DWORD ProcessClass,
 	PVOID processInfoPointer,
 	ULONG uSize,
 	PULONG lpSize
@@ -30,18 +30,18 @@ NtQueryInformationProcessEx(
 	if (!pNtQueryInformationProcess)
 	{
 		pNtQueryInformationProcess = (NTQUERYINFORMATIONPROCESS)GetProcAddress(GetModuleHandleW(L"ntdll"), "NtQueryInformationProcess");
-		if (!pNtQueryInformationProcess) { return 41; }
+		if (!pNtQueryInformationProcess) { return -41541; }
 	}
 
-	return pNtQueryInformationProcess(hProcess, processInfo, processInfoPointer, uSize, lpSize);
+	return pNtQueryInformationProcess(hProcess, ProcessClass, processInfoPointer, uSize, lpSize);
 }
 
 LONG 
 WINAPI
 NtReadVirtualMemory(
 	HANDLE hProcess,
-	PVOID pAdressToRead,
-	PVOID pAdressToWrite,
+	PVOID pAddressToRead,
+	PVOID pAddressToWrite,
 	ULONG uSize,
 	PULONG lpSize
 )
@@ -49,10 +49,10 @@ NtReadVirtualMemory(
 	if (!pNtReadVirtualMemory)
 	{
 		pNtReadVirtualMemory = (NTREADVIRTUALMEMORY)GetProcAddress(GetModuleHandleW(L"ntdll"), "NtReadVirtualMemory");
-		if (!pNtReadVirtualMemory) { return 41; }
+		if (!pNtReadVirtualMemory) { return -41541; }
 	}
 
-	return pNtReadVirtualMemory(hProcess, pAdressToRead, pAdressToWrite, uSize, lpSize);
+	return pNtReadVirtualMemory(hProcess, pAddressToRead, pAddressToWrite, uSize, lpSize);
 }
 
 VOID
@@ -67,7 +67,7 @@ ProcessManager::GetUserProcessInfo(
 	HANDLE hProcess = NULL;
 	___PROCESS_BASIC_INFORMATION ProcessBInfo = { NULL };
 	RTL_USER_PROCESS_PARAMETERS processInfo = { NULL };
-	LPWSTR szBuf = NULL; 
+	WCHAR szBuf[1024] = { NULL };
 	
 	hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwProcessId);
 	if (!hProcess) { return; }
@@ -90,9 +90,9 @@ ProcessManager::GetUserProcessInfo(
 	
 	if (processInfo.CommandLine.Length)
 	{
-		szBuf = (LPWSTR)FastAlloc(processInfo.CommandLine.Length);
-		if (szBuf) { NtReadVirtualMemory(hProcess, processInfo.CommandLine.Buffer, szBuf, processInfo.CommandLine.Length, NULL); }	
+		NtReadVirtualMemory(hProcess, processInfo.CommandLine.Buffer, szBuf, processInfo.CommandLine.Length, NULL);	
 	}
+
 	pPeb->szArgs = szBuf;
 
 	CloseHandle(hProcess);

@@ -139,7 +139,7 @@ CPUExt::SwapData(
 		}
 
 		// bswap32
-		for (UINT64 j = i / 4; j < ((uSize / 2) / 4); j++)
+		for (DWORD64 j = i / 4; j < ((uSize / 2) / 4); j++)
 		{
 			DWORD dwLow = _byteswap_ulong(*reinterpret_cast<DWORD*>(&Array8[i]));
 			DWORD dwUp = _byteswap_ulong(*reinterpret_cast<DWORD*>(&Array8[uSize - i - 4]));
@@ -151,7 +151,7 @@ CPUExt::SwapData(
 		}
 
 		// bswap16
-		for (UINT64 j = i / 2; j < ((uSize / 2) / 2); j++)
+		for (DWORD64 j = i / 2; j < ((uSize / 2) / 2); j++)
 		{
 			WORD wLow = _byteswap_ushort(*reinterpret_cast<WORD*>(&Array8[i]));
 			WORD wUp = _byteswap_ushort(*reinterpret_cast<WORD*>(&Array8[uSize - i - 2]));

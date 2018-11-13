@@ -217,10 +217,13 @@ ReadAudioFileEx(
 	if (largeSize.QuadPart < DWORD(-1))
 	{
 		// allocate pointer and get data to it
-		*lpData = AdvanceAlloc((UINT64)largeSize.QuadPart, VIRTUAL_MEMORY_ALLOC);
+		*lpData = AdvanceAlloc((UINT64)largeSize.QuadPart, HEAP_MEMORY_ALLOC);
 		ASSERT1(*lpData, L"Can't alloc pointer");
 
-		if (!ReadFile(hFile, *lpData, (DWORD)((UINT64)largeSize.QuadPart), (DWORD*)&sizeWritten, NULL)) { return FS_OSR_BAD_ALLOC; }
+		if (!ReadFile(hFile, *lpData, (DWORD)((UINT64)largeSize.QuadPart), (DWORD*)&sizeWritten, NULL)) 
+		{ 
+			return FS_OSR_BAD_ALLOC;
+		}
 	}
 	else
 	{

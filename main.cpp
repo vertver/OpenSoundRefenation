@@ -8,13 +8,8 @@
 * main.cpp
 * entry-point
 *********************************************************/
+#include <windows.h>
 #include "OSRClasses.h"
-#include "osrUI.h"
-
-int argc;
-char* argv[MAX_NUM_ARGVS];
-
-UserInterface userInterface;
 
 BOOL
 WINAPI
@@ -25,6 +20,8 @@ WinMain(
 	_In_ int nShowCmd
 )
 {
+	OSR::UserInterface Userinterface;
+
 	UNREFERENCED_PARAMETER(hInstance);
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(nShowCmd);
@@ -33,5 +30,5 @@ WinMain(
 
 	// critical section
 	InitApplication();
-	userInterface.CreateMainWindow();
+	Userinterface.CreateMainWindow();
 }

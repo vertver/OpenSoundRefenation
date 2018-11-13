@@ -219,6 +219,9 @@ using WSTRING512				= WideChar[512];
 using WSTRING1024				= WideChar[1024];
 #endif
 
+struct handle_closer { void operator()(HANDLE h) { if (h) CloseHandle(h); } };
+typedef std::unique_ptr<void, handle_closer> SCOPE_HANDLE;
+
 #ifdef WIN32
 using UnhandledExceptionFilterType = LONG WINAPI(struct _EXCEPTION_POINTERS *pExceptionInfo);
 extern DLL_API UnhandledExceptionFilterType *previous_filter;
@@ -228,7 +231,7 @@ extern DLL_API HANDLE hHeap;
 if (FAILED(X)) \
 { \
 static WSTRING1024 szError = { NULL }; \
-FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, X, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), szError, 2047, NULL); \
+FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, X, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), szError, 1023, NULL); \
 THROW1(szError); \
 }
 
@@ -236,7 +239,7 @@ THROW1(szError); \
 if (FAILED(X)) \
 { \
 static WSTRING1024 szError = { NULL }; \
-FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, X, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), szError, 2047, NULL); \
+FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, X, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), szError, 1023, NULL); \
 if (!THROW2(szError)) { ExitProcess(X); } \
 }
 #endif
@@ -554,15 +557,26 @@ UnloadFile(
 )
 {
 	// #NOTE: it's must be allocated by malloc
-	free(pFile);
-	pFile = nullptr;
+	if (pFile)
+	{
+		free(pFile);
+		pFile = nullptr;
+	}
 }
 #endif
 
-#define FREEPROCESSHEAP(Pointer)		if (Pointer) { FreePointer(Pointer, NULL, NULL); Pointer = nullptr; }
-#define FREEKERNELHEAP(Pointer)			if (Pointer) { FreePointer(Pointer, NULL, HEAP_MEMORY_ALLOC); Pointer = nullptr; }
-#define FREEVIRTUALMEM(Pointer, Size)	if (Pointer) { FreePointer(Pointer, Size, VIRTUAL_MEMORY_ALLOC); Pointer = nullptr; }
-#define FREEMAPPEDMEM(Pointer, Size)	if (Pointer) { FreePointer(Pointer, Size, MAPPED_MEMORY_ALLOC); Pointer = nullptr; }		// in windows set Size to NULL
+#define FREEPROCESSHEAP(Pointer)		if (Pointer) { FreePointer(Pointer, NULL, NULL);					Pointer = nullptr; }
+#define FREEKERNELHEAP(Pointer)			if (Pointer) { FreePointer(Pointer, NULL, HEAP_MEMORY_ALLOC);		Pointer = nullptr; }
+#define FREEVIRTUALMEM(Pointer, Size)	if (Pointer) { FreePointer(Pointer, Size, VIRTUAL_MEMORY_ALLOC);	Pointer = nullptr; }
+#define FREEMAPPEDMEM(Pointer, Size)	if (Pointer) { FreePointer(Pointer, Size, MAPPED_MEMORY_ALLOC);		Pointer = nullptr; }		// in windows set Size to NULL
+
+typedef struct  
+{
+	DWORD FileNumber;
+	DWORD FileSize;
+	WIN32_FIND_DATAW FindData;
+
+} FILE_INFO;
 
 typedef struct
 {

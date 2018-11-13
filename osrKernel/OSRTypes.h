@@ -38,7 +38,7 @@ typedef float f32;
 typedef double f64;
 
 #ifdef WITHOUT_WIDECHAR
-typedef u16 WideChar;
+typedef i16 WideChar;
 #else
 typedef wchar_t WideChar;
 #endif
@@ -78,8 +78,13 @@ typedef struct
 	u8 bit8 : 1;
 } BIT_BYTE;
 
+#ifdef _HAS_CXX17
 constexpr i32 iMinus = 0 - MAX_I32VALUE;
 constexpr i32 iPlus = MAX_I32VALUE;
+#else
+const i32 iMinus = 0 - MAX_I32VALUE;
+const i32 iPlus = MAX_I32VALUE;
+#endif
 
 inline 
 float
@@ -88,7 +93,7 @@ f16tof32(f16 fValue)
 	u16 wValue = *(PU16)(&fValue);
 	float fReturn = .0f;
 
-	fReturn = ((wValue & 0x8000) << 16) | (((wValue & 0x7c00) + 0x1C000) << 13) | ((wValue & 0x03FF) << 13);
+	fReturn = ((float)(((wValue & 0x8000) << 16) | (((wValue & 0x7c00) + 0x1C000) << 13) | ((wValue & 0x03FF) << 13)));
 
 	return fReturn;
 }
@@ -97,11 +102,10 @@ inline
 f16
 f32tof16(f32 fValue)
 {
-	f16 fReturn = { NULL };
 	u16 wValue = 0;
 	u32 dwValue = *(PU32)(&fValue);
 
-	wValue = ((dwValue >> 16) & 0x8000) | ((((dwValue & 0x7f800000) - 0x38000000) >> 13) & 0x7c00) | ((dwValue >> 13) & 0x03ff);
+	wValue = ((u16)(((dwValue >> 16) & 0x8000) | ((((dwValue & 0x7f800000) - 0x38000000) >> 13) & 0x7c00) | ((dwValue >> 13) & 0x03ff)));
 
 	return (*(f16*)&wValue);
 }
@@ -110,7 +114,7 @@ inline
 f32
 i16tof32(i16 wValue)
 {
-	f32 fValue = 0.f;
+	f32 fValue = .0f;
 	fValue = (float)wValue / 32768.0f;
 
 	return fValue;
@@ -144,9 +148,120 @@ f32
 i24tof32(i24 iValue)
 {
 	i32 dwValue = 8 << (*(i32*)(&iValue));
-	f32 fValue = 0.f;
+	f32 fValue = .0f;
 
 	fValue = (float)dwValue / iPlus;
 
 	return fValue;
 }
+
+#ifdef __cplusplus
+class WMString
+{
+public:
+	WMString(const WideChar* String)
+	{
+		DataSize = wcslen(String);
+		DataSize++;
+		Data = (WideChar*)malloc(DataSize * sizeof(WideChar));
+		Wide = true;
+
+		memset(Data, 0, DataSize * sizeof(WideChar));
+		memcpy(Data, String, (DataSize * sizeof(WideChar)) - 2);
+	}
+
+	WMString(const char* String)
+	{
+		DataSize = strlen(String);
+		DataSize++;
+		Data = (WideChar*)malloc(DataSize * sizeof(WideChar));
+		Wide = false;
+
+		memset(Data, 0, DataSize * sizeof(WideChar));
+		
+		for (size_t i = 0; i < DataSize; i++)
+		{
+			Data[i] = String[i];
+		}
+	}
+
+	~WMString() 
+	{ 
+		free(Data);
+	}
+
+	WMString& operator= (const WideChar* Wc) 
+	{
+		DataSize = wcslen(Wc);
+		DataSize++;
+		Data = (WideChar*)malloc(DataSize * sizeof(WideChar));
+		Wide = true;
+
+		memset(Data, 0, DataSize * sizeof(WideChar));
+		memcpy(Data, Wc, (DataSize * sizeof(WideChar)) - 2);
+
+		return (WMString&)*this;
+	}
+
+	WMString& operator= (const char* Mb)
+	{
+		DataSize = strlen(Mb);
+		DataSize++;
+		Data = (WideChar*)malloc(DataSize * sizeof(WideChar));
+		Wide = false;
+
+		memset(Data, 0, DataSize * sizeof(WideChar));
+
+		for (size_t i = 0; i < DataSize; i++)
+		{
+			Data[i] = Mb[i];
+		}
+
+		return (WMString&)*this;
+	}
+
+	const WideChar* c_wstr()
+	{
+		WideChar* WideString = (WideChar*)malloc(DataSize * sizeof(WideChar));
+
+		memset(WideString, 0, DataSize * sizeof(WideChar));
+
+		for (size_t i = 0; i < DataSize; i++)
+		{
+			WideString[i] = Data[i];
+		}
+
+		return WideString;
+	}
+
+	const char* c_str()
+	{
+		char* ByteString = (char*)malloc(DataSize * sizeof(char));
+
+		memset(ByteString, 0, DataSize);
+
+		if (!Wide)
+		{
+			for (size_t i = 0; i < DataSize; i++)
+			{
+				ByteString[i] = (char)Data[i];
+			}
+		}
+		else
+		{
+			size_t Converted = 0;
+			wcstombs_s(&Converted, ByteString, DataSize, Data, DataSize);
+		}
+
+		return ByteString;
+	}
+
+	size_t size() { return DataSize; }
+	bool is_wide() { return Wide; }
+
+private:
+	bool Wide;
+	size_t DataSize;
+	WideChar* Data;
+};
+#endif

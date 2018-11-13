@@ -258,7 +258,7 @@ typedef enum __PROCESSINFOCLASS {
 using SETTHREADDESCRIPTION = HRESULT(WINAPI *)(HANDLE handle, PCWSTR name);
 using GETTHREADDESCRIPTION = HRESULT(WINAPI *)(HANDLE handle, PWSTR* name);
 typedef LONG(NTAPI *NTQUERYINFORMATIONTHREAD)(HANDLE, __THREAD_INFORMATION_CLASS, PVOID, ULONG, PULONG);
-typedef LONG(NTAPI *NTQUERYINFORMATIONPROCESS)(HANDLE, __PROCESSINFOCLASS, PVOID, ULONG, PULONG);
+typedef LONG(NTAPI *NTQUERYINFORMATIONPROCESS)(HANDLE, DWORD, PVOID, ULONG, PULONG);
 typedef LONG(NTAPI *NTREADVIRTUALMEMORY)(HANDLE, PVOID, PVOID, ULONG, PULONG);
 typedef void ThreadFunc(void *);
 
@@ -285,16 +285,29 @@ LONG WINAPI NtQueryInformationThreadEx(HANDLE hThread, __THREAD_INFORMATION_CLAS
 class DLL_API ThreadSystem
 {
 public:
-	ThreadSystem() { dwNumberOfThreads = NULL; }
+	ThreadSystem() 
+	{ 
+		dwNumberOfThreads = NULL; 
+		ASSERT2(InitializeCriticalSectionAndSpinCount(&CriticalSection, 0x00000400), L"Can't create critical section.")
+	}
+
+	~ThreadSystem()
+	{
+		DeleteCriticalSection(&CriticalSection);
+	}
 
 	DWORD GetThreadsNumber() { return dwNumberOfThreads; }
 	DWORD CreateUserThread(THREAD_INFO* pThreadInfo, ThreadFunc* pFunction, LPVOID pArgs, LPCWSTR pName);
+
 	VOID GetUserThreadName(DWORD dwThreadId, LPWSTR* lpName);
 	VOID SetUserThreadName(DWORD dwThreadId, LPWSTR lpName);
 	VOID GetThreadInformation(THREAD_INFO* pThreadInfo, DWORD dwThreadId);
 
+	VOID EnterSection() { EnterCriticalSection(&CriticalSection); }
+	VOID LeaveSection() { LeaveCriticalSection(&CriticalSection); }
 private:
 	DWORD dwNumberOfThreads;
+	CRITICAL_SECTION CriticalSection;
 };
 
 extern DLL_API ThreadSystem threadSystem;

@@ -9,6 +9,7 @@
 * Process Manager implementation
 *********************************************************/
 #include "stdafx.h"
+#include "ThreadSystem.h"
 #pragma once
 
 #ifdef WIN32
@@ -67,7 +68,7 @@ struct _PEB_T
 	T Mutant;
 	T ImageBaseAddress;
 	T Ldr;
-	_RTL_USER_PROCESS_PARAMETERS* ProcessParameters;
+	T* ProcessParameters;	//_RTL_USER_PROCESS_PARAMETERS*
 	T SubSystemData;
 	T ProcessHeap;
 	T FastPebLock;
@@ -138,11 +139,10 @@ struct _PEB_T
 	T SystemAssemblyStorageMap;
 	T MinimumStackCommit;
 };
-
 typedef _PEB_T<DWORD64, DWORD, 30> PEB64;
 
-LONG WINAPI NtQueryInformationProcessEx(HANDLE hProcess, __PROCESSINFOCLASS processInfo, PVOID processInfoPointer, ULONG uSize, PULONG lpSize);
-LONG WINAPI NtReadVirtualMemory(HANDLE hProcess, PVOID pAdressToRead, PVOID pAdressToWrite, ULONG uSize, PULONG lpSize);
+LONG WINAPI NtQueryInformationProcessEx(HANDLE hProcess, DWORD ProcessClass, PVOID processInfoPointer, ULONG uSize, PULONG lpSize);
+LONG WINAPI NtReadVirtualMemory(HANDLE hProcess, PVOID pAddressToRead, PVOID pAddressToWrite, ULONG uSize, PULONG lpSize);
 
 class DLL_API ProcessManager
 {

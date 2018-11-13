@@ -38,8 +38,9 @@
 
 // Helpers
 #ifndef IM_ASSERT
-#include <assert.h>
-#define IM_ASSERT(_EXPR)            assert(_EXPR)                               // You can override the default assert handler by editing imconfig.h
+#ifndef DISABLE_ASSERTS
+#define IM_ASSERT(_EXPR)			if (!(_EXPR)) { int iMsg = MessageBoxA(NULL, "The ImGui library thrown assert. Are you want to continue use application", "ImGui thrown assert", MB_YESNO | MB_ICONWARNING); if (iMsg == IDNO) { ExitProcess(0xFF); } }
+#endif
 #endif
 #if defined(__clang__) || defined(__GNUC__)
 #define IM_FMTARGS(FMT)             __attribute__((format(printf, FMT, FMT+1))) // Apply printf-style warnings to user functions.

@@ -7,57 +7,10 @@
     <Filter Include="Other">
       <UniqueIdentifier>{c4594067-681f-4ae8-90e7-ccc01ce908e6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Other\Form Files">
-      <UniqueIdentifier>{99349809-55BA-4b9d-BF79-8FDBB0286EB3}</UniqueIdentifier>
-      <Extensions>ui</Extensions>
-      <ParseFiles>false</ParseFiles>
-    </Filter>
-    <Filter Include="Other\Generated Files">
-      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
-      <Extensions>cpp;c;cxx;moc;h;def;odl;idl;res;</Extensions>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Main part</Filter>
     </ClCompile>
-    <ClCompile Include="OSRMainWindow.cpp">
-      <Filter>Main part</Filter>
-    </ClCompile>
-    <ClCompile Include="defaulscreen.cpp">
-      <Filter>Main part</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="debug\moc_predefs.h.cbt">
-      <Filter>Other\Generated Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="release\moc_predefs.h.cbt">
-      <Filter>Other\Generated Files</Filter>
-    </CustomBuild>
-    <ClInclude Include="ui_OSRMainWindow.h">
-      <Filter>Other\Generated Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <QtUic Include="OSRMainWindow.ui">
-      <Filter>Other\Form Files</Filter>
-    </QtUic>
-    <QtUic Include="defaulscreen.ui">
-      <Filter>Other\Form Files</Filter>
-    </QtUic>
-  </ItemGroup>
-  <ItemGroup>
-    <QtMoc Include="OSRMainWindowr.h">
-      <Filter>Main part</Filter>
-    </QtMoc>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="OSRClasses.h">
-      <Filter>Main part</Filter>
-    </ClInclude>
-    <ClInclude Include="defaulscreen.h">
-      <Filter>Main part</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

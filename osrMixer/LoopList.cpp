@@ -21,7 +21,7 @@ LoopList::LoopList() :
 	lpFileInfo(NULL)
 {
 	dwMaxCountOfFiles = 100;
-	lpFileInfo = (LPAUDIO_INFO)AdvanceAlloc(dwMaxCountOfFiles * sizeof(AUDIO_INFO), VIRTUAL_MEMORY_ALLOC);
+	lpFileInfo = (LPAUDIO_INFO)AdvanceAlloc(dwMaxCountOfFiles * sizeof(AUDIO_INFO), NULL);
 	ASSERT2(lpFileInfo, L"Can't alloc struct");
 }
 
@@ -32,16 +32,13 @@ LoopList::LoopList(
 	lpFileInfo(NULL)
 {
 	dwMaxCountOfFiles = dwCountOfFiles;
-	lpFileInfo = (LPAUDIO_INFO)AdvanceAlloc(dwMaxCountOfFiles * sizeof(AUDIO_INFO), VIRTUAL_MEMORY_ALLOC);
+	lpFileInfo = (LPAUDIO_INFO)AdvanceAlloc(dwMaxCountOfFiles * sizeof(AUDIO_INFO), NULL);
 	ASSERT2(lpFileInfo, L"Can't alloc struct");
 }
 
 LoopList::~LoopList()
 {
-	if (lpFileInfo)
-	{
-		FreePointer(lpFileInfo, dwMaxCountOfFiles * sizeof(AUDIO_INFO), VIRTUAL_MEMORY_ALLOC);
-	}
+	FREEPROCESSHEAP(lpFileInfo);
 }
 
 VOID
@@ -58,30 +55,60 @@ LoopList::LoadAudioFile(
 	DWORD dwHeaderSize = NULL;
 	OSRCODE sCode = OSR_SUCCESS;
 
-	lpFileInfo[dwCurrentCountOfFiles].dwSampleCount = NULL;
-	lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo = (LPLOOP_INFO)AdvanceAlloc(sizeof(LOOP_INFO), VIRTUAL_MEMORY_ALLOC);
+	if (dwCurrentCountOfFiles == dwMaxCountOfFiles) 
+	{
+		dwCurrentCountOfFiles = 0;
+	}
 
-	lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->cbSize = sizeof(LOOP_INFO);
-	lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->dwSampleNumber = NULL;
+	lpFileInfo[dwCurrentCountOfFiles].SampleCount = NULL;
+	lpFileInfo[dwCurrentCountOfFiles].pSampleInfo = (LPLOOP_INFO)AdvanceAlloc(sizeof(LOOP_INFO), NULL);
+
+	lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->StructSize = sizeof(LOOP_INFO);
+	lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleNumber = NULL;
 
 	switch (dwDecoderType)
 	{
 	case NULL:
+	case USE_FFMPEG:
+		// open file		
+		ffReader.OpenFileToBuffer(lpFilePath, (LPCWSTR*)&szString, (LPDWORD)&lpFileInfo[dwCurrentCountOfFiles].FileSize, dwFormat);
+
+		// read big sample
+		ReadAudioFile(
+			szString,
+			(VOID**)&lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->pSample,
+			(LPDWORD)&lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleSize);
+
+		//#TODO: dynamic WAVEFORMATEX
+		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.cbSize = sizeof(WAVEFORMATEX);
+		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.nBlockAlign = 4;
+		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.nChannels = 2;
+		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.nSamplesPerSec = 44100;
+		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.wBitsPerSample = 32;
+		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.wFormatTag = 3;
+		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.nAvgBytesPerSec = ((44100 * 32 * 2) / 8);
+
+		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleDuration =
+			(lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleSize) /
+			(waveFormat->nSamplesPerSec + waveFormat->wBitsPerSample + waveFormat->nChannels);
+
+		break;
 	case USE_WMF:
 		if (mfReader.IsSupportedByMWF(lpFilePath, &waveFormat))
 		{
 			// load file to vector and copy to local buffer
 			mfReader.LoadFileToMediaBuffer(audioData, &waveFormat);
-			lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->lpSample = (LPBYTE)AdvanceAlloc(audioData.size() + 1, VIRTUAL_MEMORY_ALLOC);
-			memcpy(lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->lpSample, &audioData[0], audioData.size());
+			lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->pSample = (u8*)AdvanceAlloc(audioData.size() + 1, NULL);
+
+			memcpy((VOID*)lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->pSample, &audioData[0], audioData.size());
 
 			// set data to structs
-			lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->dwSampleSize = (DWORD)(audioData.size() + 1);
-			lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->dwSampleDuration = mfReader.uDuration;
-			lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->dwSampleNumber = dwCurrentCountOfFiles;
-			lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->waveFormat = *waveFormat;
-			lpFileInfo[dwCurrentCountOfFiles].dwFileSize = (DWORD)(audioData.size());
-			lpFileInfo[dwCurrentCountOfFiles].dwSampleCount = NULL;
+			lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleSize = (DWORD)(audioData.size() + 1);
+			lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleDuration = mfReader.uDuration;
+			lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleNumber = dwCurrentCountOfFiles;
+			lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat = *waveFormat;
+			lpFileInfo[dwCurrentCountOfFiles].FileSize = (DWORD)(audioData.size());
+			lpFileInfo[dwCurrentCountOfFiles].SampleCount = NULL;
 
 			// free COM-pointer
 			CoTaskMemFree(waveFormat);
@@ -91,56 +118,31 @@ LoopList::LoadAudioFile(
 	default:
 		ReadAudioFileEx(
 			lpFilePath,
-			(VOID**)&lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->lpSample,
-			(LONGLONG*)&lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->dwSampleSize,
+			(VOID**)&lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->pSample,
+			(LONGLONG*)&lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleSize,
 			&dwHeaderSize
 		);
 
 		sCode = GetWaveFormatExtented(
-			lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->lpSample,
-			lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->dwSampleSize,
-			&lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->waveFormat
+			(BYTE*)lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->pSample,
+			lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleSize,
+			&lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat
 		);
 
 		if (OSRFAILED(sCode))
 		{  
-			FreePointer(lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->lpSample, NULL, HEAP_MEMORY_ALLOC);
+			FreePointer((VOID*)lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->pSample, NULL, NULL);
 			return;
 		}
 
-		lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->dwSampleDuration = 
-			(lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->dwSampleSize - dwHeaderSize) / 
+		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleDuration = 
+			(lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleSize - dwHeaderSize) / 
 			(waveFormat->nSamplesPerSec + waveFormat->wBitsPerSample + waveFormat->nChannels);	
 		
 		break;
-	case USE_FFMPEG:
-		// open file		
-		ffReader.OpenFileToBuffer(lpFilePath, (LPCWSTR*)&szString, &lpFileInfo[dwCurrentCountOfFiles].dwFileSize, dwFormat);
-
-		// read big sample
-		ReadAudioFileEx(
-			szString,
-			(VOID**)&lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->lpSample,
-			(LONGLONG*)&lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->dwSampleSize,
-			&dwHeaderSize
-		);
-
-		//#TODO: dynamic WAVEFORMATEX
-		lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->waveFormat.cbSize = sizeof(WAVEFORMATEX);
-		lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->waveFormat.nAvgBytesPerSec = ((44100 * 32 * 2) / 8);
-		lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->waveFormat.nBlockAlign = 4;
-		lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->waveFormat.nChannels = 2;
-		lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->waveFormat.nSamplesPerSec = 44100;
-		lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->waveFormat.wBitsPerSample = 32;
-		lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->waveFormat.wFormatTag = 3;
-
-		lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->dwSampleDuration =
-			(lpFileInfo[dwCurrentCountOfFiles].lpSampleInfo->dwSampleSize - dwHeaderSize) /
-			(waveFormat->nSamplesPerSec + waveFormat->wBitsPerSample + waveFormat->nChannels);
-
-		break;
 	}
 
-	dwCurrentCountOfFiles++;
 	*pSampleNumber = dwCurrentCountOfFiles;
+	dwCurrentCountOfFiles++;
 }
+

@@ -11,6 +11,15 @@
 #pragma once
 #include "stdafx.h"
 
+enum WINDOWS_VERSIONS
+{
+	WIN_7_SERVER2008R2 = 1,
+	WIN_8_SERVER2012,
+	WIN_81_SERVER2012R2,
+	WIN_10_SERVER2016,
+	WINDOWS_FUTURE
+};
+
 #ifdef WIN32
 DLL_API BOOL IsProcessWithAdminPrivilege();
 DLL_API BOOL IsAdminUser();
@@ -21,4 +30,5 @@ DLL_API VOID GetTimeString(LPCWSTR lpString);
 DLL_API LONG CreateMinidump(_EXCEPTION_POINTERS* pExceptionInfo);
 DLL_API LONG WINAPI UnhandledFilter(struct _EXCEPTION_POINTERS* pExceptionInfo);
 DLL_API VOID WINAPI GetCurrentPeb(VOID** pPeb);
+DLL_API DWORD GetWindowsVersion();
 #endif

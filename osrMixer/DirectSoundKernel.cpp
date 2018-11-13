@@ -23,7 +23,8 @@ DEngine::DEngine() :
 OSRCODE
 DEngine::CreateDirectEngine(
 	HWND hwnd, 
-	WAVEFORMATEX* waveFormat
+	WAVEFORMATEX* waveFormat,
+	DWORD dwBufSize
 )
 {
 	ASSERT2(waveFormat, L"No wave format");
@@ -35,9 +36,8 @@ DEngine::CreateDirectEngine(
 	FAILEDX2(DirectSoundCreate(nullptr, &pDirectSound, nullptr));
 	if (!pDirectSound) { return MXR_OSR_NO_OUT; }
 
-	// we need to get exclusive mode for HWND 
-	// because if the window was minimized, the
-	// sound content will stop playing
+	// we need to get exclusive mode for HWND  because if the 
+	// window was minimized, the sound content will stop playing
 	if (FAILED(pDirectSound->SetCooperativeLevel(hwnd, DSSCL_EXCLUSIVE)))
 	{
 		// if exclusive mode is not supported - get to priority mode
@@ -63,39 +63,35 @@ DEngine::CreateDirectEngine(
 		return MXR_OSR_UNSUPPORTED_FMT;
 	}
 
+	dwBufferSize = dwBufSize;
+	bufferDesc.dwSize = sizeof(DSBUFFERDESC);
+	bufferDesc.dwFlags = DSBCAPS_PRIMARYBUFFER | DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLFREQUENCY | DSBCAPS_CTRLPOSITIONNOTIFY;
+	bufferDesc.dwBufferBytes = dwBufSize;
+	bufferDesc.lpwfxFormat = waveFormat;
+	bufferDesc.guid3DAlgorithm = GUID_NULL;
+
+	// create secondary buffer for output buffer
+	if (FAILED(pDirectSound->CreateSoundBuffer(&bufferDesc, &pSupportBuffer, nullptr))) { return MXR_OSR_BUFFER_CORRUPT; }
+
 	return OSR_SUCCESS;
 }
 
 OSRCODE
 DEngine::LoadSoundBuffer(
-	LPVOID pData, 
-	DWORD dwSize,
+	LPVOID pData,			// pData must have size equ dwBufferSize (% 2)
 	WAVEFORMATEX* waveFormat
 )
 {
 	ASSERT2(pData, L"No data pointer");
-	ASSERT2(dwSize, L"No data size");
 	ASSERT2(waveFormat, L"No wave format");
 
-	//#NOTE: Delete data pointer after this function
-	DSBUFFERDESC bufferDesc = { NULL };
 	DWORD dwBufSize = NULL;
 
-	bufferDesc.dwSize = sizeof(DSBUFFERDESC);
-	bufferDesc.dwFlags = DSBCAPS_PRIMARYBUFFER | DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLFREQUENCY | DSBCAPS_CTRLPOSITIONNOTIFY;
-	bufferDesc.dwBufferBytes = dwSize;
-	bufferDesc.lpwfxFormat = waveFormat;
-	bufferDesc.guid3DAlgorithm = GUID_NULL;
-
-	// create secondary buffer for output buffer
-	if (FAILED(pDirectSound->CreateSoundBuffer(&bufferDesc, &pSupportBuffer, NULL))) { return MXR_OSR_BUFFER_CORRUPT; }
-
 	// lock buffer to copy data to DirectSound buffer
-	if (FAILED(pSupportBuffer->Lock(NULL, dwSize, &pBuffer, &dwBufSize, nullptr, nullptr, NULL))) { return MXR_OSR_BUFFER_CORRUPT; }
+	if (FAILED(pSupportBuffer->Lock(NULL, dwBufferSize, &pBuffer, &dwBufSize, nullptr, nullptr, NULL))) { return MXR_OSR_BUFFER_CORRUPT; }
 
 	// copy data
-	ASSERT2((dwSize <= dwBufSize), L"DirectSound buffer smaller then data buffer");
-	memcpy_s(pBuffer, dwBufSize, pData, dwSize);
+	memcpy(pBuffer, pData, dwBufferSize);
 
 	// unlock buffer to use this
 	if (FAILED(pSupportBuffer->Unlock(pBuffer, dwBufSize, nullptr, NULL))) { return MXR_OSR_BUFFER_CORRUPT; }

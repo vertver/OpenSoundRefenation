@@ -106,28 +106,27 @@ RunWithAdminPrivilege()
 	}
 }
 
-std::wstring szPathTemp;
+WSTRING_PATH szPathTemp;
 
 LPCWSTR
 GetTempDirectory()
 {
-	return szPathTemp.c_str();
+	return szPathTemp;
 }
 
 VOID
 CreateTempDirectory()
 {
 	WSTRING_PATH szFullPath = { NULL };
+
 	// get program directory to create 'temp' directory
 	ASSERT1(GetCurrentDirectoryW(sizeof(WSTRING_PATH), szFullPath), L"Can't get proccess directory");
+	_snwprintf_s(szPathTemp, sizeof(WSTRING_PATH), L"%s%s", szFullPath, L"\\Temp");
 
-	szPathTemp = szFullPath;
-	szPathTemp += L"\\Temp";
-
-	DWORD dwGetDir = GetFileAttributesW(szPathTemp.c_str());
+	DWORD dwGetDir = GetFileAttributesW(szPathTemp);
 	if (dwGetDir == INVALID_FILE_ATTRIBUTES || !(dwGetDir & FILE_ATTRIBUTE_DIRECTORY))
 	{
-		if (!CreateDirectoryW(szPathTemp.c_str(), nullptr))
+		if (!CreateDirectoryW(szPathTemp, nullptr))
 		{
 			DWORD dwError = GetLastError();
 			if (!IsProcessWithAdminPrivilege() && dwError == ERROR_ACCESS_DENIED)
@@ -152,13 +151,13 @@ GetTimeString(
 {
 	if (!lpString) { return; }
 
+	static WSTRING128 szTimeString = { NULL };
 	SYSTEMTIME sysTime = { NULL };
 	GetSystemTime(&sysTime);
 	
-	std::wstring szTime = std::to_wstring(sysTime.wYear) + std::to_wstring(sysTime.wMonth) + std::to_wstring(sysTime.wDay)
-		+ std::to_wstring(sysTime.wHour) + std::to_wstring(sysTime.wMinute);
+	_snwprintf_s(szTimeString, sizeof(WSTRING128), L"%d%d%d%d%d", sysTime.wYear, sysTime.wMonth, sysTime.wDay, sysTime.wHour, sysTime.wMinute);
 
-	lpString = szTime.c_str();
+	memcpy((LPVOID)lpString, szTimeString, sizeof(WSTRING128));
 }
 
 LONG 
@@ -166,21 +165,20 @@ CreateMinidump(
 	_EXCEPTION_POINTERS* pExceptionInfo
 )
 {
-	std::wstring szFullPath = { NULL };
-	std::wstring szTemp = { NULL };
+	WSTRING512 szFullPath = { NULL };
+	WSTRING512 szTemp = { NULL };
 	WSTRING_PATH szPath = { NULL };
 
 	// get current working directory
 	GetCurrentDirectoryW(sizeof(WSTRING_PATH), szPath);
-	szTemp = szPath;
-	szTemp += L"\\Dump";
+	_snwprintf_s(szTemp, sizeof(WSTRING512), L"%s%s", szPath, L"\\Dump");
 
 	// create new path "dump"
-	DWORD dwGetDir = GetFileAttributesW(szTemp.c_str());
+	DWORD dwGetDir = GetFileAttributesW(szTemp);
 	if (dwGetDir == INVALID_FILE_ATTRIBUTES || !(dwGetDir & FILE_ATTRIBUTE_DIRECTORY))
 	{
 		// we can't create temp directory at kernel paths or "Program files"
-		if (!CreateDirectoryW(szTemp.c_str(), nullptr))
+		if (!CreateDirectoryW(szTemp, nullptr))
 		{
 			DWORD dwError = GetLastError();
 			THROW1(L"Can't create temp directory. Please, change working directory");
@@ -195,13 +193,13 @@ CreateMinidump(
 	GetTimeString(szTime);
 
 	// create minidump file handle
-	szFullPath = szTemp + L"\\" + L"OpenSoundRefenation_" + szName + L"_" + szTime + L".mdmp";
-	HANDLE hFile = CreateFileW(szFullPath.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+	_snwprintf_s(szFullPath, sizeof(WSTRING512), L"%s%s%s%s%s%s%s", szTemp, L"\\", L"OpenSoundRefenation_", szName, L"_", szTime, L".mdmp");
+	HANDLE hFile = CreateFileW(szFullPath, GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
-		szFullPath = szPath + std::wstring(L"\\") + L"OpenSoundRefenation_" + szName + L"_" + szTime + L".mdmp";
-		CreateFileW(szFullPath.c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+		_snwprintf_s(szFullPath, sizeof(WSTRING512), L"%s%s%s%s%s%s%s", szPath, L"\\", L"OpenSoundRefenation_", szName, L"_", szTime, L".mdmp");
+		hFile = CreateFileW(szFullPath, GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 	}
 
 	if (hFile != INVALID_HANDLE_VALUE)
@@ -216,8 +214,8 @@ CreateMinidump(
 		// write the dump
 		if (MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile, dump_flags, &ExInfo, nullptr, nullptr))
 		{
-			szTemp = L"Minidump saved at (" + szFullPath + L")";
-			MessageBoxW(nullptr, szTemp.c_str(), L"Minidump saved", MB_OK | MB_ICONINFORMATION);
+			_snwprintf_s(szTemp, sizeof(WSTRING512), L"%s%s%s", L"Minidump saved at (", szFullPath, L")");
+			MessageBoxW(nullptr, szTemp, L"Minidump saved", MB_OK | MB_ICONINFORMATION);
 			return EXCEPTION_EXECUTE_HANDLER;
 		}
 	}
@@ -246,4 +244,61 @@ GetCurrentPeb(VOID** pPeb)
 	*pPeb = processInformation.PebBaseAddress;
 }
 
+DWORD
+GetWindowsVersion()
+{
+	static DWORD WinVer = 0;
+
+	if (!WinVer)
+	{
+		DWORD dwVersion = 0;
+		DWORD dwMajorVersion = 0;
+		DWORD dwMinorVersion = 0;
+		DWORD dwBuild = 0;
+
+		typedef DWORD(WINAPI *LPFN_GETVERSION)(VOID);
+		LPFN_GETVERSION fnGetVersion;
+		fnGetVersion = (LPFN_GETVERSION)GetProcAddress(GetModuleHandleA("kernel32"), "GetVersion");
+
+		if (fnGetVersion)
+		{
+			dwVersion = fnGetVersion();
+			dwMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
+			dwMinorVersion = (DWORD)(HIBYTE(LOWORD(dwVersion)));
+
+			if (dwVersion < 0x80000000) { dwBuild = (DWORD)(HIWORD(dwVersion)); }
+
+			switch (dwMajorVersion)
+			{
+			case 0:
+			case 1:
+			case 2:
+			case 3:
+			case 4:
+			case 5:
+				break;
+			case 6:
+				switch (dwMinorVersion)
+				{
+				case 1:	 WinVer = WIN_7_SERVER2008R2;		break;
+				case 2:	 WinVer = WIN_8_SERVER2012;  		break;
+				case 3:	 WinVer = WIN_81_SERVER2012R2;		break;
+				default: WinVer = WINDOWS_FUTURE;			break;
+				}
+			case 10:
+				switch (dwMinorVersion)
+				{
+				case 0:	 WinVer = WIN_10_SERVER2016;		break;
+				default: WinVer = WINDOWS_FUTURE;			break;
+				}
+				break;
+			default:
+				WinVer = WINDOWS_FUTURE;
+				break;
+			}
+		}
+	}
+
+	return WinVer;
+}
 #endif
