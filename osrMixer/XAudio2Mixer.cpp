@@ -13,7 +13,7 @@
 DLL_API XMixer XAudioMixer;
 DLL_API HANDLE hPlay;
 
-OSRSample* SampleArray[128] = { nullptr };
+OSRSample* SampleArrays[128] = { nullptr };
 LPLOOP_INFO loopInfo[512] = { nullptr };
 DWORD SampleNumber = 0;
 DWORD loopCount = 0;
@@ -77,7 +77,7 @@ VOID
 XMixer::PlayAsync(DWORD SampleNum)
 {
 	BOOL isRunning = TRUE;
-	OSRSample* Sample = SampleArray[SampleNum];
+	OSRSample* Sample = SampleArrays[SampleNum];
 	HRESULT hr = 0;
 
 	FAILEDX2((hr = pXAudio->CreateSourceVoice(&audioEngine.lpSourceVoice, &audioEngine.play.outFormat, 0, 1.0f, &audioEngine.voiceContext)));
@@ -91,7 +91,7 @@ XMixer::PlayAsync(DWORD SampleNum)
 			loopInfo[SampleNum]->waveFormat.nSamplesPerSec
 		);
 
-		 SampleArray[0] = Sample;
+		 SampleArrays[0] = Sample;
 
 		Sample->LoadSample(
 			(void*)loopInfo[SampleNum]->pSample,
@@ -125,19 +125,19 @@ XMixer::PlayAsync(DWORD SampleNum)
 			Sample->ConvertToPlay(lpPlay);
 			audioBuffer.pAudioData = (BYTE*)lpPlay;
 			hr = audioEngine.lpSourceVoice->SubmitSourceBuffer(&audioBuffer);
-			SampleArray[SampleNumber + 1] = SampleArray[SampleNumber]->OnBufferEnd(loopInfo[loopCount]);
+			SampleArrays[SampleNumber + 1] = SampleArrays[SampleNumber]->OnBufferEnd(loopInfo[loopCount]);
 			SampleNumber++;
 		}
 
 		if (SampleNumber > 127)
 		{
-			for (size_t i = 0; i < 127; i++) { delete SampleArray[i]; }
+			for (size_t i = 0; i < 127; i++) { delete SampleArrays[i]; }
 
-			SampleArray[0] = SampleArray[127];
+			SampleArrays[0] = SampleArrays[127];
 			SampleNumber = 0;
 		}
 
-		Sample = SampleArray[SampleNumber];
+		Sample = SampleArrays[SampleNumber];
 		if (GetAsyncKeyState(VK_SPACE)) { break; }
 		Sleep(5);
 	}

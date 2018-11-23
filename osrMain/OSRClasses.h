@@ -40,7 +40,7 @@ namespace OSR
 		Mixer() { MixerSampleRate = 44100; MixerBufferSize = 2048; }
 		Mixer(u32 SampleRate, u32 BufferSize) { MixerSampleRate = SampleRate; MixerBufferSize = BufferSize; }
 
-		void CreateMixer(HWND hwnd, OSRSample Sample);
+		void CreateMixer(HWND hwnd);
 		void LoadSample(LPCWSTR lpPath);
 		void PlaySample();
 
@@ -64,3 +64,60 @@ namespace OSR
 		HWND MainHwnd;
 	};
 }; 
+
+#include <Shobjidl.h>
+
+class DLL_API TaskbarValue
+{
+#ifndef _RELEASE1
+#define _RELEASE1(X) if (X) { X->Release(); X = NULL; }
+#endif
+public:
+	TaskbarValue(HWND hwnd)
+	{
+		if (FAILED(CoCreateInstance(CLSID_TaskbarList, nullptr, CLSCTX_ALL, IID_PPV_ARGS(&pTaskbar))))
+		{
+			// set here your error message
+		}
+
+		currentHwnd = hwnd;
+
+		pTaskbar->SetProgressState(currentHwnd, TBPF_NORMAL);
+		pTaskbar->SetProgressValue(currentHwnd, 0, 100);
+	}
+
+	VOID SetValue(DWORD Value)
+	{
+		if (Value == 100)
+		{
+			pTaskbar->SetProgressState(currentHwnd, TBPF_NOPROGRESS);
+		}
+
+		pTaskbar->SetProgressValue(currentHwnd, Value, 100);
+	}
+
+	VOID SetError()
+	{
+		pTaskbar->SetProgressState(currentHwnd, TBPF_ERROR);
+	}
+
+	VOID SetPause()
+	{
+		pTaskbar->SetProgressState(currentHwnd, TBPF_PAUSED);
+	}
+
+	VOID SetCompleted()
+	{
+		pTaskbar->SetProgressState(currentHwnd, TBPF_NOPROGRESS);
+	}
+
+	~TaskbarValue()
+	{
+		_RELEASE1(pTaskbar);
+	}
+
+private:
+	HWND currentHwnd;
+	ITaskbarList3* pTaskbar;
+#undef _RELEASE1
+};

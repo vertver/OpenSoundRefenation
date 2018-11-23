@@ -212,6 +212,8 @@ OSR::UserInterface::CreateMainWindow()
 	}
 	io.Fonts->Build();
 
+	OutMixer.CreateMixer(MainHwnd);
+
 	ImGui_ImplWin32_Init(MainHwnd);
 	ImGui_ImplDX11_Init(dx11Renderer.m_pDevice, dx11Renderer.m_pContext);
 

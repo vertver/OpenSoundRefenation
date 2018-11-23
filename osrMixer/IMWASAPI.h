@@ -14,6 +14,7 @@
 #include <audiopolicy.h>
 #include <AudioClient.h>
 #include <wrl\implements.h>
+#include <initguid.h>
 #include <mmdeviceapi.h>
 #include <endpointvolume.h>
 
@@ -75,6 +76,7 @@ GetAudioClientVersion()
 }
 
 const
+inline
 IID*
 GetAudioClientIID()
 {
@@ -122,25 +124,43 @@ typedef struct whost_processor
 	LPVOID pUserData;
 } WASAPI_HOST_PROCESSOR;
 
-class IMEngine : public RuntimeClass< RuntimeClassFlags< ClassicCom >, FtmBase, IActivateAudioInterfaceCompletionHandler >
+class DLL_API IMEngine
 {
 public:
-	IMEngine() : m_BufferFrames(NULL), m_SampleReadyEvent(nullptr), m_SampleReadyKey(0), m_MixFormat(nullptr),
-		 m_SampleReadyAsyncResult(nullptr), hnsBufferDuration(0) { }
+	IMEngine()
+	{ 
+		m_MixFormat = nullptr;
+		m_SampleReadyAsyncResult = nullptr;
+		DeviceCount = 0;
+		hOutput = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+		hStart = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+		hExit = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+		
+		pRenderStream = nullptr;
+		pAudioClient = nullptr;
+		pAudioRenderClient = nullptr;
+		pOutVol = nullptr;
+		pCaptureClient = nullptr;
+		pCaptureClientParent = nullptr;
+		PCaptureClientStream = nullptr;
+		pInVol = nullptr;
+		enumerator = nullptr;
+		m_SampleReadyAsyncResult = nullptr;
+		pDeviceInfo = nullptr;
 
-	//STDMETHOD(ActivateCompleted)(IActivateAudioInterfaceAsyncOperation *operation);
+		memset(&OutputDeviceInfo, 0, sizeof(WASAPI_DEVICE_INFO));
+		memset(&InputDeviceInfo, 0, sizeof(WASAPI_DEVICE_INFO));
+	}
+
+	DWORD GetAudioThreadId() { return WasapiThread; }
+	DWORD GetBufferSize() { return BufferSize; }
+	WASAPI_DEVICE_INFO* GetOutputInfo() { return &OutputDeviceInfo; }
+	WASAPI_DEVICE_INFO* GetInputInfo() { return &InputDeviceInfo; }
+
 	OSRCODE InitEngine(HWND hwnd);
-	OSRCODE PlayAudio();
-
-private:
-	DWORD				DeviceCount;
-	UINT32              m_BufferFrames;
-	HANDLE              m_SampleReadyEvent;
-	MFWORKITEM_KEY      m_SampleReadyKey;
-	CRITICAL_SECTION    m_CritSec;
-	REFERENCE_TIME      hnsBufferDuration;
-
-	WAVEFORMATEX*		m_MixFormat;
+	OSRCODE CreateDefaultDevice();
+	OSRCODE StartDevice(LPVOID pProc);
+	OSRCODE StopDevice();
 
 	IStream*				pRenderStream;
 	IAudioClient*			pAudioClient;
@@ -152,11 +172,30 @@ private:
 	IAudioCaptureClient*	pCaptureClient;
 	IAudioEndpointVolume*	pInVol;
 
+private:
+	DWORD				WasapiThread;
+	DWORD				DeviceCount;
+	DWORD				BufferSize;
+	HANDLE				hOutput;
+	HANDLE				hStart;
+	HANDLE				hExit;
+	WAVEFORMATEX*		m_MixFormat;
+
+
+
 	IMMDeviceEnumerator*enumerator;	
 	IMFAsyncResult*		m_SampleReadyAsyncResult;
+	WASAPI_DEVICE_INFO** pDeviceInfo;
 	WASAPI_DEVICE_INFO	OutputDeviceInfo;
 	WASAPI_DEVICE_INFO	InputDeviceInfo;
 };
+
+typedef struct wsample_proc
+{
+	LPLOOP_INFO pLoopInfo;
+	OSRSample* pSample;
+	IMEngine* pEngine;
+} WASAPI_SAMPLE_PROC, *PWASAPI_SAMPLE_PROC, *LPWASAPI_SAMPLE_PROC;
 
 class IMMixer
 {

@@ -1,14 +1,19 @@
 #include "stdafx.h"
+#include "IMWASAPI.h"
 
-DLL_API XEngine XAudioEngine;
+XEngine XAudioEngine;
+IMEngine eEngine;
+LOOP_INFO lInfo;
 
 void
 OSR::Mixer::CreateMixer(
-	HWND hwnd,
-	OSRSample Sample
+	HWND hwnd
 )
 {
-	WAVEFORMATEX waveFormat = { NULL };
+	eEngine.InitEngine(hwnd);
+	eEngine.CreateDefaultDevice();
+
+	/*WAVEFORMATEX waveFormat = { NULL };
 	waveFormat.cbSize = sizeof(WAVEFORMATEX);
 	waveFormat.nAvgBytesPerSec = (Sample.BitsOutput * Sample.ChannelsOutput * Sample.SampleRateOutput) / 8;
 	waveFormat.nBlockAlign = 4;
@@ -19,8 +24,8 @@ OSR::Mixer::CreateMixer(
 
 	if (!hwnd)
 	{
-	
-	}
+
+	}*/
 }
 
 void
@@ -28,35 +33,41 @@ OSR::Mixer::LoadSample(
 	LPCWSTR lpPath
 )
 {
-	LOOP_INFO lInfo = { NULL };
 	osrEngine.DecodeFile(lpPath, &lInfo);
 
-	WAVEFORMATEX waveFormat = lInfo.waveFormat;
-	waveFormat.wBitsPerSample = 32;
-	waveFormat.nBlockAlign = (waveFormat.wBitsPerSample / 8) * waveFormat.nChannels;
-	waveFormat.wFormatTag = 3;
-	waveFormat.nAvgBytesPerSec = (waveFormat.nSamplesPerSec * waveFormat.wBitsPerSample * waveFormat.nChannels) / 8;
+	//WAVEFORMATEX waveFormat = lInfo.waveFormat;
+	//waveFormat.wBitsPerSample = 32;
+	//waveFormat.nBlockAlign = (waveFormat.wBitsPerSample / 8) * waveFormat.nChannels;
+	//waveFormat.wFormatTag = 3;
+	//waveFormat.nAvgBytesPerSec = (waveFormat.nSamplesPerSec * waveFormat.wBitsPerSample * waveFormat.nChannels) / 8;
 
-	XPlay play(waveFormat, lInfo);
+	//XPlay play(waveFormat, lInfo);
 
-	if (!XAudioEngine.pXAudio)
-	{
-		XAudioEngine.CreateXEngine(play);
-	}
+	//if (!XAudioEngine.pXAudio)
+	//{
+	//	XAudioEngine.CreateXEngine(play);
+	//}
 
-	if (XAudioEngine.lpSourceVoice)
-	{
-		XAudioEngine.lpSourceVoice->DestroyVoice();
-		XAudioEngine.lpSourceVoice = nullptr;
-	}
-	LoopNumber = play.CurrentSampleCount;
+	//if (XAudioEngine.lpSourceVoice)
+	//{
+	//	XAudioEngine.lpSourceVoice->DestroyVoice();
+	//	XAudioEngine.lpSourceVoice = nullptr;
+	//}
+	//LoopNumber = play.CurrentSampleCount;
 
-	mixer.InitMixer(XAudioEngine);
+	//mixer.InitMixer(XAudioEngine);
 }
+
+WASAPI_SAMPLE_PROC SampleProc = { 0 };
 
 void
 OSR::Mixer::PlaySample()
 {
-	mixer.PlayAsync(LoopNumber);
+	//mixer.PlayAsync(LoopNumber);
+	SampleProc.pEngine = &eEngine;
+	SampleProc.pLoopInfo = &lInfo;
+	SampleProc.pSample = nullptr;
+
+	eEngine.StartDevice((LPVOID)&SampleProc);
 }
 

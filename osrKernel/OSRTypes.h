@@ -167,7 +167,7 @@ public:
 		Wide = true;
 
 		memset(Data, 0, DataSize * sizeof(WideChar));
-		memcpy(Data, String, (DataSize * sizeof(WideChar)) - 2);
+		memcpy_s(Data, DataSize * sizeof(WideChar), String, (DataSize * sizeof(WideChar)) - 2);
 	}
 
 	WMString(const char* String)

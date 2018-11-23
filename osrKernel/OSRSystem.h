@@ -182,8 +182,8 @@ public:
 			pNextSample->LoadSample(pData, BufferSizeOutput, BitsOutput, ChannelsOutput, SampleRateOutput);
 		}
 		else
-		{
-			u8 bufFloat[65536] = { NULL };
+		{	
+			u8 bufFloat[44100 * 2 * 4] = { NULL };
 
 			if (pNextSample->ToEndFileSize > 0) { memcpy(bufFloat, pData, pNextSample->ToEndFileSize); }
 			pNextSample->LoadSample(bufFloat, BufferSizeOutput, BitsOutput, ChannelsOutput, SampleRateOutput);
@@ -202,6 +202,50 @@ public:
 			{
 				pOutBuf[i] = pOutputBuffer[i % ChannelsOutput][i / ChannelsOutput];
 			}
+		}
+	}
+
+	void ConvertToPlay(void* pOutData, u8 Bits)
+	{
+		u8* p8 = nullptr;
+		i16* p16 = nullptr;
+		i24* p24 = nullptr;
+		f32* pf32 = nullptr;
+
+		switch (Bits)
+		{
+		case 8:
+			p8 = (u8*)pOutData;
+
+			for (u32 i = 0; i < BufferSizeOutput; i++)
+			{
+				p8[i] = (u8)f32toi16(pOutputBuffer[i % ChannelsOutput][i / ChannelsOutput]);
+			}
+			break;
+		case 16:
+			p16 = (i16*)pOutData;
+
+			for (u32 i = 0; i < BufferSizeOutput; i++)
+			{
+				p16[i] = f32toi16(pOutputBuffer[i % ChannelsOutput][i / ChannelsOutput]);
+			}
+			break;
+		case 24:
+			p24 = (i24*)pOutData;
+
+			for (u32 i = 0; i < BufferSizeOutput; i++)
+			{
+				p24[i] = f32toi24(pOutputBuffer[i % ChannelsOutput][i / ChannelsOutput]);
+			}
+			break;
+		case 32:
+			pf32 = (f32*)pOutData;
+
+			for (u32 i = 0; i < BufferSizeOutput; i++)
+			{
+				pf32[i] = pOutputBuffer[i % ChannelsOutput][i / ChannelsOutput];
+			}
+			break;
 		}
 	}
 
