@@ -70,7 +70,10 @@ AVReader::OpenFileToBuffer(
 	LPCWSTR lpPath, 
 	LPCWSTR* lpTempPath,
 	LPDWORD dwSize,
-	DWORD dwFormat
+	DWORD dwFormat,
+	DWORD* lpSampleRate,
+	LPWORD lpChannels,
+	LPWORD Bits
 )
 {
 	WSTRING256 szTimeString = { NULL };
@@ -139,7 +142,10 @@ AVReader::OpenFileToBuffer(
 		codec = avcodec_find_decoder(AV_CODEC_ID_PCM_F32LE);
 		break;
 	case 9:
-
+		codec = avcodec_find_decoder(AV_CODEC_ID_PCM_S16LE);
+		break;
+	case 10:
+		codec = avcodec_find_decoder(AV_CODEC_ID_PCM_S24LE);
 	default:
 		break;
 	}
@@ -183,6 +189,8 @@ AVReader::OpenFileToBuffer(
 			DecodeFrame(c, pkt, decoded_frame, hTempFile);
 		}
 
+		decoded_frame->sample_rate;
+
 		if (data_size < AUDIO_REFILL_THRESH)
 		{
 			// move data to pointer
@@ -191,6 +199,23 @@ AVReader::OpenFileToBuffer(
 			ReadFile(hFile, data + data_size, AUDIO_INBUF_SIZE - ((DWORD)data_size), &len, NULL);
 			if (len > 0) { data_size += len; }
 		}
+	}
+
+	switch ((DWORD)(c->codec->sample_fmts))
+	{
+	case AV_SAMPLE_FMT_NONE:	*Bits = 0; break;
+	case AV_SAMPLE_FMT_U8:		*Bits = 8; break;
+	case AV_SAMPLE_FMT_U8P:		*Bits = 8; break;
+	case AV_SAMPLE_FMT_S16:		*Bits = 16; break;
+	case AV_SAMPLE_FMT_S16P:	*Bits = 16; break;
+	case AV_SAMPLE_FMT_S32:		*Bits = 32; break;
+	case AV_SAMPLE_FMT_S32P:	*Bits = 32; break;
+	case AV_SAMPLE_FMT_S64:		*Bits = 64; break;
+	case AV_SAMPLE_FMT_S64P:	*Bits = 64; break;
+	case AV_SAMPLE_FMT_FLT:		*Bits = 32; break;
+	case AV_SAMPLE_FMT_FLTP:	*Bits = 32; break;
+	case AV_SAMPLE_FMT_DBL:		*Bits = 64; break;
+	case AV_SAMPLE_FMT_DBLP:	*Bits = 64; break;
 	}
 
 	pkt->data = nullptr;

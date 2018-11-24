@@ -5,6 +5,7 @@ float fBlockSize = 0.f;
 float fSampleRate = 0.f;
 
 typedef AEffect* (VSTCALLBACK *PluginMain) (audioMasterCallback audioMaster);
+AEffect* pCustomEffect;
 
 VSTHOST_API HANDLE hPluginHandle = nullptr;
 VSTHOST_API VSTHost PluginHost = {};
@@ -144,14 +145,16 @@ VSTMasterAudioCallback(
 		result = 2400;		// we are a VST 2.4 compatible host
 		break;
 	case audioMasterCurrentId:
-		result = 1;
+		result = 'AASH';
 		break;
 	case audioMasterIdle:
-		// Ignore
-		result = 1;
+	{ 
+		effect->dispatcher(effect, effEditIdle, 0, 0, NULL, 0.0f);
+		return 0; 
+	}
 		break;
 	case audioMasterGetTime: 
-		result = 1;
+		return 0;
 		break;
 	case audioMasterIOChanged: 
 		result = 1;
@@ -159,6 +162,10 @@ VSTMasterAudioCallback(
 	case audioMasterSizeWindow:
 		result = 0;
 		break;
+	case audioMasterProcessEvents: 
+	{ 
+		return 0;
+	}
 	case audioMasterGetSampleRate:
 		result = (int)fSampleRate;
 		break;
@@ -191,6 +198,10 @@ VSTMasterAudioCallback(
 	case audioMasterGetVendorVersion:
 		result = 1;
 		break;
+	case audioMasterVendorSpecific: 
+	{
+		return 0; 
+	}
 	case audioMasterCanDo:
 		result = IsSupportByHost(pluginIdString, (LPSTR)ptr);
 		break;
@@ -198,6 +209,8 @@ VSTMasterAudioCallback(
 		result = kVstLangEnglish;
 		break;
 	case audioMasterUpdateDisplay:
+		effect->dispatcher(pCustomEffect, effEditIdle, 0, 0, NULL, 0.0f); 
+		return 0;
 		// ignore
 		break;
 	default:
@@ -254,6 +267,7 @@ VSTHost::LoadPlugin(
 
 	pMain = (PluginMain)pVSTEntryPoint;
 	pEffect = pMain(&VSTMasterAudioCallback);
+	pCustomEffect = (AEffect*)pEffect;
 
 	if (IsInterfaceEnabled)
 	{
@@ -320,7 +334,7 @@ VSTHost::InitPlugin(
 	// open VST host 
 	pCurrentEffect->dispatcher(pCurrentEffect, effOpen, 0, 0, nullptr, 0);
 	pCurrentEffect->dispatcher(pCurrentEffect, effSetSampleRate, 0, 0, nullptr, (float)dwSampleRate);
-	pCurrentEffect->dispatcher(pCurrentEffect, effSetBlockSize, 1, dwBlockSize, nullptr, 0);
+	pCurrentEffect->dispatcher(pCurrentEffect, effSetBlockSize, 0, dwBlockSize, nullptr, 0);
 
 	// set message to resume plugin
 	ResumePlugin();

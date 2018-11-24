@@ -48,6 +48,7 @@ WCSTRToMBCSTR(
 	{
 		// allocate new string at kernel heap
 		lpNewString = (LPSTR)FastAlloc(StringSize++);
+		
 		ASSERT2(WideCharToMultiByte(CP_UTF8, 0, lpString, -1, lpNewString, StringSize, NULL, NULL), L"Can't convert wchar_t to char");
 	}
 	return lpNewString;

@@ -30,6 +30,7 @@
 #ifdef WIN32
 #define OSR_DECODER_NAME		L##"osrDecoder.dll"
 #define OSR_MIXER_NAME			L##"osrMixer.dll"
+#define ANSI_LOG(X)				OutputDebugStringA(X); OutputDebugStringA("\n");
 #define MSG_LOG(X)				OutputDebugStringW(L##X); OutputDebugStringW(L"\n");
 #define WMSG_LOG(X)				OutputDebugStringW(X); OutputDebugStringW(L"\n");
 #else
@@ -203,7 +204,6 @@ bool ThrowWarning(const char* lpText);				// fourth level
 #define _DEB(X)					if (FAILED(X)) { DEBUG_BREAK; }
 #endif
 #define _RELEASE(X)				if (X) { X->Release(); X = NULL; }
-#define _GETPROC(fun, type, name)  { fun = (type) GetProcAddress(hDInputDLL, name); if (!fun) { return FALSE; } }
 
 using STRING_PATH				= char[MAX_PATH];
 using STRING128					= char[128];

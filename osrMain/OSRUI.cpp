@@ -81,7 +81,14 @@ CycleFunc()
 	dx11Renderer.m_pDXGISwapChain->Present(1, 0); // Present with vsync
 }
 
-LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT
+WINAPI
+WndProc(
+	HWND hWnd,
+	UINT msg,
+	WPARAM wParam, 
+	LPARAM lParam
+)
 {
 	if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
 		return true;
@@ -148,12 +155,19 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			dx11Renderer.m_pDevice->CreateRenderTargetView(pBackBuffer, nullptr, &dx11Renderer.m_pRenderTargetView);
 			_RELEASE(pBackBuffer);
 		}
+		if (wParam == SIZE_MINIMIZED)
+		{
+			Sleep(1);
+		}
 		return 0;
 	case WM_SYSCOMMAND:
 		break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
+	default:
+		Sleep(1);
+		break;
 	}
 
 	return DefWindowProc(hWnd, msg, wParam, lParam);
@@ -230,6 +244,10 @@ OSR::UserInterface::CreateMainWindow()
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 			continue;
+		}
+		else
+		{
+			Sleep(1);
 		}
 
 		CycleFunc();

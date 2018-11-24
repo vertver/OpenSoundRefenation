@@ -14,5 +14,5 @@
 class AVReader
 {
 public:
-	DLL_API VOID OpenFileToBuffer(LPCWSTR lpPath, LPCWSTR* lpTempPath, LPDWORD dwSize, DWORD dwFormat);
+	DLL_API VOID OpenFileToBuffer(LPCWSTR lpPath, LPCWSTR* lpTempPath, LPDWORD dwSize, DWORD dwFormat, DWORD* lpSampleRate, LPWORD lpChannels, LPWORD Bits);
 };

@@ -9,6 +9,7 @@
 * libsndfile decoder implementation
 *********************************************************/
 #pragma once
+#define ENABLE_SNDFILE_WINDOWS_PROTOTYPES
 #include "sndfile.hh"
 #include "OSR.h"
 
@@ -17,7 +18,7 @@
 class SndFileReader
 {
 public:
-	DLL_API VOID OpenFileToSoundBuffer(LPCWSTR lpPath, BYTE** lpPCMData, LPDWORD dwSize);
+	DLL_API VOID OpenFileToSoundBuffer(LPCWSTR lpPath, VOID** lpOutData, LPDWORD dwSize, WAVEFORMATEX* pFormat);
 
 private:
 	SF_INFO fileInfo;

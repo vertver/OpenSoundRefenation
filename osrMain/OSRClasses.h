@@ -23,15 +23,9 @@ namespace OSR
 	class DLL_API Engine
 	{
 	public:
-		void DecodeFile(LPCWSTR lpPath, LPLOOP_INFO pLoopInfo)
-		{
-			DWORD SampleNumber = 0;
-			loopList.LoadAudioFile(lpPath, USE_WMF, 0, &SampleNumber);
-			*pLoopInfo = *(loopList.GetLoopInfo()->pSampleInfo);
-		}
+		void DecodeFile(LPCWSTR lpPath, LPLOOP_INFO pLoopInfo);
 
-	private:
-		LoopList loopList;
+		LoopList loopList;		
 	};
 
 	class DLL_API Mixer
@@ -45,6 +39,7 @@ namespace OSR
 		void PlaySample();
 
 	private:
+		LPVOID pVSTHost;
 		DWORD LoopNumber; 
 		OSR::Engine osrEngine;
 		XMixer mixer;
@@ -63,11 +58,18 @@ namespace OSR
 	private:
 		HWND MainHwnd;
 	};
-}; 
+};
+
+typedef struct
+{
+	OSR::Engine* pEngine;
+	LPCWSTR lpPath;
+	LPLOOP_INFO pLoopInfo;
+} DECODE_STRUCT;
 
 #include <Shobjidl.h>
 
-class DLL_API TaskbarValue
+class TaskbarValue
 {
 #ifndef _RELEASE1
 #define _RELEASE1(X) if (X) { X->Release(); X = NULL; }

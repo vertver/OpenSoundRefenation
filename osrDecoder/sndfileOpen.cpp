@@ -13,15 +13,31 @@
 VOID
 SndFileReader::OpenFileToSoundBuffer(
 	LPCWSTR lpPath,
-	BYTE** lpPCMData,
-	LPDWORD dwSize
+	VOID** lpOutData,
+	LPDWORD dwSize,
+	WAVEFORMATEX* pFormat
 )
 {
-	LPCSTR lpNewPath = WCSTRToMBCSTR(lpPath);
-	CHAR buf[BUFFER_SIZE] = { NULL };
+	sndFile = sf_wchar_open(lpPath, SFM_READ, &fileInfo);
+	
+	if (!sndFile)
+	{
+		ANSI_LOG(sf_strerror(0));
+		return;
+	}
 
-	sndFile = sf_open(lpNewPath, SFM_READ, &fileInfo);
-	if (!sndFile) { DEBUG_BREAK; }
+	pFormat->nChannels = fileInfo.channels;
+	pFormat->nSamplesPerSec = fileInfo.samplerate;
+	pFormat->cbSize = sizeof(WAVEFORMATEX);
+	pFormat->nAvgBytesPerSec = ((pFormat->nSamplesPerSec * 32 * pFormat->nChannels) / 8);	
+	pFormat->wBitsPerSample = 32;
+	pFormat->nBlockAlign = (pFormat->wBitsPerSample * pFormat->nChannels) / 8;
+	pFormat->wFormatTag = 3;
 
-	UnloadFile((LPVOID)lpPath);
+	*dwSize = fileInfo.frames * fileInfo.channels * sizeof(f32);
+
+	*lpOutData = FastAlloc(fileInfo.frames * fileInfo.channels * sizeof(f32));
+	sf_readf_float(sndFile, (f32*)*lpOutData, fileInfo.frames);
+
+	sf_close(sndFile);
 }

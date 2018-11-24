@@ -9,6 +9,7 @@
 * WASAPI kernel implementation
 *********************************************************/
 #include "stdafx.h"
+#include "IMWASAPI.h"
 
 DLL_API HANDLE hThreadExitEvent = NULL;
 DLL_API HANDLE hThreadLoadSamplesEvent = NULL;
@@ -87,7 +88,7 @@ WASAPIThreadProc(LPVOID pParam)
 
 	while (isPlaying)
 	{
-		DWORD dwWait = 1;//WaitForMultipleObjects(2, hHandlesArray, FALSE, INFINITY);
+		DWORD dwWait = WaitForMultipleObjects(2, hHandlesArray, FALSE, INFINITY);
 		BYTE* pByte = nullptr;
 
 		switch (dwWait)
@@ -97,25 +98,21 @@ WASAPIThreadProc(LPVOID pParam)
 			break;
 		case WAIT_OBJECT_0 + 1:
 		{
-			DWORD dwFrames = 0;
 			DWORD dwPadding = 0;
 			static size_t Samples = 0;
 
-			DWORD dwSleep = hndActual / 10000000 / 10;
-			Sleep(dwSleep);
+			DWORD dwSleep = hndActual / 100000000;
+			Sleep((dwSleep / 2));
 
 			hr = pProc->pEngine->pAudioClient->GetCurrentPadding((UINT32*)&dwPadding);
 
 			if (SUCCEEDED(hr))
 			{
-				dwFrames = FrameSize /* - dwPadding*/;
-
-				DWORD dwFramesToWrite = dwFrames;
+				DWORD dwFramesToWrite = FrameSize;
 
 				hr = pProc->pEngine->pAudioRenderClient->GetBuffer(dwFramesToWrite, &pByte);
 
-				if (hr == AUDCLNT_E_BUFFER_TOO_LARGE)
-					continue;
+				if (hr == AUDCLNT_E_BUFFER_TOO_LARGE) { continue; }
 
 				if (pByte)
 				{
@@ -128,14 +125,6 @@ WASAPIThreadProc(LPVOID pParam)
 			if (FAILED(hr)) 
 			{ 
 				isPlaying = FALSE; 
-
-				if (dwSampleNumber > 127)
-				{
-					for (size_t i = 0; i < 127; i++) { if (SampleArray[i]) delete SampleArray[i]; }
-
-					SampleArray[0] = SampleArray[127];
-					dwSampleNumber = 0;
-				}
 			}
 			else
 			{
@@ -149,8 +138,20 @@ WASAPIThreadProc(LPVOID pParam)
 
 				SampleArray[dwSampleNumber + 1] = Sample->OnBufferEnd(pProc->pLoopInfo);
 				dwSampleNumber++;
-
 				Sample = SampleArray[dwSampleNumber];
+
+				if (pProc->pEngine->pHost)
+				{
+					ProcessAudio(
+						Sample->pOutputBuffer,
+						Sample->pOutputBuffer,
+						dwSampleRate,
+						Sample->BufferSizeOutput,
+						Sample->ChannelsOutput,
+						pProc->pEngine->pHost
+					);
+				}
+
 				Sample->ConvertToPlay(pData, 32);
 				Samples++;
 			}
@@ -159,6 +160,14 @@ WASAPIThreadProc(LPVOID pParam)
 		default:
 			break;
 		}
+	}
+
+	if (dwSampleNumber > 127)
+	{
+		for (size_t i = 0; i < 127; i++) { if (SampleArray[i]) delete SampleArray[i]; }
+
+		SampleArray[0] = SampleArray[127];
+		dwSampleNumber = 0;
 	}
 
 	return 0;
@@ -240,7 +249,7 @@ static REFERENCE_TIME MakeHnsPeriod(UINT32 nFrames, DWORD nSamplesPerSec)
 }
 
 OSRCODE
-IMEngine::CreateDefaultDevice()
+IMEngine::CreateDefaultDevice(REFERENCE_TIME referTime)
 {
 	HRESULT hr = 0;	
 	DWORD dwFrames = 0;	
@@ -277,18 +286,20 @@ IMEngine::CreateDefaultDevice()
 	//#NOTE: can be failed on AC97. Be careful
 	if (FAILED(pAudioClient->GetDevicePeriod(&OutputDeviceInfo.DefaultDevicePeriod, &OutputDeviceInfo.MinimumDevicePeriod)))
 	{
-		OutputDeviceInfo.DefaultDevicePeriod = 100000;
-		OutputDeviceInfo.MinimumDevicePeriod = 30000;
+		OutputDeviceInfo.DefaultDevicePeriod = 1000000;
+		OutputDeviceInfo.MinimumDevicePeriod = 300000;
 	}
 
 	WAVEFORMATEX* closeFormat = nullptr;
 	pAudioClient->GetMixFormat(&closeFormat);
 
+	memcpy(&OutputDeviceInfo.waveFormat, closeFormat, sizeof(WAVEFORMATEX));
+
 	// init audio client
 	hr = pAudioClient->Initialize(
 		AUDCLNT_SHAREMODE_SHARED, 
 		0,
-		1000000,
+		referTime,		
 		0,
 		closeFormat,
 		nullptr
@@ -296,7 +307,6 @@ IMEngine::CreateDefaultDevice()
 
 	// get current buffer size
 	pAudioClient->GetBufferSize((UINT32*)&dwFrames);
-	BufferSize = dwFrames;
 
 	//#NOTE: can be triggered on Windows 7+ systems
 	if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED)
@@ -311,6 +321,9 @@ IMEngine::CreateDefaultDevice()
 		hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTime, 0, closeFormat, nullptr);
 		if (FAILED(hr)) { return MXR_OSR_NO_OUT; }
 	}
+
+	pAudioClient->GetBufferSize((UINT32*)&dwFrames);
+	BufferSize = dwFrames;
 
 	// get render client and set event for output
 	FAILEDX2(pAudioClient->GetService(IID_PPV_ARGS(&pAudioRenderClient)));
@@ -335,6 +348,7 @@ IMEngine::StartDevice(LPVOID pProc)
 
 	WasapiThread = thread.CreateUserThread(nullptr, (ThreadFunc*)(WASAPIThreadProc), (LPVOID)pProc, L"OSR WASAPI worker thread");
 
+	if (hThreadExitEvent) { ResetEvent(hThreadExitEvent); }
 	SetEvent(hStart);
 	while (!hThreadLoadSamplesEvent) { Sleep(0); }
 	SetEvent(hThreadLoadSamplesEvent);
@@ -345,12 +359,18 @@ IMEngine::StartDevice(LPVOID pProc)
 OSRCODE
 IMEngine::StopDevice()
 {
-	if (FAILED(pAudioClient->Stop()))
+	if (pAudioClient)
 	{
-		return MXR_OSR_NO_OUT;
+		if (FAILED(pAudioClient->Stop()))
+		{
+			return MXR_OSR_NO_OUT;
+		}
 	}
 
-	SetEvent(hExit);
+	thread.EnterSection();
+	if (hThreadLoadSamplesEvent) { ResetEvent(hThreadLoadSamplesEvent); }
+	if (hThreadExitEvent) { SetEvent(hThreadExitEvent); }
+	thread.LeaveSection();
 
 	return OSR_SUCCESS;
 }

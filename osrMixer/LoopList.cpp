@@ -68,10 +68,13 @@ LoopList::LoadAudioFile(
 
 	switch (dwDecoderType)
 	{
-	case NULL:
 	case USE_FFMPEG:
+	{
+		WORD Bits = 0;
+		WORD Channels = 0;
+		DWORD SampleRate = 0;
 		// open file		
-		ffReader.OpenFileToBuffer(lpFilePath, (LPCWSTR*)&szString, (LPDWORD)&lpFileInfo[dwCurrentCountOfFiles].FileSize, dwFormat);
+		ffReader.OpenFileToBuffer(lpFilePath, (LPCWSTR*)&szString, (LPDWORD)&lpFileInfo[dwCurrentCountOfFiles].FileSize, 2, &SampleRate, &Channels, &Bits);
 
 		// read big sample
 		ReadAudioFile(
@@ -81,18 +84,61 @@ LoopList::LoadAudioFile(
 
 		//#TODO: dynamic WAVEFORMATEX
 		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.cbSize = sizeof(WAVEFORMATEX);
-		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.nBlockAlign = 4;
-		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.nChannels = 2;
-		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.nSamplesPerSec = 44100;
-		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.wBitsPerSample = 32;
-		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.wFormatTag = 3;
-		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.nAvgBytesPerSec = ((44100 * 32 * 2) / 8);
+		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.nChannels = Channels;
+		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.nSamplesPerSec = SampleRate;
+
+		if (!Bits)
+		{
+			lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.wBitsPerSample = 32;
+		}
+		else
+		{
+			lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.wBitsPerSample = Bits;
+		}
+
+		if (Bits >= 32)
+		{
+			lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.wFormatTag = 3;
+		}
+		else
+		{
+			lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.wFormatTag = 1;
+		}
+
+		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.nBlockAlign = Channels * Bits / 8;
+		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat.nAvgBytesPerSec = ((SampleRate * Bits * Channels) / 8);
 
 		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleDuration =
 			(lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleSize) /
 			(waveFormat->nSamplesPerSec + waveFormat->wBitsPerSample + waveFormat->nChannels);
 
+	}
 		break;
+	case USE_LIBSNDFILE:
+	{
+		SndFileReader sReader = {};
+		WAVEFORMATEX waveFormat = { 0 };
+
+		sReader.OpenFileToSoundBuffer(lpFilePath,
+			(VOID**)&lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->pSample,
+			(LPDWORD)&lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleSize,
+			&waveFormat
+		);
+
+		if (lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->pSample)
+		{
+			lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleDuration =
+				(lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleSize - dwHeaderSize) /
+				(waveFormat.nSamplesPerSec + waveFormat.wBitsPerSample + waveFormat.nChannels);
+
+			lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleNumber = dwCurrentCountOfFiles;
+			lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat = waveFormat;
+			lpFileInfo[dwCurrentCountOfFiles].FileSize = lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleSize;
+			lpFileInfo[dwCurrentCountOfFiles].SampleCount = NULL;
+
+			break;
+		}
+	}
 	case USE_WMF:
 		if (mfReader.IsSupportedByMWF(lpFilePath, &waveFormat))
 		{
@@ -114,32 +160,33 @@ LoopList::LoadAudioFile(
 			CoTaskMemFree(waveFormat);
 			break;
 		}
-	case USE_LIBSNDFILE:
+	case NULL:
 	default:
-		ReadAudioFileEx(
+		if (OSRSUCCEDDED(ReadAudioFileEx(
 			lpFilePath,
 			(VOID**)&lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->pSample,
 			(LONGLONG*)&lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleSize,
 			&dwHeaderSize
-		);
+		)))
+		{
+			sCode = GetWaveFormatExtented(
+				(BYTE*)lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->pSample,
+				lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleSize,
+				&lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat
+			);
 
-		sCode = GetWaveFormatExtented(
-			(BYTE*)lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->pSample,
-			lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleSize,
-			&lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->waveFormat
-		);
+			if (OSRFAILED(sCode))
+			{
+				FreePointer((VOID*)lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->pSample, NULL, NULL);
+				return;
+			}
 
-		if (OSRFAILED(sCode))
-		{  
-			FreePointer((VOID*)lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->pSample, NULL, NULL);
-			return;
+			lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleDuration =
+				(lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleSize - dwHeaderSize) /
+				(waveFormat->nSamplesPerSec + waveFormat->wBitsPerSample + waveFormat->nChannels);
+
+			break;
 		}
-
-		lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleDuration = 
-			(lpFileInfo[dwCurrentCountOfFiles].pSampleInfo->SampleSize - dwHeaderSize) / 
-			(waveFormat->nSamplesPerSec + waveFormat->wBitsPerSample + waveFormat->nChannels);	
-		
-		break;
 	}
 
 	*pSampleNumber = dwCurrentCountOfFiles;
