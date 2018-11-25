@@ -37,6 +37,7 @@ namespace OSR
 		void CreateMixer(HWND hwnd);
 		void LoadSample(LPCWSTR lpPath);
 		void PlaySample();
+		void StopSample();
 
 	private:
 		LPVOID pVSTHost;

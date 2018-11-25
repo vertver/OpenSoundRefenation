@@ -14,6 +14,7 @@
 DX11Render dx11Renderer;
 VUMeter vMeter;
 bool Window_Flag_Resizeing = false;
+DLL_API bool IsBlur = false;
 
 OSR::Mixer OutMixer;
 
@@ -60,9 +61,19 @@ CycleFunc()
 		ImGui::SliderFloat("Track Position", &f, 0.0f, 1.0f);
 		ImGui::ColorEdit3("Clear color", (float*)&clear_color);
 
-		if (ImGui::Button("Button"))
+		if (ImGui::Button("Play Audio"))
 		{
 			OutMixer.PlaySample();
+		}
+
+		if (ImGui::Button("Stop Audio"))
+		{
+			OutMixer.StopSample();
+		}
+
+		if (ImGui::Button("Blur On/Off"))
+		{
+			IsBlur = !IsBlur;
 		}
 
 		ImGui::SameLine();
@@ -74,9 +85,34 @@ CycleFunc()
 
 	// Rendering
 	ImGui::Render();
-	dx11Renderer.m_pContext->OMSetRenderTargets(1, &dx11Renderer.m_pRenderTargetView, nullptr);
-	dx11Renderer.m_pContext->ClearRenderTargetView(dx11Renderer.m_pRenderTargetView, (float*)&clear_color);
+
+	static ID3DBlob* pBlurShader = nullptr;
+
+	RECT clrect;
+	GetClientRect(dx11Renderer.GetCurrentHwnd(), &clrect);
+
+	if (IsBlur)
+	{
+		dx11Renderer.BeginRenderBlur(dx11Renderer.m_pContext, clrect.bottom - clrect.top, clrect.right - clrect.left);
+	} 
+	else 
+	{
+		dx11Renderer.m_pContext->OMSetRenderTargets(1, &dx11Renderer.m_pRenderTargetView, nullptr);
+		dx11Renderer.m_pContext->ClearRenderTargetView(dx11Renderer.m_pRenderTargetView, (float*)&clear_color);
+	}
+
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+	if (IsBlur)
+	{
+		dx11Renderer.EndRenderBlur(dx11Renderer.m_pContext, clrect.bottom - clrect.top, clrect.right - clrect.left);
+	}
+
+	// imgui popup
+	//ImGui::Begin("Text");
+	//ImGui::Text("Test");
+	//ImGui::End();
+	/*ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());*/
 
 	dx11Renderer.m_pDXGISwapChain->Present(1, 0); // Present with vsync
 }
@@ -128,7 +164,7 @@ WndProc(
 	case WM_COPY:
 		break;
 	case WM_ENTERSIZEMOVE:
-		SetTimer(hWnd, 2, 16, nullptr);
+		SetTimer(hWnd, 2, 4, nullptr);
 		Window_Flag_Resizeing = true;
 		return 0;
 	case WM_EXITSIZEMOVE:

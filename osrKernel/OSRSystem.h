@@ -95,7 +95,7 @@ public:
 
 		for (u32 i = 0; i < Channels; i++)
 		{
-			if (!pOutputBuffer[i]) { pOutputBuffer[i] = (f32*)FastAlloc(BufferSize * sizeof(f32)); }
+			if (!pOutputBuffer[i]) { pOutputBuffer[i] = (f32*)AdvanceAlloc(BufferSize * sizeof(f32), NULL); }
 		}
 
 		switch (Bits)
@@ -253,8 +253,8 @@ public:
 	{
 		for (u32 i = 0; i < 8; i++)
 		{
-			FREEKERNELHEAP(pOutputBuffer[i]);
-			FREEKERNELHEAP(pInputBuffer[i]);
+			FREEPROCESSHEAP(pOutputBuffer[i]);
+			FREEPROCESSHEAP(pInputBuffer[i]);
 		}
 	}
 

@@ -21,8 +21,8 @@ WINAPIV
 WASAPIThreadProc(LPVOID pParam)
 {
 	// blockalign = channels * bits / 8
-	hThreadExitEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-	hThreadLoadSamplesEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+	if (!hThreadExitEvent) hThreadExitEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+	if (!hThreadLoadSamplesEvent) hThreadLoadSamplesEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
 	
 	HRESULT hr = 0;
 	DWORD dwTask = 0;
@@ -106,9 +106,11 @@ WASAPIThreadProc(LPVOID pParam)
 
 			hr = pProc->pEngine->pAudioClient->GetCurrentPadding((UINT32*)&dwPadding);
 
+			DWORD dwFramesToWrite = FrameSize;
+
 			if (SUCCEEDED(hr))
 			{
-				DWORD dwFramesToWrite = FrameSize;
+				
 
 				hr = pProc->pEngine->pAudioRenderClient->GetBuffer(dwFramesToWrite, &pByte);
 
@@ -125,12 +127,29 @@ WASAPIThreadProc(LPVOID pParam)
 			if (FAILED(hr)) 
 			{ 
 				isPlaying = FALSE; 
+
+				hr = pProc->pEngine->pAudioRenderClient->GetBuffer(dwFramesToWrite, &pByte);
+
+				memset(pData, 0, dwFramesToWrite * dwChannels * sizeof(f32));
+
+				if (pByte)
+				{
+					memcpy(pByte, pData, dwFramesToWrite * dwChannels * sizeof(f32));
+				}
+
+				hr = pProc->pEngine->pAudioRenderClient->ReleaseBuffer(dwFramesToWrite, 0);
 			}
 			else
 			{
 				if (dwSampleNumber > 127)
 				{
-					for (size_t i = 0; i < 127; i++) { if (SampleArray[i]) delete SampleArray[i]; }
+					for (size_t i = 0; i < 127; i++)
+					{
+						if (SampleArray[i]) 
+						{
+							delete SampleArray[i]; SampleArray[i] = nullptr;
+						}
+					}
 
 					SampleArray[0] = SampleArray[127];
 					dwSampleNumber = 0;
@@ -162,12 +181,12 @@ WASAPIThreadProc(LPVOID pParam)
 		}
 	}
 
-	if (dwSampleNumber > 127)
+	for (size_t i = 0; i < dwSampleNumber; i++)
 	{
-		for (size_t i = 0; i < 127; i++) { if (SampleArray[i]) delete SampleArray[i]; }
-
-		SampleArray[0] = SampleArray[127];
-		dwSampleNumber = 0;
+		if (SampleArray[i])
+		{
+			delete SampleArray[i]; SampleArray[i] = nullptr;
+		}
 	}
 
 	return 0;
@@ -341,17 +360,31 @@ ThreadSystem thread;
 OSRCODE
 IMEngine::StartDevice(LPVOID pProc)
 {
-	if (FAILED(pAudioClient->Start()))
+	static DWORD dwStart = 0;
+	WASAPI_SAMPLE_PROC* pProce = (WASAPI_SAMPLE_PROC*)pProc;
+
+	if (dwStart)
 	{
-		return MXR_OSR_NO_OUT;
+		Sleep(0);
 	}
 
-	WasapiThread = thread.CreateUserThread(nullptr, (ThreadFunc*)(WASAPIThreadProc), (LPVOID)pProc, L"OSR WASAPI worker thread");
+	if (pProce->pLoopInfo->pSample)
+	{
+		WasapiThread = thread.CreateUserThread(nullptr, (ThreadFunc*)(WASAPIThreadProc), (LPVOID)pProc, L"OSR WASAPI worker thread");
 
-	if (hThreadExitEvent) { ResetEvent(hThreadExitEvent); }
-	SetEvent(hStart);
-	while (!hThreadLoadSamplesEvent) { Sleep(0); }
-	SetEvent(hThreadLoadSamplesEvent);
+		if (FAILED(pAudioClient->Start()))
+		{
+			return MXR_OSR_NO_OUT;
+		}
+
+		if (hThreadExitEvent) { ResetEvent(hThreadExitEvent); }
+		if (hThreadLoadSamplesEvent) { ResetEvent(hThreadLoadSamplesEvent); }
+		SetEvent(hStart);
+		while (!hThreadLoadSamplesEvent) { Sleep(0); }
+		SetEvent(hThreadLoadSamplesEvent);
+	}
+
+	dwStart++;
 
 	return OSR_SUCCESS;
 }
@@ -368,8 +401,8 @@ IMEngine::StopDevice()
 	}
 
 	thread.EnterSection();
-	if (hThreadLoadSamplesEvent) { ResetEvent(hThreadLoadSamplesEvent); }
-	if (hThreadExitEvent) { SetEvent(hThreadExitEvent); }
+	if (hThreadLoadSamplesEvent)	{ ResetEvent(hThreadLoadSamplesEvent); }
+	if (hThreadExitEvent)			{ SetEvent(hThreadExitEvent); }
 	thread.LeaveSection();
 
 	return OSR_SUCCESS;

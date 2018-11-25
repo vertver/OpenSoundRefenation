@@ -1,6 +1,7 @@
-﻿  OSRUI.cpp
-i:\osr\opensoundrefenation\osrmain\osrui.cpp(31): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\osrui.cpp(32): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\osrui.cpp(45): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\osrui.cpp(47): warning C4305: '+=': truncation from 'double' to 'float'
+﻿  DX11RenderMain.cpp
+i:\osr\opensoundrefenation\osrmain\dx11rendermain.cpp(287): warning C4244: '=': conversion from 'DWORD' to 'FLOAT', possible loss of data
+i:\osr\opensoundrefenation\osrmain\dx11rendermain.cpp(288): warning C4244: '=': conversion from 'DWORD' to 'FLOAT', possible loss of data
+i:\osr\opensoundrefenation\osrmain\dx11rendermain.cpp(294): warning C4838: conversion from 'DWORD' to 'LONG' requires a narrowing conversion
+i:\osr\opensoundrefenation\osrmain\dx11rendermain.cpp(297): warning C4838: conversion from 'DWORD' to 'float' requires a narrowing conversion
+i:\osr\opensoundrefenation\osrmain\dx11rendermain.cpp(297): warning C4244: 'initializing': conversion from 'DWORD' to 'float', possible loss of data
   osrMain.vcxproj -> I:\OSR\OpenSoundRefenation\\debug\osrMain.dll

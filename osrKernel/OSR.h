@@ -30,9 +30,9 @@
 #ifdef WIN32
 #define OSR_DECODER_NAME		L##"osrDecoder.dll"
 #define OSR_MIXER_NAME			L##"osrMixer.dll"
-#define ANSI_LOG(X)				OutputDebugStringA(X); OutputDebugStringA("\n");
-#define MSG_LOG(X)				OutputDebugStringW(L##X); OutputDebugStringW(L"\n");
-#define WMSG_LOG(X)				OutputDebugStringW(X); OutputDebugStringW(L"\n");
+#define ANSI_LOG(X)				OutputDebugStringA(X);		OutputDebugStringA("\n");
+#define MSG_LOG(X)				OutputDebugStringW(L##X);	OutputDebugStringW(L"\n");
+#define WMSG_LOG(X)				OutputDebugStringW(X);		OutputDebugStringW(L"\n");
 #else
 #define MSG_LOG(X)				printf(X); printf("\n");
 #define WMSG_LOG(X)				MSG_LOG(X)
