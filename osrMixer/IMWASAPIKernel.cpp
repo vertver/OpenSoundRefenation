@@ -18,7 +18,9 @@ OSRSample* SampleArray[128] = { nullptr };
 
 DWORD
 WINAPIV
-WASAPIThreadProc(LPVOID pParam)
+WASAPIThreadProc(
+	LPVOID pParam
+)
 {
 	// blockalign = channels * bits / 8
 	if (!hThreadExitEvent) hThreadExitEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
@@ -32,7 +34,7 @@ WASAPIThreadProc(LPVOID pParam)
 	OSRSample* Sample = nullptr;
 	HANDLE hHandlesArray[] = { hThreadExitEvent, hThreadLoadSamplesEvent };
 	WASAPI_SAMPLE_PROC* pProc = reinterpret_cast<WASAPI_SAMPLE_PROC*>(pParam);
-	static BYTE* pData = nullptr;
+	BYTE* pData = nullptr;
 
 	DWORD dwChannels = pProc->pEngine->GetOutputInfo()->waveFormat.nChannels;
 	DWORD dwBits = pProc->pEngine->GetOutputInfo()->waveFormat.wBitsPerSample;
@@ -85,6 +87,7 @@ WASAPIThreadProc(LPVOID pParam)
 	Sample->ConvertToPlay((VOID*)pData, 32);
 
 	REFERENCE_TIME hndActual = 1000000 * FrameSize * dwSampleRate;
+	size_t Samples = 0;
 
 	while (isPlaying)
 	{
@@ -99,8 +102,6 @@ WASAPIThreadProc(LPVOID pParam)
 		case WAIT_OBJECT_0 + 1:
 		{
 			DWORD dwPadding = 0;
-			static size_t Samples = 0;
-
 			DWORD dwSleep = hndActual / 100000000;
 			Sleep((dwSleep / 2));
 
@@ -109,9 +110,7 @@ WASAPIThreadProc(LPVOID pParam)
 			DWORD dwFramesToWrite = FrameSize;
 
 			if (SUCCEEDED(hr))
-			{
-				
-
+			{		
 				hr = pProc->pEngine->pAudioRenderClient->GetBuffer(dwFramesToWrite, &pByte);
 
 				if (hr == AUDCLNT_E_BUFFER_TOO_LARGE) { continue; }
@@ -127,17 +126,6 @@ WASAPIThreadProc(LPVOID pParam)
 			if (FAILED(hr)) 
 			{ 
 				isPlaying = FALSE; 
-
-				hr = pProc->pEngine->pAudioRenderClient->GetBuffer(dwFramesToWrite, &pByte);
-
-				memset(pData, 0, dwFramesToWrite * dwChannels * sizeof(f32));
-
-				if (pByte)
-				{
-					memcpy(pByte, pData, dwFramesToWrite * dwChannels * sizeof(f32));
-				}
-
-				hr = pProc->pEngine->pAudioRenderClient->ReleaseBuffer(dwFramesToWrite, 0);
 			}
 			else
 			{
@@ -147,12 +135,18 @@ WASAPIThreadProc(LPVOID pParam)
 					{
 						if (SampleArray[i]) 
 						{
-							delete SampleArray[i]; SampleArray[i] = nullptr;
+							delete SampleArray[i]; 
+							SampleArray[i] = nullptr;
 						}
 					}
 
 					SampleArray[0] = SampleArray[127];
 					dwSampleNumber = 0;
+				}
+
+				if (pProc->pEngine->pTaskValue) 
+				{
+					pProc->pEngine->pTaskValue->SetValue(Sample->SamplePosition, pProc->pLoopInfo->SampleSize);
 				}
 
 				SampleArray[dwSampleNumber + 1] = Sample->OnBufferEnd(pProc->pLoopInfo);
@@ -181,11 +175,20 @@ WASAPIThreadProc(LPVOID pParam)
 		}
 	}
 
-	for (size_t i = 0; i < dwSampleNumber; i++)
+	pProc->pEngine->pTaskValue->SetCompleted();
+	FREEKERNELHEAP(pData);
+	if (hMMCSS) { AvRevertMmThreadCharacteristics(hMMCSS); }
+
+	if (!Sample) { delete Sample; Sample = nullptr; }
+	
+	DWORD dwSampleN = dwSampleNumber + 1;
+	if (dwSampleN > 127) { dwSampleN = 127; }
+	for (size_t i = 0; i < dwSampleN; i++)
 	{
 		if (SampleArray[i])
 		{
-			delete SampleArray[i]; SampleArray[i] = nullptr;
+			delete SampleArray[i]; 
+			SampleArray[i] = nullptr;
 		}
 	}
 
@@ -205,6 +208,8 @@ IMEngine::InitEngine(
 
 	{ 
 		IMMDevice* pRenderer = nullptr;
+
+		if (!pTaskValue) { pTaskValue = new TaskbarValue(hwnd); }
 
 		// create instance for enumerator
 		if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&deviceEnumerator))))
@@ -268,7 +273,9 @@ static REFERENCE_TIME MakeHnsPeriod(UINT32 nFrames, DWORD nSamplesPerSec)
 }
 
 OSRCODE
-IMEngine::CreateDefaultDevice(REFERENCE_TIME referTime)
+IMEngine::CreateDefaultDevice(
+	REFERENCE_TIME referTime
+)
 {
 	HRESULT hr = 0;	
 	DWORD dwFrames = 0;	
@@ -276,13 +283,14 @@ IMEngine::CreateDefaultDevice(REFERENCE_TIME referTime)
 	IMMDevice* pRenderer = nullptr;
 	REFERENCE_TIME refTime = 0;
 	IPropertyStore *pProperty = nullptr;
-	IMMDeviceEnumerator* deviceEnumerator = nullptr;
+	IMMDeviceEnumerator*& deviceEnumerator = enumerator;
 
 	// create instance for enumerator
 	if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&deviceEnumerator))))
 	{
 		// get default device
 		FAILEDX2(deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &pRenderer));
+		OutputDeviceInfo.device = pRenderer;
 	}
 	else
 	{
@@ -348,8 +356,6 @@ IMEngine::CreateDefaultDevice(REFERENCE_TIME referTime)
 	FAILEDX2(pAudioClient->GetService(IID_PPV_ARGS(&pAudioRenderClient)));
 
 	hOutput = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-	//FAILEDX2(pAudioClient->SetEventHandle(hOutput));
-
 	CoTaskMemFree(closeFormat);
 
 	return OSR_SUCCESS;
@@ -358,30 +364,31 @@ IMEngine::CreateDefaultDevice(REFERENCE_TIME referTime)
 ThreadSystem thread;
 
 OSRCODE
-IMEngine::StartDevice(LPVOID pProc)
+IMEngine::StartDevice(
+	LPVOID pProc
+)
 {
 	static DWORD dwStart = 0;
 	WASAPI_SAMPLE_PROC* pProce = (WASAPI_SAMPLE_PROC*)pProc;
 
-	if (dwStart)
-	{
-		Sleep(0);
-	}
-
 	if (pProce->pLoopInfo->pSample)
 	{
-		WasapiThread = thread.CreateUserThread(nullptr, (ThreadFunc*)(WASAPIThreadProc), (LPVOID)pProc, L"OSR WASAPI worker thread");
-
-		if (FAILED(pAudioClient->Start()))
+		if (!WasapiThread)
 		{
-			return MXR_OSR_NO_OUT;
-		}
+			static const wchar_t* WasapiString = L"OSR WASAPI worker thread";
+			WasapiThread = thread.CreateUserThread(nullptr, (ThreadFunc*)(WASAPIThreadProc), (LPVOID)pProc, WasapiString);
 
-		if (hThreadExitEvent) { ResetEvent(hThreadExitEvent); }
-		if (hThreadLoadSamplesEvent) { ResetEvent(hThreadLoadSamplesEvent); }
-		SetEvent(hStart);
-		while (!hThreadLoadSamplesEvent) { Sleep(0); }
-		SetEvent(hThreadLoadSamplesEvent);
+			if (FAILED(pAudioClient->Start()))
+			{
+				return MXR_OSR_NO_OUT;
+			}
+
+			if (hThreadExitEvent) { ResetEvent(hThreadExitEvent); }
+			if (hThreadLoadSamplesEvent) { ResetEvent(hThreadLoadSamplesEvent); }
+			SetEvent(hStart);
+			while (!hThreadLoadSamplesEvent) { Sleep(0); }
+			SetEvent(hThreadLoadSamplesEvent);
+		}
 	}
 
 	dwStart++;
@@ -400,10 +407,11 @@ IMEngine::StopDevice()
 		}
 	}
 
-	thread.EnterSection();
+	WasapiThread = 0;
+
 	if (hThreadLoadSamplesEvent)	{ ResetEvent(hThreadLoadSamplesEvent); }
 	if (hThreadExitEvent)			{ SetEvent(hThreadExitEvent); }
-	thread.LeaveSection();
+	Sleep(100);
 
 	return OSR_SUCCESS;
 }

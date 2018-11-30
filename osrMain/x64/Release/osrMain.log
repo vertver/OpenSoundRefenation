@@ -1,38 +1,8 @@
-﻿  stdafx.cpp
-i:\osr\opensoundrefenation\osrmain\osrclasses.h(51): warning C4251: 'OSR::Mixer::CurrentSample': class 'OSRSample' needs to have dll-interface to be used by clients of class 'OSR::Mixer'
-  i:\osr\opensoundrefenation\osrkernel\osrsystem.h(38): note: see declaration of 'OSRSample'
-  imgui.cpp
-  imgui_demo.cpp
-  imgui_draw.cpp
-  imgui_impl_dx11.cpp
-  imgui_impl_dx9.cpp
-  imgui_impl_win32.cpp
-  imgui_widgets.cpp
-  dllmain.cpp
-  DX11RenderMain.cpp
-  osrMain.cpp
-  OSRMixer.cpp
-  OSRUI.cpp
-i:\osr\opensoundrefenation\osrmain\osrui.cpp(31): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\osrui.cpp(32): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\osrui.cpp(45): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\osrui.cpp(47): warning C4305: '+=': truncation from 'double' to 'float'
-  VUMeter.cpp
-i:\osr\opensoundrefenation\osrmain\vumeter.cpp(26): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\vumeter.cpp(27): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\vumeter.cpp(67): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\vumeter.cpp(68): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\vumeter.cpp(69): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\vumeter.cpp(71): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\vumeter.cpp(72): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\vumeter.cpp(73): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\vumeter.cpp(137): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\vumeter.cpp(138): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\vumeter.cpp(143): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\vumeter.cpp(144): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-i:\osr\opensoundrefenation\osrmain\vumeter.cpp(167): warning C4244: 'initializing': conversion from 'double' to 'DWORD', possible loss of data
+﻿  OSRMixer.cpp
      Creating library I:\OSR\OpenSoundRefenation\\release\osrMain.lib and object I:\OSR\OpenSoundRefenation\\release\osrMain.exp
   Generating code
-  All 1658 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  21 of 1686 functions ( 1.2%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    4 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   osrMain.vcxproj -> I:\OSR\OpenSoundRefenation\\release\osrMain.dll

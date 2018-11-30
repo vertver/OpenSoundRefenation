@@ -15,12 +15,82 @@ DX11Render dx11Renderer;
 VUMeter vMeter;
 bool Window_Flag_Resizeing = false;
 DLL_API bool IsBlur = false;
+DLL_API bool IsLoad = false;
+DLL_API float ProgressBartest = 0.0;
 
 OSR::Mixer OutMixer;
 
 VOID
 OSR::UserInterface::CreateApplicationMenu()
 {
+}
+
+
+VOID 
+ImDrawCallbackPostBlur(
+	const ImDrawList* parent_list,
+	const ImDrawCmd* cmd
+) 
+{
+	ID3D11DeviceContext* pCustomDeviceContext = dx11Renderer.m_pContext;
+	ImGuiIO* mainio = (ImGuiIO*)cmd->UserCallbackData;
+
+	if (IsBlur && mainio) 
+	{
+		struct BACKUP_DX11_STATE
+		{
+			UINT                        ScissorRectsCount, ViewportsCount;
+			D3D11_RECT                  ScissorRects[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
+			D3D11_VIEWPORT              Viewports[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
+			ID3D11RasterizerState*      RS;
+			ID3D11BlendState*           BlendState;
+			FLOAT                       BlendFactor[4];
+			UINT                        SampleMask;
+			UINT                        StencilRef;
+			ID3D11DepthStencilState*    DepthStencilState;
+			ID3D11ShaderResourceView*   PSShaderResource;
+			ID3D11SamplerState*         PSSampler;
+			ID3D11PixelShader*          PS;
+			ID3D11VertexShader*         VS;
+			UINT                        PSInstancesCount, VSInstancesCount;
+			ID3D11ClassInstance*        PSInstances[256], *VSInstances[256];   // 256 is max according to PSSetShader documentation
+			D3D11_PRIMITIVE_TOPOLOGY    PrimitiveTopology;
+			ID3D11Buffer*               IndexBuffer, *VertexBuffer, *VSConstantBuffer;
+			UINT                        IndexBufferOffset, VertexBufferStride, VertexBufferOffset;
+			DXGI_FORMAT                 IndexBufferFormat;
+			ID3D11InputLayout*          InputLayout;
+		};
+
+		BACKUP_DX11_STATE old = {};
+		old.ScissorRectsCount = old.ViewportsCount = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
+		pCustomDeviceContext->RSGetScissorRects(&old.ScissorRectsCount, old.ScissorRects);
+		pCustomDeviceContext->RSGetViewports(&old.ViewportsCount, old.Viewports);
+		pCustomDeviceContext->PSGetShaderResources(0, 1, &old.PSShaderResource);
+
+		old.PSInstancesCount = old.VSInstancesCount = 256;
+
+		pCustomDeviceContext->PSGetShader(&old.PS, old.PSInstances, &old.PSInstancesCount);
+		pCustomDeviceContext->VSGetShader(&old.VS, old.VSInstances, &old.VSInstancesCount);
+		pCustomDeviceContext->IAGetPrimitiveTopology(&old.PrimitiveTopology);
+		pCustomDeviceContext->IAGetIndexBuffer(&old.IndexBuffer, &old.IndexBufferFormat, &old.IndexBufferOffset);
+		pCustomDeviceContext->IAGetVertexBuffers(0, 1, &old.VertexBuffer, &old.VertexBufferStride, &old.VertexBufferOffset);
+		pCustomDeviceContext->IAGetInputLayout(&old.InputLayout);
+
+		dx11Renderer.EndRenderBlur(dx11Renderer.m_pContext, mainio->DisplaySize.y, mainio->DisplaySize.x);
+
+		// Restore modified DX state
+		pCustomDeviceContext->RSSetScissorRects(old.ScissorRectsCount, old.ScissorRects);
+		pCustomDeviceContext->RSSetViewports(old.ViewportsCount, old.Viewports);
+		pCustomDeviceContext->PSSetShaderResources(0, 1, &old.PSShaderResource); if (old.PSShaderResource) old.PSShaderResource->Release();
+		pCustomDeviceContext->PSSetShader(old.PS, old.PSInstances, old.PSInstancesCount); if (old.PS) old.PS->Release();
+		for (UINT i = 0; i < old.PSInstancesCount; i++) if (old.PSInstances[i]) old.PSInstances[i]->Release();
+		pCustomDeviceContext->VSSetShader(old.VS, old.VSInstances, old.VSInstancesCount); if (old.VS) old.VS->Release();
+		for (UINT i = 0; i < old.VSInstancesCount; i++) if (old.VSInstances[i]) old.VSInstances[i]->Release();
+		pCustomDeviceContext->IASetPrimitiveTopology(old.PrimitiveTopology);
+		pCustomDeviceContext->IASetIndexBuffer(old.IndexBuffer, old.IndexBufferFormat, old.IndexBufferOffset); if (old.IndexBuffer) old.IndexBuffer->Release();
+		pCustomDeviceContext->IASetVertexBuffers(0, 1, &old.VertexBuffer, &old.VertexBufferStride, &old.VertexBufferOffset); if (old.VertexBuffer) old.VertexBuffer->Release();
+		pCustomDeviceContext->IASetInputLayout(old.InputLayout); if (old.InputLayout) old.InputLayout->Release();
+	}
 }
 
 VOID
@@ -42,8 +112,18 @@ CycleFunc()
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 
-	ImVec2 RegionAvail = ImGui::GetContentRegionAvail();
-	vMeter.DrawLevels(RegionAvail.x - 30, RegionAvail.y - 50.0, L, R, LS, RS, peakdetectL, false);
+	static bool FirstStart = true;
+	if (FirstStart) {
+		ImGui::SetNextWindowSize(ImVec2(100, 300)); FirstStart = false;
+	}
+
+	if (ImGui::Begin("VU Meter", nullptr))
+	{
+		ImVec2 RegionAvail = ImGui::GetContentRegionAvail();
+		vMeter.DrawLevels(RegionAvail.x - 30, RegionAvail.y - 50.0, L, R, LS, RS, peakdetectL, false);
+	}
+	ImGui::End();
+	
 
 	mnmm += 0.1;
 	LS *= 0.995f;
@@ -73,7 +153,7 @@ CycleFunc()
 
 		if (ImGui::Button("Blur On/Off"))
 		{
-			IsBlur = !IsBlur;
+			IsLoad = !IsLoad;
 		}
 
 		ImGui::SameLine();
@@ -82,18 +162,35 @@ CycleFunc()
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::End();
 	}
+	
+
+	ImGuiIO& iomain = ImGui::GetIO();
+	static ImVec2 LoadMaxContext = ImVec2(0, 0);
+	ImGui::SetNextWindowPos(ImVec2(iomain.DisplaySize.x / 2 - LoadMaxContext.x/2, iomain.DisplaySize.y / 2 - LoadMaxContext.y/2));
+	
+	if (IsLoad)
+	{
+		IsBlur = IsLoad;
+		ImGui::BeginTooltip();
+
+		ImDrawList* BlurDC2 = ImGui::GetWindowDrawList();
+		BlurDC2->AddCallback(ImDrawCallbackPostBlur, (void*)&iomain);
+
+		ImGui::ProgressBar(ProgressBartest, ImVec2(iomain.DisplaySize.x * 0.4, iomain.DisplaySize.y * 0.1), "");
+		LoadMaxContext = ImGui::GetContentRegionMax();
+		ImGui::EndTooltip();
+	}
+	else
+	{
+		IsBlur = IsLoad;
+	}
 
 	// Rendering
 	ImGui::Render();
 
-	static ID3DBlob* pBlurShader = nullptr;
-
-	RECT clrect;
-	GetClientRect(dx11Renderer.GetCurrentHwnd(), &clrect);
-
 	if (IsBlur)
 	{
-		dx11Renderer.BeginRenderBlur(dx11Renderer.m_pContext, clrect.bottom - clrect.top, clrect.right - clrect.left);
+		dx11Renderer.BeginRenderBlur(dx11Renderer.m_pContext, iomain.DisplaySize.y, iomain.DisplaySize.x);
 	} 
 	else 
 	{
@@ -102,18 +199,7 @@ CycleFunc()
 	}
 
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
-	if (IsBlur)
-	{
-		dx11Renderer.EndRenderBlur(dx11Renderer.m_pContext, clrect.bottom - clrect.top, clrect.right - clrect.left);
-	}
-
-	// imgui popup
-	//ImGui::Begin("Text");
-	//ImGui::Text("Test");
-	//ImGui::End();
-	/*ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());*/
-
+	
 	dx11Renderer.m_pDXGISwapChain->Present(1, 0); // Present with vsync
 }
 

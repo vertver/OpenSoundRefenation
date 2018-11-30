@@ -9,6 +9,7 @@ DWORD SamplesCount = 0;
 size_t uPlay;
 
 extern DLL_API bool IsBlur;
+extern DLL_API bool IsLoad; 
 
 VOID
 WINAPIV
@@ -16,14 +17,14 @@ DecodeFileProc(
 	LPVOID pProc
 )
 {
-	IsBlur = true;
+	IsLoad = true;
 	DECODE_STRUCT* pStruct = (DECODE_STRUCT*)pProc;
 	
 	DWORD SampleNumber = 0;
 	pStruct->pEngine->loopList.LoadAudioFile(pStruct->lpPath, USE_LIBSNDFILE, 0, &SampleNumber);
 	*pStruct->pLoopInfo = *(pStruct->pEngine->loopList.GetLoopInfo()->pSampleInfo);
 	SetEvent(hStartEvent);
-	IsBlur = false;
+	IsLoad = false;
 } 
 
 void
@@ -52,14 +53,14 @@ OSR::Mixer::CreateMixer(
 )
 {
 	static VSTHost vstHost = {};
-	pVSTHost = &vstHost;
+	pVSTHost = nullptr;//&vstHost;
 
 	eEngine.InitEngine(hwnd);
 	eEngine.CreateDefaultDevice(1000000);
 	eEngine.pHost = (VSTHost*)pVSTHost;
 
-	eEngine.pHost->LoadPlugin(L"I:\\VSTPlugins\\FabFilter Pro-Q 2 x64.dll");
-	eEngine.pHost->InitPlugin(eEngine.GetOutputInfo()->waveFormat.nSamplesPerSec, eEngine.GetBufferSize() * eEngine.GetOutputInfo()->waveFormat.nChannels);
+	//eEngine.pHost->LoadPlugin(L"I:\\VSTPlugins\\FabFilter Pro-Q 2 x64.dll");
+	//eEngine.pHost->InitPlugin(eEngine.GetOutputInfo()->waveFormat.nSamplesPerSec, eEngine.GetBufferSize() * eEngine.GetOutputInfo()->waveFormat.nChannels);
 }
 
 void

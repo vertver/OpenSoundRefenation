@@ -60,6 +60,9 @@
     <ClInclude Include="osrMath.h">
       <Filter>Includes</Filter>
     </ClInclude>
+    <ClInclude Include="OSRConfig.h">
+      <Filter>Includes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -88,6 +91,9 @@
     </ClCompile>
     <ClCompile Include="win32kernel.cpp">
       <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="OSRConfigSystem.cpp">
+      <Filter>Kernel</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

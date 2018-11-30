@@ -147,8 +147,6 @@ DX11Render::LoadShader(
 		HANDLE hFile = CreateFileW(szPathToDir, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (!hFile || hFile == INVALID_HANDLE_VALUE) { return FS_OSR_BAD_HANDLE; }
 
-		//GetFileSize(hFile, &dwShaderSize);
-
 		FILE_STANDARD_INFO fileInfo = {};
 		GetFileInformationByHandleEx(hFile, FileStandardInfo, &fileInfo, sizeof(fileInfo));
 
@@ -173,6 +171,9 @@ DX11Render::BeginRenderBlur(
 	DWORD Width
 )
 {
+	if (Width > 10000 || !Width) Width = 1;
+	if (Height > 10000 || !Height) Height = 1;
+
 	static D3D11_TEXTURE2D_DESC textureDesc = { };
 	bool RestartRenderTargets = false;
 

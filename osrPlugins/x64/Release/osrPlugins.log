@@ -1,12 +1,9 @@
-﻿  stdafx.cpp
-  VSTWindows.cpp
-i:\osr\opensoundrefenation\osrplugins\vstwindows.cpp(369): warning C4244: 'argument': conversion from 'const LONG_PTR' to 'DWORD', possible loss of data
-  dllmain.cpp
-  osrPlugins.cpp
+﻿  VSTWindows.cpp
+i:\osr\opensoundrefenation\osrplugins\vstwindows.cpp(395): warning C4244: 'argument': conversion from 'const LONG_PTR' to 'DWORD', possible loss of data
      Creating library I:\OSR\OpenSoundRefenation\\release\osrPlugins.lib and object I:\OSR\OpenSoundRefenation\\release\osrPlugins.exp
   Generating code
-  7 of 27 functions (25.9%) were compiled, the rest were copied from previous compilation.
-    5 functions were new in current compilation
+  4 of 28 functions (14.3%) were compiled, the rest were copied from previous compilation.
+    1 functions were new in current compilation
     1 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   osrPlugins.vcxproj -> I:\OSR\OpenSoundRefenation\\release\osrPlugins.dll

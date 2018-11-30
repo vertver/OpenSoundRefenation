@@ -90,6 +90,7 @@
   <ItemGroup>
     <ClInclude Include="KernCPU.h" />
     <ClInclude Include="OSR.h" />
+    <ClInclude Include="OSRConfig.h" />
     <ClInclude Include="osrMath.h" />
     <ClInclude Include="OSRSystem.h" />
     <ClInclude Include="OSRTypes.h" />
@@ -102,6 +103,7 @@
   <ItemGroup>
     <ClCompile Include="KernCPU.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="OSRConfigSystem.cpp" />
     <ClCompile Include="OSRFileSystem.cpp" />
     <ClCompile Include="osrKernel.cpp" />
     <ClCompile Include="osrMath.cpp" />

@@ -184,7 +184,7 @@ public:
 		hOutput = CreateEventW(nullptr, TRUE, FALSE, nullptr);
 		hStart = CreateEventW(nullptr, TRUE, FALSE, nullptr);
 		hExit = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-		
+
 		pRenderStream = nullptr;
 		pAudioClient = nullptr;
 		pAudioRenderClient = nullptr;
@@ -196,6 +196,7 @@ public:
 		enumerator = nullptr;
 		m_SampleReadyAsyncResult = nullptr;
 		pDeviceInfo = nullptr;
+		pTaskValue = nullptr;
 
 		memset(&OutputDeviceInfo, 0, sizeof(WASAPI_DEVICE_INFO));
 		memset(&InputDeviceInfo, 0, sizeof(WASAPI_DEVICE_INFO));
@@ -216,6 +217,8 @@ public:
 			pHost->ClosePluginWindow();
 			pHost->DestroyPluginWindow();
 		}
+
+		if (pTaskValue) { delete pTaskValue; }
 	}
 
 	DWORD GetAudioThreadId() { return WasapiThread; }
@@ -252,6 +255,7 @@ public:
 	IAudioRenderClient*		pAudioRenderClient;
 	IAudioEndpointVolume*	pOutVol;
 
+	TaskbarValue*		pTaskValue;
 	VSTHost*				pHost;
 	IAudioCaptureClient*	pCaptureClientParent;
 	IStream*				PCaptureClientStream;
@@ -267,6 +271,7 @@ private:
 	HANDLE				hExit;
 	WAVEFORMATEX*		m_MixFormat;
 
+	
 	IMMDeviceEnumerator*enumerator;	
 	IMFAsyncResult*		m_SampleReadyAsyncResult;
 	WASAPI_DEVICE_INFO** pDeviceInfo;

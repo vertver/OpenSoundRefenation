@@ -52,10 +52,6 @@ UserThreadProc(
 
 	threadSystem.SetUserThreadName(GetCurrentThreadId(), lpNewThreadName);
 
-	// cast _TEB to custom _TEB type
-	_TEB* teb = NtCurrentTeb();
-	threadEntry->funcTeb = teb;
-	
 	threadFunc(pArglist);
 }
 
@@ -69,12 +65,22 @@ ThreadSystem::CreateUserThread(
 	LPCWSTR pName
 )
 {
+	EnterSection();
+
 	ASSERT2(pFunction, L"No function pointer at CreateUserThread()");
 	ASSERT2(pArgs, L"No thread args at CreateUserThread()");
 
+	if (dwNumberOfThreads > 4095)
+	{
+		dwNumberOfThreads = 0;
+	}
+	else
+	{
+		dwNumberOfThreads++;
+	}
+
 	UINT_PTR hThread = NULL;
 	DWORD dwThreadId = NULL;
-	LPWSTR lpThreadName = const_cast<LPWSTR>(pName);
 
 	threadStruct[dwNumberOfThreads].lpThreadName = pName;
 	threadStruct[dwNumberOfThreads].pArgs = pArgs;
@@ -85,7 +91,7 @@ ThreadSystem::CreateUserThread(
 		hThread = _beginthread(UserThreadProc, pThreadInfo->dwStackSize, &threadStruct[dwNumberOfThreads]);
 		pThreadInfo->hThread = reinterpret_cast<HANDLE>(hThread);
 		pThreadInfo->dwThreadId = GetThreadId(pThreadInfo->hThread);
-		pThreadInfo->lpThreadName = lpThreadName;
+		pThreadInfo->lpThreadName = const_cast<LPWSTR>(pName);
 		pThreadInfo->cbSize = sizeof(THREAD_INFO);
 		dwThreadId = pThreadInfo->dwThreadId;
 	}
@@ -95,14 +101,8 @@ ThreadSystem::CreateUserThread(
 		dwThreadId = GetThreadId(reinterpret_cast<HANDLE>(hThread));
 	}
 
-	if (dwNumberOfThreads > 4095)
-	{
-		dwNumberOfThreads = 0;
-	}
-	else
-	{
-		dwNumberOfThreads++;
-	}
+	LeaveSection();
+
 	return dwThreadId;
 }
 
@@ -178,11 +178,11 @@ ThreadSystem::GetThreadInformation(
 	NtQueryInformationThreadEx(hThread, ThreadBasicInformation, &basicInfo, sizeof(THREAD_BASIC_INFORMATION), NULL);
 	NtReadVirtualMemory(GetCurrentProcess(), basicInfo.TebBaseAddress, &tib, sizeof(NT_TIB64), NULL);
 
-	LPWSTR lpThreadNameString = (LPWSTR)FastAlloc(sizeof(WSTRING128));
-	GetUserThreadName(dwThreadId, &lpThreadNameString);
+	static WSTRING128 lpThreadNameString;
+	GetUserThreadName(dwThreadId, (LPWSTR*)&lpThreadNameString);
 
 	//#NOTE: the pThreadInfo variable must exist to delete pointer
-	if (!pThreadInfo) { pThreadInfo = (PTHREAD_INFO)FastAlloc(cbSize); }
+	if (!pThreadInfo) { return; }
 	pThreadInfo->cbSize = cbSize;
 	pThreadInfo->dwStackSize = (DWORD)ptrdiff_t(tib.StackBase - tib.StackLimit);
 	pThreadInfo->dwThreadId = dwThreadId;

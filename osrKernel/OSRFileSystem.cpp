@@ -153,26 +153,91 @@ GetDiskUsage(
 #endif
 
 #ifdef WIN32
+OSRCODE 
+CreateNewFileWithData(
+	LPCWSTR lpPath, 
+	LPVOID lpData, 
+	DWORD dwDataSize
+)
+{
+	DWORD DataOutSize = 0;
+	HANDLE hFile = CreateFileW(lpPath, GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (!hFile || hFile == INVALID_HANDLE_VALUE) { return FS_OSR_BAD_HANDLE; }
+
+	WriteFile(hFile, lpData, dwDataSize, &DataOutSize, nullptr);
+	CloseHandle(hFile);
+
+	return OSR_SUCCESS;
+}
+
+OSRCODE 
+ReadDataFromFile(
+	LPCWSTR lpPath,
+	VOID** lpOutData,
+	LPDWORD lpOutSize
+)
+{
+	LARGE_INTEGER largeCount = { 0 };
+	size_t uSize = 0;
+	HANDLE hFile = NULL;
+
+	// open handle and read audio file to buffer 
+	hFile = CreateFileW(lpPath, GENERIC_READ, NULL, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+	if (!hFile || hFile == INVALID_HANDLE_VALUE) { return FS_OSR_BAD_HANDLE; }
+
+	GetFileSizeEx(hFile, &largeCount);
+	uSize = largeCount.QuadPart;
+
+	// allocate pointer and get data to it
+	*lpOutData = FastAlloc(uSize);
+
+	if (!ReadFile(hFile, *lpOutData, uSize, lpOutSize, nullptr))
+	{
+		FREEKERNELHEAP(lpOutData);
+		CloseHandle(hFile);
+		return FS_OSR_BAD_ALLOC;
+	}
+
+	CloseHandle(hFile);
+	return OSR_SUCCESS;
+}
+
 OSRCODE
 ReadAudioFile(
 	LPCWSTR lpPath,
 	VOID** lpData,
 	DWORD* dwSizeWritten
 )
-{
+{	
+	LARGE_INTEGER largeCount = { 0 };
+	size_t uSize = 0;
+	HANDLE hFile = NULL;
+
 	// open handle and read audio file to buffer 
-	HANDLE hFile = CreateFileW(lpPath, GENERIC_READ, NULL, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	hFile = CreateFileW(lpPath, GENERIC_READ, NULL, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (!hFile || hFile == INVALID_HANDLE_VALUE) { return FS_OSR_BAD_HANDLE; }
-	DWORD dwSize = GetFileSize(hFile, NULL);
+
+
+	FILE_STANDARD_INFO fileInfo = {};
+	GetFileInformationByHandleEx(hFile, FileStandardInfo, &fileInfo, sizeof(fileInfo));
+
+	GetFileSizeEx(hFile, &largeCount);
+	uSize = largeCount.QuadPart;
 
 	// allocate pointer and get data to it
-	*lpData = FastAlloc(dwSize);
+	*lpData = FastAlloc(uSize);
 	ASSERT1(*lpData, L"Can't alloc pointer");
-	if (!ReadFile(hFile, *lpData, dwSize, dwSizeWritten, NULL)) { return FS_OSR_BAD_ALLOC; }
+
+	if (!ReadFile(hFile, *lpData, uSize, dwSizeWritten, nullptr)) 
+	{ 
+		CloseHandle(hFile);
+		return FS_OSR_BAD_ALLOC; 
+	}
 
 	CloseHandle(hFile);
 	return OSR_SUCCESS;
 }
+
 #else
 OSRCODE
 ReadAudioFile(
@@ -256,7 +321,8 @@ ReadAudioFileEx(
 	for (DWORD i = 0; i < 8; i++)
 	{
 		WAV_CHUNK_HEADER waveHeader = *((WAV_CHUNK_HEADER*)(*lpData) + dwPointerToData);
-
+		
+		// find 'data' chunk
 		if (waveHeader.dwChunkId == 0x61746164) { break; }
 		dwPointerToData += waveHeader.dwFileSize;
 	}

@@ -67,7 +67,7 @@ ProcessManager::GetUserProcessInfo(
 	HANDLE hProcess = NULL;
 	___PROCESS_BASIC_INFORMATION ProcessBInfo = { NULL };
 	RTL_USER_PROCESS_PARAMETERS processInfo = { NULL };
-	WCHAR szBuf[1024] = { NULL };
+	static WCHAR szBuf[1024] = { NULL };
 	
 	hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwProcessId);
 	if (!hProcess) { return; }
