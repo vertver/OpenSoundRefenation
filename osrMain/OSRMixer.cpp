@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "IMWASAPI.h"
+#include "WaveOutHeader.h"
 
+MMEngine mmEngine;
 XEngine XAudioEngine;
 IMEngine eEngine;
 LOOP_INFO lInfo;
@@ -52,12 +54,18 @@ OSR::Mixer::CreateMixer(
 	HWND hwnd
 )
 {
-	static VSTHost vstHost = {};
-	pVSTHost = nullptr;//&vstHost;
+	if (false)
+	{
+		static VSTHost vstHost = {};
+		pVSTHost = nullptr;//&vstHost;
 
-	eEngine.InitEngine(hwnd);
-	eEngine.CreateDefaultDevice(1000000);
-	eEngine.pHost = (VSTHost*)pVSTHost;
+		eEngine.InitEngine(hwnd);
+		eEngine.CreateDefaultDevice(1000000);
+		eEngine.pHost = (VSTHost*)pVSTHost;
+	}
+
+	mmEngine.InitEngine(hwnd);
+	mmEngine.CreateDefaultDevice(100);
 
 	//eEngine.pHost->LoadPlugin(L"I:\\VSTPlugins\\FabFilter Pro-Q 2 x64.dll");
 	//eEngine.pHost->InitPlugin(eEngine.GetOutputInfo()->waveFormat.nSamplesPerSec, eEngine.GetBufferSize() * eEngine.GetOutputInfo()->waveFormat.nChannels);
@@ -72,24 +80,34 @@ OSR::Mixer::LoadSample(
 	uPlay = 0;
 }
 
-WASAPI_SAMPLE_PROC SampleProc = { 0 };
+WASAPI_SAMPLE_PROC SampleProc = { nullptr };
+WAVOUT_SAMPLE_PROC MProc = { nullptr };
 
 void
 OSR::Mixer::PlaySample()
 {
 	static size_t Sample1 = 0;
 
+	MProc.pEngine = &mmEngine;
+	MProc.pLoopInfo = &lInfo;
+	MProc.pSample = nullptr;
+
 	SampleProc.pEngine = &eEngine;
 	SampleProc.pLoopInfo = &lInfo;
 	SampleProc.pSample = nullptr;
 
-	if (uPlay)
+	if (false)
 	{
-		eEngine.RestartDevice(1000000);
+		if (uPlay)
+		{
+			eEngine.RestartDevice(1000000);
+		}
+
+		WaitForSingleObject(hStartEvent, INFINITE);
+		eEngine.StartDevice((LPVOID)&SampleProc);
 	}
 
-	WaitForSingleObject(hStartEvent, INFINITE);
-	eEngine.StartDevice((LPVOID)&SampleProc);
+	mmEngine.StartDevice(&MProc);
 	uPlay++;
 }
 

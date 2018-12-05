@@ -18,56 +18,9 @@
 #include <mmdeviceapi.h>
 #include <endpointvolume.h>
 #include "OSRVST.h"
+#include "AsyncReader.h"
 
 using namespace Microsoft::WRL;
-
-
-inline
-void
-ProcessAudio(
-	float** pInput,
-	float** pOutput,
-	DWORD SampleRate,
-	DWORD BufferSize,
-	DWORD Channels,
-	VSTHost* pHost
-)
-{
-	float* pCustomOutput[8] = { nullptr };
-	float* pCustomInput[8] = { nullptr };
-
-	for (size_t i = 0; i < Channels * 2; i++)
-	{
-		pCustomOutput[i] = (float*)FastAlloc(BufferSize * sizeof(f32));
-		pCustomInput[i] = (float*)FastAlloc(BufferSize * sizeof(f32));
-
-#ifndef WIN32
-		memset(pCustomInput[i], 0, BufferSize * sizeof(f32));
-		memset(pCustomOutput[i], 0, BufferSize * sizeof(f32));
-#endif
-	}
-
-	for (size_t i = 0; i < Channels; i++)
-	{
-		memcpy(pCustomInput[i], pInput[i], BufferSize * sizeof(f32));
-	}
-
-	// process function
-	if (!pHost) { return; }
-	pHost->ProcessAudio(pCustomInput, pCustomOutput, BufferSize / Channels);
-
-	for (size_t i = 0; i < Channels; i++)
-	{
-		memcpy(pOutput[i], pCustomOutput[i], BufferSize * sizeof(f32));
-	}
-
-	for (size_t i = 0; i < Channels * 2; i++)
-	{
-		FREEKERNELHEAP(pCustomOutput[i]);
-		FREEKERNELHEAP(pCustomInput[i]);
-	}
-}
-
 
 #ifndef GUID_SECT
 #define GUID_SECT

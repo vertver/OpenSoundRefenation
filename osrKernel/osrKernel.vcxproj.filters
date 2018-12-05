@@ -63,6 +63,9 @@
     <ClInclude Include="OSRConfig.h">
       <Filter>Includes</Filter>
     </ClInclude>
+    <ClInclude Include="OSRSettings.h">
+      <Filter>Includes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

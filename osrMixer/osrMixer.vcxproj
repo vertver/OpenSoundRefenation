@@ -66,7 +66,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)\debug\;$(SolutionDir)\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>osrDecoder.lib;osrPlugins.lib;osrKernel.lib;XAudio2.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;dsound.lib;avrt.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>osrDecoder.lib;osrPlugins.lib;osrKernel.lib;XAudio2.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;winmm.lib;dsound.lib;avrt.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)\osrMixer.dll</OutputFile>
     </Link>
   </ItemDefinitionGroup>
@@ -90,19 +90,22 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>$(OutDir)\osrMixer.dll</OutputFile>
       <AdditionalLibraryDirectories>$(SolutionDir)\release\;$(SolutionDir)\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>osrDecoder.lib;osrPlugins.lib;osrKernel.lib;XAudio2.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;dsound.lib;avrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>osrDecoder.lib;osrPlugins.lib;osrKernel.lib;XAudio2.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;winmm.lib;dsound.lib;avrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AsyncReader.h" />
     <ClInclude Include="DirectSoundMain.h" />
     <ClInclude Include="IMWASAPI.h" />
     <ClInclude Include="LoopList.h" />
     <ClInclude Include="SoundList.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="WaveOutHeader.h" />
     <ClInclude Include="XAudioMain.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AsyncReader.cpp" />
     <ClCompile Include="DirectSoundKernel.cpp" />
     <ClCompile Include="DirectSoundMixer.cpp" />
     <ClCompile Include="dllmain.cpp" />
@@ -114,6 +117,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="WaveOutKernel.cpp" />
     <ClCompile Include="XAudio2Kernel.cpp" />
     <ClCompile Include="XAudio2Mixer.cpp" />
   </ItemGroup>

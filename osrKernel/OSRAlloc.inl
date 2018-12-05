@@ -143,6 +143,7 @@ FreePointer(
 	}
 }
 
+// DEPRECATED
 __forceinline
 VOID
 UnloadFile(

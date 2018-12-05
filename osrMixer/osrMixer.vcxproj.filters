@@ -34,6 +34,9 @@
     <Filter Include="Loop List">
       <UniqueIdentifier>{e16c4662-ccf5-4822-a3de-880012cdacc1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Mixer\MME">
+      <UniqueIdentifier>{58aaff82-967f-491d-aa0b-7e04f0b0a6b7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -56,6 +59,12 @@
     </ClInclude>
     <ClInclude Include="LoopList.h">
       <Filter>Loop List</Filter>
+    </ClInclude>
+    <ClInclude Include="AsyncReader.h">
+      <Filter>Loop List</Filter>
+    </ClInclude>
+    <ClInclude Include="WaveOutHeader.h">
+      <Filter>Mixer\MME</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -88,6 +97,12 @@
     </ClCompile>
     <ClCompile Include="LoopList.cpp">
       <Filter>Loop List</Filter>
+    </ClCompile>
+    <ClCompile Include="AsyncReader.cpp">
+      <Filter>Loop List</Filter>
+    </ClCompile>
+    <ClCompile Include="WaveOutKernel.cpp">
+      <Filter>Mixer\MME</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

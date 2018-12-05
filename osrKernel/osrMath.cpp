@@ -13,10 +13,10 @@ Math::BuildWindow(
 	ASSERT2((DataSize != 1), L"Division on zero is impossible");
 	ASSERT2(DataSize, L"Division on zero is impossible");
 
-	float alpha;
-	float alpha1;
-	float alpha2;
-	float alpha3;
+	float alpha = 0;
+	float alpha1 = 0;
+	float alpha2 = 0;
+	float alpha3 = 0;
 
 	// get process our window
 	switch (windowType)

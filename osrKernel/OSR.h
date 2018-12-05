@@ -12,7 +12,6 @@
 
 #include <string>
 #include <vector>
-#include "OSRTypes.h"
 
 #ifndef POSIX_PLATFORM
 #include <windows.h>
@@ -81,8 +80,10 @@
 using HANDLE = VOID*;
 using LPVOID = VOID*;
 using BOOL = int;
-using WCHAR = wchar_t;
+using WCHAR = WideChar;
 using CHAR = char;
+using LPWSTR = WideChar*;
+using LPSTR = char*;
 using LPCSTR = const char*;
 using PCSTR = LPCSTR;
 using LPCWSTR = const WideChar*;
@@ -228,6 +229,8 @@ bool ThrowWarning(const char* lpText);				// fourth level
 #endif
 #define _RELEASE(X)				if (X) { X->Release(); X = NULL; }
 
+#include "OSRTypes.h"
+
 using STRING_PATH				= char[MAX_PATH];
 using STRING64					= char[64];
 using STRING128					= char[128];
@@ -277,6 +280,10 @@ DLL_API LPCSTR WCSTRToMBCSTR(LPCWSTR lpString);
 DLL_API VOID CreateKernelHeap();
 DLL_API VOID DestroyKernelHeap();
 DLL_API HANDLE GetKernelHeap();
+
+DLL_API DWORD GetMainThreadId();
+DLL_API VOID SuspendMainThread();
+DLL_API VOID ResumeMainThread();
 
 DLL_API BOOL IsNetworkInstalled();
 DLL_API LPWSTR FormatError(LONG dwErrorCode);

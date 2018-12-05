@@ -56,8 +56,6 @@ WASAPIThreadProc(
 			pProc->pLoopInfo->waveFormat.nSamplesPerSec
 		);
 
-		SampleArray[0] = Sample;
-
 		Sample->LoadSample(
 			(void*)pProc->pLoopInfo->pSample,
 			FrameSize * dwChannels,
@@ -65,6 +63,8 @@ WASAPIThreadProc(
 			pProc->pLoopInfo->waveFormat.nChannels,
 			pProc->pLoopInfo->waveFormat.nSamplesPerSec
 		);
+
+		SampleArray[0] = Sample;
 	}
 	else if (Sample && !pProc->pLoopInfo)
 	{

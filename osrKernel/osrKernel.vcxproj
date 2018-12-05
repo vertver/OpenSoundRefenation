@@ -92,6 +92,7 @@
     <ClInclude Include="OSR.h" />
     <ClInclude Include="OSRConfig.h" />
     <ClInclude Include="osrMath.h" />
+    <ClInclude Include="OSRSettings.h" />
     <ClInclude Include="OSRSystem.h" />
     <ClInclude Include="OSRTypes.h" />
     <ClInclude Include="OSRWin32kernel.h" />

@@ -10,6 +10,7 @@
 *********************************************************/
 #include "stdafx.h"
 #include "VUMeter.h"
+#include "../resource1.h"
 
 DX11Render dx11Renderer;
 VUMeter vMeter;
@@ -300,6 +301,8 @@ OSR::UserInterface::CreateMainWindow()
 {
 	// create window class
 	WNDCLASSEXW wc = { sizeof(WNDCLASSEXW), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"OSR_DAW", nullptr };
+	wc.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_OSR));
+	wc.hIconSm = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_OSRSMALL));
 	RegisterClassExW(&wc);
 
 	RECT rec = { 0, 0, 640, 360 };
@@ -307,7 +310,7 @@ OSR::UserInterface::CreateMainWindow()
 
 	MainHwnd = CreateWindowW(
 		L"OSR_DAW",
-		L"Open Sound Refenation 0.4A",
+		L"Open Sound Refenation 0.44A",
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,

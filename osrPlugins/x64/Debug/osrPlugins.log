@@ -1,1 +1,8 @@
-﻿  osrPlugins.vcxproj -> I:\OSR\OpenSoundRefenation\\debug\osrPlugins.dll
+﻿  stdafx.cpp
+  dllmain.cpp
+  osrPlugins.cpp
+  VSTWindows.cpp
+i:\osr\opensoundrefenation\osrplugins\vstwindows.cpp(395): warning C4244: 'argument': conversion from 'const LONG_PTR' to 'DWORD', possible loss of data
+  Generating Code...
+     Creating library I:\OSR\OpenSoundRefenation\\debug\osrPlugins.lib and object I:\OSR\OpenSoundRefenation\\debug\osrPlugins.exp
+  osrPlugins.vcxproj -> I:\OSR\OpenSoundRefenation\\debug\osrPlugins.dll
