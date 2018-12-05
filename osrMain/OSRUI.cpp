@@ -115,7 +115,7 @@ CycleFunc()
 
 	static bool FirstStart = true;
 	if (FirstStart) {
-		ImGui::SetNextWindowSize(ImVec2(100, 300)); FirstStart = false;
+		ImGui::SetNextWindowSize(ImVec2(100, 500)); FirstStart = false;
 	}
 
 	if (ImGui::Begin("VU Meter", nullptr))
