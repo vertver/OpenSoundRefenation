@@ -50,7 +50,7 @@ public:
 		SampleRateInput = 0;
 		SampleRateOutput = 0;
 
-		for (u8 i = 0; i < 8; i++)
+		for (u8 i = 0; i < 16; i++)
 		{
 			pInputBuffer[i] = nullptr;
 			pOutputBuffer[i] = nullptr;
@@ -76,7 +76,7 @@ public:
 		ToEndFileSize = NULL;
 		SamplePosition = NULL;
 
-		for (u8 i = 0; i < 8; i++)
+		for (u8 i = 0; i < 16; i++)
 		{
 			pInputBuffer[i] = nullptr;
 			pOutputBuffer[i] = nullptr;
@@ -183,7 +183,7 @@ public:
 		}
 		else
 		{	
-			u8 bufFloat[44100 * 2 * 4] = { NULL };
+			u8 bufFloat[192000 * 2 * 4] = { NULL };
 
 			if (pNextSample->ToEndFileSize > 0) { memcpy(bufFloat, pData, pNextSample->ToEndFileSize); }
 			pNextSample->LoadSample(bufFloat, BufferSizeOutput, BitsOutput, ChannelsOutput, SampleRateOutput);
@@ -276,8 +276,8 @@ public:
 	u64 SamplePosition; 
 	i32 ToEndFileSize;
 
-	f32* pInputBuffer[8];
-	f32* pOutputBuffer[8];
+	f32* pInputBuffer[16];
+	f32* pOutputBuffer[16];
 
 	OSRSample* pNextSample;
 	OSRSample* pPreviousSample;

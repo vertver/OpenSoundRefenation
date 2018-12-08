@@ -22,6 +22,9 @@
     <Filter Include="ImGui">
       <UniqueIdentifier>{65082e67-5931-4be3-98a6-239bcb07fd57}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Discord-RPC">
+      <UniqueIdentifier>{9dc1b64c-ff95-489c-b11f-3da9f1fb0ba5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -66,6 +69,30 @@
     <ClInclude Include="..\include\ImGui\imstb_truetype.h">
       <Filter>ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\discord-rpc\include\discord_rpc.h">
+      <Filter>Discord-RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\discord-rpc\include\discord_register.h">
+      <Filter>Discord-RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\discord-rpc\src\backoff.h">
+      <Filter>Discord-RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\discord-rpc\src\connection.h">
+      <Filter>Discord-RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\discord-rpc\src\msg_queue.h">
+      <Filter>Discord-RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\discord-rpc\src\rpc_connection.h">
+      <Filter>Discord-RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\discord-rpc\src\serialization.h">
+      <Filter>Discord-RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="DiscordPart.h">
+      <Filter>Main classes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -109,6 +136,24 @@
     </ClCompile>
     <ClCompile Include="..\include\ImGui\imgui_widgets.cpp">
       <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\discord-rpc\src\connection_win.cpp">
+      <Filter>Discord-RPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\discord-rpc\src\discord_register_win.cpp">
+      <Filter>Discord-RPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\discord-rpc\src\discord_rpc.cpp">
+      <Filter>Discord-RPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\discord-rpc\src\dllmain.cpp">
+      <Filter>Discord-RPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\discord-rpc\src\rpc_connection.cpp">
+      <Filter>Discord-RPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\discord-rpc\src\serialization.cpp">
+      <Filter>Discord-RPC</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

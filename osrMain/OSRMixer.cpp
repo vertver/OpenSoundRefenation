@@ -3,7 +3,6 @@
 #include "WaveOutHeader.h"
 
 MMEngine mmEngine;
-XEngine XAudioEngine;
 IMEngine eEngine;
 LOOP_INFO lInfo;
 HANDLE hStartEvent;

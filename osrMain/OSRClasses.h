@@ -43,7 +43,6 @@ namespace OSR
 		LPVOID pVSTHost;
 		DWORD LoopNumber; 
 		OSR::Engine osrEngine;
-		XMixer mixer;
 		OSRSample CurrentSample;
 		u32 MixerSampleRate;
 		u32 MixerBufferSize;

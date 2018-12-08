@@ -66,7 +66,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)\debug\;$(SolutionDir)\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>osrDecoder.lib;osrPlugins.lib;osrKernel.lib;XAudio2.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;winmm.lib;dsound.lib;avrt.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>osrDecoder.lib;osrPlugins.lib;osrKernel.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;winmm.lib;dsound.lib;avrt.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)\osrMixer.dll</OutputFile>
     </Link>
   </ItemDefinitionGroup>
@@ -90,7 +90,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>$(OutDir)\osrMixer.dll</OutputFile>
       <AdditionalLibraryDirectories>$(SolutionDir)\release\;$(SolutionDir)\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>osrDecoder.lib;osrPlugins.lib;osrKernel.lib;XAudio2.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;winmm.lib;dsound.lib;avrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>osrDecoder.lib;osrPlugins.lib;osrKernel.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;winmm.lib;dsound.lib;avrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

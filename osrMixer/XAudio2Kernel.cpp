@@ -9,12 +9,12 @@
 * XAudio2 kernel implementation
 *********************************************************/
 #include "stdafx.h"
-
-VOID
-XEngine::CreateXEngine(XPlay inPlay)
-{
-	FAILEDX2(XAudio2Create(&pXAudio));
-	FAILEDX2(pXAudio->CreateMasteringVoice(&pMasteringVoice));
-
-	play = inPlay;
-}
+//
+//VOID
+//XEngine::CreateXEngine(XPlay inPlay)
+//{
+//	FAILEDX2(XAudio2Create(&pXAudio));
+//	FAILEDX2(pXAudio->CreateMasteringVoice(&pMasteringVoice));
+//
+//	play = inPlay;
+//}

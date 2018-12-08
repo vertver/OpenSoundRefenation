@@ -64,7 +64,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>osrDecoder.lib;osrMixer.lib;osrKernel.lib;osrUI.lib;osrPlugins.lib;XAudio2.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;dsound.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>osrDecoder.lib;osrMixer.lib;osrKernel.lib;osrPlugins.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;dsound.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)\lib;$(SolutionDir)\debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)\osrMain.dll</OutputFile>
     </Link>
@@ -86,12 +86,19 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>osrDecoder.lib;osrMixer.lib;osrKernel.lib;osrUI.lib;osrPlugins.lib;XAudio2.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;dsound.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>osrDecoder.lib;osrMixer.lib;osrKernel.lib;osrPlugins.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;dsound.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)\lib;$(SolutionDir)\release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)\osrMain.dll</OutputFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\discord-rpc\include\discord_register.h" />
+    <ClInclude Include="..\..\..\discord-rpc\include\discord_rpc.h" />
+    <ClInclude Include="..\..\..\discord-rpc\src\backoff.h" />
+    <ClInclude Include="..\..\..\discord-rpc\src\connection.h" />
+    <ClInclude Include="..\..\..\discord-rpc\src\msg_queue.h" />
+    <ClInclude Include="..\..\..\discord-rpc\src\rpc_connection.h" />
+    <ClInclude Include="..\..\..\discord-rpc\src\serialization.h" />
     <ClInclude Include="..\include\ImGui\imconfig.h" />
     <ClInclude Include="..\include\ImGui\imgui.h" />
     <ClInclude Include="..\include\ImGui\imgui_impl_dx11.h" />
@@ -101,6 +108,7 @@
     <ClInclude Include="..\include\ImGui\imstb_rectpack.h" />
     <ClInclude Include="..\include\ImGui\imstb_textedit.h" />
     <ClInclude Include="..\include\ImGui\imstb_truetype.h" />
+    <ClInclude Include="DiscordPart.h" />
     <ClInclude Include="DX11Main.h" />
     <ClInclude Include="OSRClasses.h" />
     <ClInclude Include="stdafx.h" />
@@ -108,6 +116,12 @@
     <ClInclude Include="VUMeter.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\discord-rpc\src\connection_win.cpp" />
+    <ClCompile Include="..\..\..\discord-rpc\src\discord_register_win.cpp" />
+    <ClCompile Include="..\..\..\discord-rpc\src\discord_rpc.cpp" />
+    <ClCompile Include="..\..\..\discord-rpc\src\dllmain.cpp" />
+    <ClCompile Include="..\..\..\discord-rpc\src\rpc_connection.cpp" />
+    <ClCompile Include="..\..\..\discord-rpc\src\serialization.cpp" />
     <ClCompile Include="..\include\ImGui\imgui.cpp" />
     <ClCompile Include="..\include\ImGui\imgui_demo.cpp" />
     <ClCompile Include="..\include\ImGui\imgui_draw.cpp" />

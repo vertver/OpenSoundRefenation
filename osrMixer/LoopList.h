@@ -10,6 +10,7 @@
 *********************************************************/
 #pragma once
 #include "stdafx.h"
+#include "OSRSystem.h"
 
 extern DLL_API AVReader ffReader;
 extern DLL_API WMFReader mfReader;

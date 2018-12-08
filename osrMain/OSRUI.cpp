@@ -11,6 +11,7 @@
 #include "stdafx.h"
 #include "VUMeter.h"
 #include "../resource1.h"
+#include "DiscordPart.h"
 
 DX11Render dx11Renderer;
 VUMeter vMeter;
@@ -352,6 +353,10 @@ OSR::UserInterface::CreateMainWindow()
 	io.Fonts->Build();
 
 	OutMixer.CreateMixer(MainHwnd);
+
+	DiscordNetwork disc = {};
+	disc.Init();
+	disc.SetStatus(DiscordNetwork::StatusNumber::Waiting);
 
 	ImGui_ImplWin32_Init(MainHwnd);
 	ImGui_ImplDX11_Init(dx11Renderer.m_pDevice, dx11Renderer.m_pContext);
