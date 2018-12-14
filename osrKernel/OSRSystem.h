@@ -183,7 +183,7 @@ public:
 		}
 		else
 		{	
-			u8 bufFloat[192000 * 2 * 4] = { NULL };
+			u8 bufFloat[44100 * 2 * 4] = { NULL };
 
 			if (pNextSample->ToEndFileSize > 0) { memcpy(bufFloat, pData, pNextSample->ToEndFileSize); }
 			pNextSample->LoadSample(bufFloat, BufferSizeOutput, BitsOutput, ChannelsOutput, SampleRateOutput);

@@ -20,8 +20,11 @@ GetConfigPath(
 {
 	if (!lpPath) { return FS_OSR_BAD_PTR; }
 
+	LPWSTR lpPathT = nullptr;
 	WSTRING_PATH szPath = { 0 };
-	GetCurrentDirectoryW(sizeof(WSTRING_PATH), szPath);
+	GetApplicationDirectory(&lpPathT);
+	memcpy(szPath, lpPath, 520);
+
 	_snwprintf_s(szPath, sizeof(WSTRING_PATH), L"%s%s", szPath, L"\\Configs");
 
 	WIN32_FIND_DATAW findData = { 0 };

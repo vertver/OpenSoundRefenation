@@ -1,8 +1,9 @@
 ﻿  stdafx.cpp
+  VSTFindPlugin.cpp
+  VSTWindows.cpp
+i:\osr\opensoundrefenation\osrplugins\vstwindows.cpp(488): warning C4244: аргумент: преобразование "const LONG_PTR" в "DWORD", возможна потеря данных
   dllmain.cpp
   osrPlugins.cpp
-  VSTWindows.cpp
-i:\osr\opensoundrefenation\osrplugins\vstwindows.cpp(395): warning C4244: 'argument': conversion from 'const LONG_PTR' to 'DWORD', possible loss of data
-  Generating Code...
-     Creating library I:\OSR\OpenSoundRefenation\\debug\osrPlugins.lib and object I:\OSR\OpenSoundRefenation\\debug\osrPlugins.exp
+  Создание кода...
+i:\osr\opensoundrefenation\osrplugins\vstwindows.cpp(396): warning C4715: VSTHost::CheckPlugin: значение возвращается не при всех путях выполнения
   osrPlugins.vcxproj -> I:\OSR\OpenSoundRefenation\\debug\osrPlugins.dll

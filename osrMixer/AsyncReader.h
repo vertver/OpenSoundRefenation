@@ -24,8 +24,10 @@ ProcessAudio(
 	VSTHost* pHost
 )
 {
-	float* pCustomOutput[8] = { nullptr };
-	float* pCustomInput[8] = { nullptr };
+	if (!pHost || !pHost->pEffect) { return;}
+
+	float* pCustomOutput[16] = { nullptr };
+	float* pCustomInput[16] = { nullptr };
 
 	for (size_t i = 0; i < Channels * 2; i++)
 	{
@@ -44,7 +46,6 @@ ProcessAudio(
 	}
 
 	// process function
-	if (!pHost) { return; }
 	pHost->ProcessAudio(pCustomInput, pCustomOutput, BufferSize / Channels);
 
 	for (size_t i = 0; i < Channels; i++)

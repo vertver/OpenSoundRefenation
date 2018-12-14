@@ -193,7 +193,7 @@ ReadDataFromFile(
 
 	if (!ReadFile(hFile, *lpOutData, uSize, lpOutSize, nullptr))
 	{
-		FREEKERNELHEAP(lpOutData);
+		FREEKERNELHEAP(*lpOutData);
 		CloseHandle(hFile);
 		return FS_OSR_BAD_ALLOC;
 	}
@@ -217,7 +217,6 @@ ReadAudioFile(
 	hFile = CreateFileW(lpPath, GENERIC_READ, NULL, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (!hFile || hFile == INVALID_HANDLE_VALUE) { return FS_OSR_BAD_HANDLE; }
 
-
 	FILE_STANDARD_INFO fileInfo = {};
 	GetFileInformationByHandleEx(hFile, FileStandardInfo, &fileInfo, sizeof(fileInfo));
 
@@ -230,6 +229,7 @@ ReadAudioFile(
 
 	if (!ReadFile(hFile, *lpData, uSize, dwSizeWritten, nullptr)) 
 	{ 
+		FREEKERNELHEAP(*lpData)
 		CloseHandle(hFile);
 		return FS_OSR_BAD_ALLOC; 
 	}

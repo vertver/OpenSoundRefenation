@@ -1,7 +1,9 @@
-﻿  OSRMixer.cpp
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(944,5): warning MSB8027: Two or more files with the name of dllmain.cpp will produce outputs to the same location. This can lead to an incorrect build result.  The files involved are ..\include\discord-presence\src\dllmain.cpp, dllmain.cpp.
+  OSRMixer.cpp
+x64\Release\dllmain.obj : warning LNK4042: object specified more than once; extras ignored
      Creating library I:\OSR\OpenSoundRefenation\\release\osrMain.lib and object I:\OSR\OpenSoundRefenation\\release\osrMain.exp
   Generating code
-  21 of 1686 functions ( 1.2%) were compiled, the rest were copied from previous compilation.
+  3 of 2280 functions ( 0.1%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
     4 functions had inline decision re-evaluated but remain unchanged
   Finished generating code

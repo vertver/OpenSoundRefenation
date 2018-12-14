@@ -48,26 +48,28 @@ OSR::Engine::DecodeFile(
 	threadS.CreateUserThread(nullptr, DecodeFileProc, &decodeStruct, L"OSR Decoder Worker");
 }
 
+#define TEST_VST 1
+
 void
 OSR::Mixer::CreateMixer(
 	HWND hwnd
 )
 {
-	if (false)
+	WSTRING_PATH pathToDll = { 0 };
+
+	eEngine.InitEngine(hwnd);
+	eEngine.CreateDefaultDevice(300000);
+
+#ifdef TEST_VST
+	static VSTHost vstHost = {};
+	pVSTHost = &vstHost;
+	eEngine.pHost = (VSTHost*)pVSTHost;
+	if (OSRSUCCEDDED(OpenFileDialog(&pathToDll)))
 	{
-		static VSTHost vstHost = {};
-		pVSTHost = nullptr;//&vstHost;
-
-		eEngine.InitEngine(hwnd);
-		eEngine.CreateDefaultDevice(1000000);
-		eEngine.pHost = (VSTHost*)pVSTHost;
+		eEngine.pHost->LoadPlugin(pathToDll);
+		eEngine.pHost->InitPlugin(eEngine.GetOutputInfo()->waveFormat.nSamplesPerSec, eEngine.GetBufferSize() * eEngine.GetOutputInfo()->waveFormat.nChannels);
 	}
-
-	mmEngine.InitEngine(hwnd);
-	mmEngine.CreateDefaultDevice(100);
-
-	//eEngine.pHost->LoadPlugin(L"I:\\VSTPlugins\\FabFilter Pro-Q 2 x64.dll");
-	//eEngine.pHost->InitPlugin(eEngine.GetOutputInfo()->waveFormat.nSamplesPerSec, eEngine.GetBufferSize() * eEngine.GetOutputInfo()->waveFormat.nChannels);
+#endif
 }
 
 void
@@ -85,28 +87,18 @@ WAVOUT_SAMPLE_PROC MProc = { nullptr };
 void
 OSR::Mixer::PlaySample()
 {
-	static size_t Sample1 = 0;
-
-	MProc.pEngine = &mmEngine;
-	MProc.pLoopInfo = &lInfo;
-	MProc.pSample = nullptr;
-
 	SampleProc.pEngine = &eEngine;
 	SampleProc.pLoopInfo = &lInfo;
 	SampleProc.pSample = nullptr;
 
-	if (false)
+	if (uPlay)
 	{
-		if (uPlay)
-		{
-			eEngine.RestartDevice(1000000);
-		}
-
-		WaitForSingleObject(hStartEvent, INFINITE);
-		eEngine.StartDevice((LPVOID)&SampleProc);
+		eEngine.RestartDevice(1000000);
 	}
 
-	mmEngine.StartDevice(&MProc);
+	WaitForSingleObject(hStartEvent, INFINITE);
+	eEngine.StartDevice((LPVOID)&SampleProc);
+
 	uPlay++;
 }
 

@@ -299,7 +299,100 @@ VSTHost::LoadPlugin(
 		}
 	}
 
+	// is our plugin is instrument
+	if (pCustomEffect->flags & effFlagsIsSynth)
+	{
+		if (hPlugin) { FreeLibrary(hPlugin); }
+		return FALSE;
+	}
+
 	return TRUE;
+}
+
+BOOL
+VSTHost::CheckPlugin(
+	LPCWSTR lpPathToPlugin,
+	LPBOOL isFactoryEnable
+)
+{
+	FARPROC pVSTFunc = nullptr;
+	FARPROC pVSTEntryPoint = nullptr;
+	PluginMain pMain = nullptr;
+	IPluginFactory* pFactory = nullptr;
+
+	hPlugin = LoadLibraryW(lpPathToPlugin);
+	if (!hPlugin)
+	{
+		return FALSE;
+	}
+
+	// checking for VST host
+	if (!pVSTEntryPoint)
+	{
+		//#TODO: create VSTi host
+		pVSTEntryPoint = GetProcAddress(hPlugin, "VSTPluginMain");
+		
+		if (!pVSTEntryPoint)
+		{
+			if (hPlugin) { FreeLibrary(hPlugin); }
+		}
+	}
+	if (!pVSTFunc)
+	{
+		pVSTFunc = GetProcAddress(hPlugin, "GetPluginFactory");
+		if (!pVSTFunc)
+		{
+			IsInterfaceEnabled = false;
+		}
+		else
+		{
+			IsInterfaceEnabled = true;
+		}
+
+		*isFactoryEnable = IsInterfaceEnabled;
+	}
+
+	pMain = (PluginMain)pVSTEntryPoint;
+	pEffect = pMain(&VSTMasterAudioCallback);
+	pCustomEffect = (AEffect*)pEffect;
+
+	if (IsInterfaceEnabled)
+	{
+		// get plugin factory
+		pFactory = (IPluginFactory*)pVSTFunc();
+
+		if (pFactory)
+		{
+			// get name of plugin
+			PClassInfo classInfo = { NULL };
+			for (long i = 0; i < pFactory->countClasses(); i++)
+			{
+				pFactory->getClassInfo(i, &classInfo);
+			}
+
+			for (int i = 0; i < 64; i++) { szPluginName[i] = classInfo.name[i]; }
+		}
+	}
+	else
+	{
+		if (!GetModuleFileNameW(hPlugin, szPluginName, sizeof(szPluginName)))
+		{
+			wchar_t szOut[256] = { NULL };
+
+			_snwprintf(szOut, sizeof(szOut), L"Function failed with %d error code", GetLastError());
+			OutputDebugStringW(szOut);
+
+			wcscpy_s(szPluginName, L"No name plugin");
+		}
+	}
+
+	// is our plugin is instrument
+	if (pCustomEffect->flags | effFlagsIsSynth)
+	{
+		pEffect = nullptr;
+		if (hPlugin) { FreeLibrary(hPlugin); }
+		return FALSE;
+	}
 }
 
 VOID
@@ -366,7 +459,7 @@ VSTHost::SuspendPlugin()
 	AEffect* pCurrentEffect = (AEffect*)pEffect;
 
 	// send to dispatcher that main was changed to 0
-	if (!pCurrentEffect) return;
+	if (!pCurrentEffect || pCurrentEffect->dispatcher) return;
 	pCurrentEffect->dispatcher(pCurrentEffect, effMainsChanged, 0, 0, nullptr, 0.0f);
 }
 
@@ -404,7 +497,7 @@ VSTHost::ClosePluginWindow()
 	AEffect* pCurrentEffect = (AEffect*)pEffect;
 
 	// close plugin window handle
-	if (!pCurrentEffect) return;
+	if (!pCurrentEffect || pCurrentEffect->dispatcher) return;
 	pCurrentEffect->dispatcher(pCurrentEffect, effEditOpen, 0, 0, nullptr, 0.0f);
 }
 

@@ -43,7 +43,7 @@ namespace OSR
 		LPVOID pVSTHost;
 		DWORD LoopNumber; 
 		OSR::Engine osrEngine;
-		OSRSample CurrentSample;
+		OSRSample*  CurrentSample;
 		u32 MixerSampleRate;
 		u32 MixerBufferSize;
 	};
@@ -53,6 +53,8 @@ namespace OSR
 	public:
 		HWND GetCurrentHwnd() { return MainHwnd; }
 		OSRCODE CreateMainWindow();
+		//VOID MenuBeginPopup(LPCSTR Name);
+		//VOID MenuEndPopup(LPCSTR Name);
 		VOID CreateApplicationMenu();
 
 	private:

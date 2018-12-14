@@ -116,9 +116,12 @@ DX11Render::LoadShader(
 	DWORD dwShaderWritten = 0;
 	DWORD dwShaderSize = 0;
 	LPCSTR lpShader = nullptr;
+	LPWSTR StaticBuf = nullptr;
 	WSTRING_PATH szPathToDir = { 0 };
 
-	GetCurrentDirectoryW(sizeof(WSTRING_PATH), szPathToDir);
+	GetApplicationDirectory(&StaticBuf);
+	memcpy(szPathToDir, StaticBuf, 520);
+
 	_snwprintf_s(szPathToDir, sizeof(WSTRING_PATH), L"%s%s", szPathToDir, L"\\Shaders");
 
 	DWORD dwGetDir = GetFileAttributesW(szPathToDir);

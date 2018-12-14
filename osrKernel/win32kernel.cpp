@@ -117,10 +117,10 @@ GetTempDirectory()
 VOID
 CreateTempDirectory()
 {
-	WSTRING_PATH szFullPath = { NULL };
+	LPWSTR szFullPath = nullptr;
 
 	// get program directory to create 'temp' directory
-	ASSERT1(GetCurrentDirectoryW(sizeof(WSTRING_PATH), szFullPath), L"Can't get proccess directory");
+	GetApplicationDirectory(&szFullPath);
 	_snwprintf_s(szPathTemp, sizeof(WSTRING_PATH), L"%s%s", szFullPath, L"\\Temp");
 
 	DWORD dwGetDir = GetFileAttributesW(szPathTemp);
@@ -168,9 +168,12 @@ CreateMinidump(
 	WSTRING512 szFullPath = { NULL };
 	WSTRING512 szTemp = { NULL };
 	WSTRING_PATH szPath = { NULL };
+	LPWSTR pr = nullptr;
 
 	// get current working directory
-	GetCurrentDirectoryW(sizeof(WSTRING_PATH), szPath);
+	GetApplicationDirectory(&pr);
+	memcpy(szPath, pr, 520);
+
 	_snwprintf_s(szTemp, sizeof(WSTRING512), L"%s%s", szPath, L"\\Dump");
 
 	// create new path "dump"
@@ -242,6 +245,23 @@ GetCurrentPeb(VOID** pPeb)
 	NtQueryInformationProcessEx(GetCurrentProcess(), ProcessBasicInformation, &processInformation, sizeof(___PROCESS_BASIC_INFORMATION), &cbLength);
 
 	*pPeb = processInformation.PebBaseAddress;
+}
+
+VOID
+GetApplicationDirectory(
+	LPWSTR* lpPath
+)
+{
+	static bool IsFirst = true;
+	static WCHAR Buffer[260] = { 0 };
+
+	if (IsFirst)
+	{
+		GetCurrentDirectoryW(520, Buffer);
+		IsFirst = false;
+	}
+	
+	*lpPath = Buffer;
 }
 
 DWORD

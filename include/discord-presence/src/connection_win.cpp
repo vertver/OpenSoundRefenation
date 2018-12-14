@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "connection.h"
 
 #define WIN32_LEAN_AND_MEAN
@@ -6,6 +7,7 @@
 #define NOIME
 #include <assert.h>
 #include <windows.h>
+
 
 int GetProcessId()
 {

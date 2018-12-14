@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "rpc_connection.h"
 #include "serialization.h"
 

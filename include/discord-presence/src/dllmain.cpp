@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include <windows.h>
 
 // outsmart GCC's missing-declarations warning

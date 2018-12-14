@@ -136,7 +136,7 @@ ThreadSystem::SetUserThreadName(
 		__try { RaiseException(0x406D1388, 0, sizeof(threadName) / sizeof(ULONG_PTR), (ULONG_PTR*)&threadName); }
 		__except (EXCEPTION_CONTINUE_EXECUTION) { }
 
-		UnloadFile((LPVOID)threadName.lpName);
+		FREEKERNELHEAP(*((void**)&threadName.lpName));
 	}
 }
 

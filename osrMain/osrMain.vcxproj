@@ -92,13 +92,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\discord-rpc\include\discord_register.h" />
-    <ClInclude Include="..\..\..\discord-rpc\include\discord_rpc.h" />
-    <ClInclude Include="..\..\..\discord-rpc\src\backoff.h" />
-    <ClInclude Include="..\..\..\discord-rpc\src\connection.h" />
-    <ClInclude Include="..\..\..\discord-rpc\src\msg_queue.h" />
-    <ClInclude Include="..\..\..\discord-rpc\src\rpc_connection.h" />
-    <ClInclude Include="..\..\..\discord-rpc\src\serialization.h" />
+    <ClInclude Include="..\include\discord-presence\include\discord_register.h" />
+    <ClInclude Include="..\include\discord-presence\include\discord_rpc.h" />
+    <ClInclude Include="..\include\discord-presence\src\backoff.h" />
+    <ClInclude Include="..\include\discord-presence\src\connection.h" />
+    <ClInclude Include="..\include\discord-presence\src\msg_queue.h" />
+    <ClInclude Include="..\include\discord-presence\src\rpc_connection.h" />
+    <ClInclude Include="..\include\discord-presence\src\serialization.h" />
     <ClInclude Include="..\include\ImGui\imconfig.h" />
     <ClInclude Include="..\include\ImGui\imgui.h" />
     <ClInclude Include="..\include\ImGui\imgui_impl_dx11.h" />
@@ -109,6 +109,7 @@
     <ClInclude Include="..\include\ImGui\imstb_textedit.h" />
     <ClInclude Include="..\include\ImGui\imstb_truetype.h" />
     <ClInclude Include="DiscordPart.h" />
+    <ClInclude Include="DragAndDrop.h" />
     <ClInclude Include="DX11Main.h" />
     <ClInclude Include="OSRClasses.h" />
     <ClInclude Include="stdafx.h" />
@@ -116,12 +117,12 @@
     <ClInclude Include="VUMeter.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\discord-rpc\src\connection_win.cpp" />
-    <ClCompile Include="..\..\..\discord-rpc\src\discord_register_win.cpp" />
-    <ClCompile Include="..\..\..\discord-rpc\src\discord_rpc.cpp" />
-    <ClCompile Include="..\..\..\discord-rpc\src\dllmain.cpp" />
-    <ClCompile Include="..\..\..\discord-rpc\src\rpc_connection.cpp" />
-    <ClCompile Include="..\..\..\discord-rpc\src\serialization.cpp" />
+    <ClCompile Include="..\include\discord-presence\src\connection_win.cpp" />
+    <ClCompile Include="..\include\discord-presence\src\discord_register_win.cpp" />
+    <ClCompile Include="..\include\discord-presence\src\discord_rpc.cpp" />
+    <ClCompile Include="..\include\discord-presence\src\dllmain.cpp" />
+    <ClCompile Include="..\include\discord-presence\src\rpc_connection.cpp" />
+    <ClCompile Include="..\include\discord-presence\src\serialization.cpp" />
     <ClCompile Include="..\include\ImGui\imgui.cpp" />
     <ClCompile Include="..\include\ImGui\imgui_demo.cpp" />
     <ClCompile Include="..\include\ImGui\imgui_draw.cpp" />
@@ -130,6 +131,7 @@
     <ClCompile Include="..\include\ImGui\imgui_impl_win32.cpp" />
     <ClCompile Include="..\include\ImGui\imgui_widgets.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="DragAndDrop.cpp" />
     <ClCompile Include="DX11RenderMain.cpp" />
     <ClCompile Include="osrMain.cpp" />
     <ClCompile Include="OSRMixer.cpp" />

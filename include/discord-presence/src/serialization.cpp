@@ -1,6 +1,7 @@
+#include "stdafx.h"
 #include "serialization.h"
 #include "connection.h"
-#include "discord_rpc.h"
+#include "discord-presence/include/discord_rpc.h"
 
 template <typename T>
 void NumberToString(char* dest, T number)

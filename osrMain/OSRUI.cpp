@@ -12,6 +12,7 @@
 #include "VUMeter.h"
 #include "../resource1.h"
 #include "DiscordPart.h"
+#include "DragAndDrop.h"
 
 DX11Render dx11Renderer;
 VUMeter vMeter;
@@ -20,13 +21,13 @@ DLL_API bool IsBlur = false;
 DLL_API bool IsLoad = false;
 DLL_API float ProgressBartest = 0.0;
 
+DropTarget dropTarget;
 OSR::Mixer OutMixer;
 
 VOID
 OSR::UserInterface::CreateApplicationMenu()
 {
 }
-
 
 VOID 
 ImDrawCallbackPostBlur(
@@ -219,35 +220,6 @@ WndProc(
 
 	switch (msg)
 	{
-	case WM_DROPFILES:
-	{
-		DWORD dwFileCount = DragQueryFileW((HDROP)wParam, 0xFFFFFFFF, nullptr, 0);
-		WSTRING_PATH szFilePaths = { NULL };
-
-		if (dwFileCount > 1) { break; }
-
-		for (DWORD i = 0; i < dwFileCount; i++)
-		{
-			DWORD dwPathSize = DragQueryFileW((HDROP)wParam, i, nullptr, 0);
-
-			if (dwPathSize > 0 && dwPathSize < MAX_PATH)
-			{
-				if (DragQueryFileW((HDROP)wParam, i, szFilePaths, dwPathSize + 1) > 0)
-				{
-					WIN32_FIND_DATAW findData = { NULL };
-
-					HANDLE hFind = FindFirstFileW(szFilePaths, &findData);
-
-					// open file here
-					OutMixer.LoadSample(szFilePaths);
-
-					FindClose(hFind);
-				}
-			}
-		}
-
-		DragFinish((HDROP)wParam);
-	}
 	return 0;
 	case WM_COPY:
 		break;
@@ -297,13 +269,15 @@ WndProc(
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
+STRING_PATH szPath = { NULL };
+
 OSRCODE
 OSR::UserInterface::CreateMainWindow()
 {
 	// create window class
 	WNDCLASSEXW wc = { sizeof(WNDCLASSEXW), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"OSR_DAW", nullptr };
-	wc.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_OSR));
-	wc.hIconSm = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_OSRSMALL));
+	wc.hIcon = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_OSR));
+	wc.hIconSm = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_OSRSMALL));
 	RegisterClassExW(&wc);
 
 	RECT rec = { 0, 0, 640, 360 };
@@ -330,19 +304,24 @@ OSR::UserInterface::CreateMainWindow()
 
 	ShowWindow(MainHwnd, SW_SHOWDEFAULT);
 	UpdateWindow(MainHwnd);
-	DragAcceptFiles(MainHwnd, TRUE);
+
+	dropTarget.Window = MainHwnd;
+	dropTarget.AddMixer(&OutMixer);
+	RegisterDragDrop(MainHwnd, &dropTarget);
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
 	io.Fonts->Clear();
 
-	STRING_PATH szPath = { NULL };
+	LPWSTR lpPathe = nullptr;
+	GetApplicationDirectory(&lpPathe);
+
 	GetCurrentDirectoryA(sizeof(STRING_PATH), szPath);
 	snprintf(szPath, sizeof(STRING_PATH), "%s%s", szPath, "\\arimo_reg.ttf");
 
 	ImFont* font = io.Fonts->AddFontFromFileTTF(szPath, 16.0f);
-	if (font != NULL) 
+	if (font) 
 	{
 		io.FontDefault = font; 
 	}
@@ -353,6 +332,7 @@ OSR::UserInterface::CreateMainWindow()
 	io.Fonts->Build();
 
 	OutMixer.CreateMixer(MainHwnd);
+
 
 	DiscordNetwork disc = {};
 	disc.Init();

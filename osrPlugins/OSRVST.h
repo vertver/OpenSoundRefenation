@@ -3,6 +3,13 @@
 
 #define VSTHOST_API __declspec(dllexport)
 
+typedef struct  
+{
+	WCHAR PathToPlugin[260];
+	bool isInterfaceEnable;
+	bool isInstrument;
+} VSTPLUGIN_INFO;
+
 class VSTHOST_API VSTHost
 {
 public:	
@@ -21,6 +28,7 @@ public:
 		: pEffect(nullptr), hPlugin(NULL), pUnknown(nullptr), IsVSTI(false), PluginWindowHandle(NULL), IsInterfaceEnabled(NULL) { }
 
 	BOOL LoadPlugin(LPCWSTR lpPathToPlugin);
+	BOOL CheckPlugin(LPCWSTR lpPathToPlugin, LPBOOL isFactoryEnable);
 	VOID UnloadPlugin() { if (hPlugin) { FreeLibrary(hPlugin); hPlugin = NULL; } }
 
 	VOID ResumePlugin();
@@ -39,11 +47,14 @@ public:
 	{
 		if (hPlugin)
 		{
-			SuspendPlugin();
-			ClosePluginWindow();
 			DestroyPluginWindow();
 			UnloadPlugin();
 		}
+
+		pEffect = nullptr;
+		hPlugin = NULL;
+		PluginWindowHandle = NULL;
+		pUnknown = nullptr;
 	}
 };
 
@@ -55,3 +66,5 @@ typedef struct PluginVst2xIdMembers
 
 extern VSTHOST_API HANDLE hPluginHandle;
 extern VSTHOST_API VSTHost PluginHost;
+
+//BOOL CheckPluginList(VSTHost* pHost, LPCWSTR lpPluginFolder, VSTPLUGIN_INFO* pPluginInfo, size_t StructSizes);

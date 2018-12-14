@@ -44,5 +44,8 @@
     <ClCompile Include="VSTWindows.cpp">
       <Filter>Plugins\VST2</Filter>
     </ClCompile>
+    <ClCompile Include="VSTFindPlugin.cpp">
+      <Filter>Plugins\VST2</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

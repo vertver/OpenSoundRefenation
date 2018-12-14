@@ -86,7 +86,7 @@ WASAPIThreadProc(
 
 	Sample->ConvertToPlay((VOID*)pData, 32);
 
-	REFERENCE_TIME hndActual = 1000000 * FrameSize * dwSampleRate;
+	REFERENCE_TIME hndActual = 500000 * FrameSize * dwSampleRate;
 	size_t Samples = 0;
 
 	while (isPlaying)
@@ -102,7 +102,7 @@ WASAPIThreadProc(
 		case WAIT_OBJECT_0 + 1:
 		{
 			DWORD dwPadding = 0;
-			DWORD dwSleep = hndActual / 100000000;
+			DWORD dwSleep = hndActual / 200000000;
 			Sleep((dwSleep / 2));
 
 			hr = pProc->pEngine->pAudioClient->GetCurrentPadding((UINT32*)&dwPadding);
