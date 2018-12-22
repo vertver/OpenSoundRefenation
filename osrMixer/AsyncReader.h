@@ -12,6 +12,7 @@
 #include "OSR.h"
 #include "LoopList.h"
 #include "OSRVST.h"
+#include "soxr\src\soxr.h"
 
 inline
 void
@@ -60,6 +61,51 @@ ProcessAudio(
 	}
 }
 
+inline
+void
+ResampleAudio(
+	f32* pData,
+	size_t DataSize,
+	u8 Channels,
+	u32 SampleRateIn,
+	u32 SampleRateOut,
+	f32* pOutData
+)
+{
+	size_t odone, written, need_input = 1;
+	void* obuf = malloc(DataSize * sizeof(f32));
+	void* ibuf = malloc(DataSize * sizeof(f32));
+	soxr_error_t error = 0;
+	static soxr_t SOxr = soxr_create(SampleRateIn, SampleRateOut, Channels, &error, nullptr, nullptr, nullptr);
+
+	if (error) { return; }
+
+	do {
+		//size_t ilen1 = 0;
+
+		//if (need_input) 
+		//{
+		//	memcpy(ibuf, pData, DataSize);
+
+		//	if (!DataSize) {     /* If the is no (more) input data available, */
+		//		free(ibuf);     /* set ibuf to NULL, to indicate end-of-input */
+		//		ibuf = NULL;    /* to the resampler. */
+		//	}
+		//}
+
+		///* Copy data from the input buffer into the resampler, and resample
+		// * to produce as much output as is possible to the given output buffer: */
+		//error = soxr_process(SOxr, ibuf, DataSize, NULL, obuf, DataSize, &odone);
+
+
+		///* If the actual amount of data output is less than that requested, and
+		// * we have not already reached the end of the input data, then supply some
+		// * more input next time round the loop: */
+		//need_input = odone < olen && ibuf;
+
+	} while (!error && (need_input || written));
+
+}
 
 class DLL_API AsyncReader
 {

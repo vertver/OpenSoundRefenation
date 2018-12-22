@@ -247,10 +247,12 @@ using WSTRING512				= WideChar[512];
 using WSTRING1024				= WideChar[1024];
 #endif
 
+using OSRHandle					= void*;
+
+#ifdef WIN32
 struct handle_closer { void operator()(HANDLE h) { if (h) CloseHandle(h); } };
 typedef std::unique_ptr<void, handle_closer> SCOPE_HANDLE;
 
-#ifdef WIN32
 using UnhandledExceptionFilterType = LONG WINAPI(struct _EXCEPTION_POINTERS *pExceptionInfo);
 extern DLL_API UnhandledExceptionFilterType *previous_filter;
 extern DLL_API HANDLE hHeap;
@@ -297,6 +299,7 @@ DLL_API OSRCODE WriteFileFromBuffer(LPCWSTR lpPath, BYTE* pFile, DWORD dwSize, W
 DLL_API OSRCODE ReadAudioFile(LPCWSTR lpPath, VOID** lpData, DWORD* dwSizeWritten);
 DLL_API OSRCODE OpenFileDialog(WSTRING_PATH* lpPath);
 DLL_API BOOL GetDiskUsage(LARGE_INTEGER largeSize, LPCWSTR lpPath);
+DLL_API BOOL UnloadToPage(LPVOID pData, SIZE_T DataSize);
 #else
 DLL_API OSRCODE ReadAudioFile(const char* lpPath, VOID** lpData, unsigned long long* dwSizeWritten);
 DLL_API OSRCODE OpenFileDialog(STRING_PATH* lpPath);

@@ -515,6 +515,41 @@ PluginProc(
 	case WM_DESTROY:
 		SetEvent(hPluginHandle);
 		return 0;
+	case WM_SIZE:
+	{
+		return 0;
+	}
+	case WM_PAINT:
+	{
+		ERect* rec = nullptr;
+		static RECT PluginRc = { 0 };
+		RECT winRect = { 0 };
+
+		GetWindowRect(hWnd, &winRect);
+		pCustomEffect->dispatcher(pCustomEffect, effEditGetRect, 1, 0, &rec, 0);
+
+		if (PluginRc.bottom != rec->bottom || PluginRc.left != rec->left || PluginRc.right != rec->right || PluginRc.top != rec->top)
+		{
+			PluginRc.bottom = rec->bottom;
+			PluginRc.left = rec->left;
+			PluginRc.right = rec->right;
+			PluginRc.top = rec->top;
+
+			AdjustWindowRectEx(&PluginRc, GetWindowLongPtrW(hWnd, GWL_STYLE), NULL, GetWindowLongPtrW(hWnd, GWL_EXSTYLE));
+			MoveWindow(hWnd, winRect.left, winRect.top, PluginRc.right - PluginRc.left, PluginRc.bottom - PluginRc.top, TRUE);
+		}
+
+		//HMENU hMenu = GetSystemMenu(hWnd, FALSE);
+		//MENUITEMINFOW info = { 0 };
+		//info.fMask = MIIM_STRING | MIIM_CHECKMARKS;
+		//info.fType = MFT_STRING | MFT_RADIOCHECK;
+		//info.fState = MFS_ENABLED | MFS_CHECKED;
+		//info.wID = 0x444;
+
+		//InsertMenuItemW(hMenu, 0x444, FALSE, &info);
+		//DWORD LastError = GetLastError();
+
+	}
 	default:
 		break;
 	}
@@ -537,10 +572,10 @@ VSTHost::CreatePluginWindow()
 	_snwprintf(szWindowName, sizeof(szPluginName), L"%s%s", L"OSR hosted plugin name: ", szCreateBuf);
 
 	PluginWindowHandle = CreateWindowExW(
-		0L,
+		WS_EX_TOPMOST,
 		L"OSR_PLUGIN",
 		szWindowName,
-		WS_OVERLAPPEDWINDOW,
+		WS_CAPTION | WS_SYSMENU,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
 		NULL,
@@ -550,6 +585,7 @@ VSTHost::CreatePluginWindow()
 		wc.hInstance,
 		nullptr
 	);
+
 }
 
 VOID

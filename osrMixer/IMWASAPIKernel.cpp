@@ -15,6 +15,7 @@ DLL_API HANDLE hThreadExitEvent = NULL;
 DLL_API HANDLE hThreadLoadSamplesEvent = NULL;
 
 OSRSample* SampleArray[128] = { nullptr };
+f32 CurrentPosition = 0.f;
 
 DWORD
 WINAPIV
@@ -46,6 +47,9 @@ WASAPIThreadProc(
 	pData = (BYTE*)FastAlloc(FrameSize * dwChannels * sizeof(f32));
 
 	Sample = pProc->pSample;
+
+	u32 s = dwSampleRate - (dwSampleRate / (1000 / (1000 / (dwSampleRate / (FrameSize)))));
+	u32 InputSize = pProc->pLoopInfo->waveFormat.nSamplesPerSec / (1000 / (1000 / (dwSampleRate / (FrameSize))));
 
 	if (!Sample && pProc->pLoopInfo)
 	{
@@ -149,6 +153,9 @@ WASAPIThreadProc(
 					pProc->pEngine->pTaskValue->SetValue(Sample->SamplePosition, pProc->pLoopInfo->SampleSize);
 				}
 
+				//Sample->SamplePosition = (pProc->pLoopInfo->SampleSize / sizeof(f32) / pProc->pLoopInfo->waveFormat.nChannels) * CurrentPosition;
+				//Sample->ToEndFileSize = pProc->pLoopInfo->SampleSize - Sample->SamplePosition;
+
 				SampleArray[dwSampleNumber + 1] = Sample->OnBufferEnd(pProc->pLoopInfo);
 				dwSampleNumber++;
 				Sample = SampleArray[dwSampleNumber];
@@ -193,6 +200,22 @@ WASAPIThreadProc(
 	}
 
 	return 0;
+}
+
+OSRCODE
+IMEngine::SetAudioPosition(
+	f32 Position
+)
+{
+	CurrentPosition = Position;
+	return OSR_SUCCESS;
+}
+
+OSRCODE
+IMEngine::GetAudioPosition(f32& Position)
+{
+	Position = CurrentPosition;
+	return OSR_SUCCESS;
 }
 
 OSRCODE

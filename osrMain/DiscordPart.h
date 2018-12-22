@@ -6,18 +6,21 @@
 class DiscordNetwork
 {
 public:
+	STRING128 szName;
+	STRING128 szString;
 
 	enum class StatusNumber
 	{
 		Waiting,
 		OpenedAudio,
 		PlayingAudio,
-		WorkingWithAudio,
 		Processing
 	};
 
 	void Init()
 	{
+		memset(szName, 0, 128);
+		memset(szString, 0, 128);
 		DiscordEventHandlers DiscordHandler = { nullptr };
 		Discord_Initialize("519951399023280149", &DiscordHandler, (int)true, nullptr);
 		bInit = true;
@@ -42,37 +45,38 @@ public:
 
 		PresenceInfo.startTimestamp = time(nullptr);
 		PresenceInfo.largeImageText = "Digital Workstation";
-		PresenceInfo.details = "Current Track";
+		PresenceInfo.smallImageText = "Version: OSR 0.46a";
 
 		bool bOnLevel = true;
 
+#pragma execution_character_set("utf-8")
 		switch (CStatus)
 		{
 		case StatusNumber::OpenedAudio: 
-			PresenceInfo.largeImageKey = "OPEN";
+			PresenceInfo.smallImageKey = "open";
+			_snprintf_s(szString, 128, "%s%s", u8"Opened Track: ", szName);
+			PresenceInfo.details = szString;
 			break;
 		case StatusNumber::PlayingAudio: 
-			PresenceInfo.largeImageKey = "PLAY";
-			break;
-		case StatusNumber::WorkingWithAudio:
-			PresenceInfo.largeImageKey = "WORK";
+			PresenceInfo.smallImageKey = "play";
+			_snprintf_s(szString, 128, "%s%s", u8"Playing Track: ", szName);
+			PresenceInfo.details = szString;
 			break;
 		case StatusNumber::Processing: 
-			PresenceInfo.largeImageKey = "PRCS";
+			PresenceInfo.smallImageKey = "prcs";
+			_snprintf_s(szString, 128, "%s%s", u8"Processing Track: ", szName);
+			PresenceInfo.details = szString;
 			break;
 		case StatusNumber::Waiting: 
-			PresenceInfo.largeImageKey = "WAIT";
-			PresenceInfo.details = "Waiting for audio";
+			PresenceInfo.smallImageKey = "wait";
+			PresenceInfo.details = u8"Waiting for audio";
 			break;
 		}	
-
-		//STRING64 CurrentTrack 
 		
-		PresenceInfo.largeImageKey = "OSRLOGO";
+		PresenceInfo.largeImageKey = "osrlogo";
 
 		Discord_UpdatePresence(&PresenceInfo);
 	}
-
 
 	~DiscordNetwork()
 	{
@@ -81,5 +85,6 @@ public:
 
 private:
 	bool bInit;
+
 };
 

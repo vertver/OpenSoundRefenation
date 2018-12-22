@@ -288,3 +288,511 @@ class OSRSampleEx : public OSRSample
 	u32 CurrentSystem;
 	u8 IsBigEndian;
 };
+
+class IOSRFileSystem
+{
+public:
+	virtual void Open(const char* PathToFile, u8*& pOutStream, size_t& OutSize) = 0;
+	virtual void SetPosition(OSRHandle& Handle, size_t FilePosition) = 0;
+	virtual size_t GetCurrentSize(OSRHandle& Handle) = 0;
+
+	virtual void Read(OSRHandle& Handle, u8*& pOutStream, size_t& OutSize) = 0;
+	virtual void ReadSize(OSRHandle& Handle, size_t& SizeToRead, void*& pOutFile) = 0;
+	virtual void Write(OSRHandle& Handle, u8*& pOutStream, size_t& OutSize) = 0;
+
+	virtual void GetPathUTF8(OSRHandle& OutHandle, const char*& OutString, size_t& OutStringSize) = 0;
+	virtual bool IsAudio(const char* PathToFile) = 0;
+
+	virtual void OpenHandle(const char* PathToFile, OSRHandle& OutHandle) = 0;
+	virtual void CloseThisHandle(OSRHandle& OutHandle) = 0;
+
+	OSRHandle LocalHandle;
+};
+
+#ifdef WIN32
+#include <psapi.h>
+#include <strsafe.h>
+#include <strsafe.h>
+
+class IOSRWin32FileSystem : public IOSRFileSystem
+{
+	IOSRWin32FileSystem() {};
+	IOSRWin32FileSystem(LPCWSTR PathToFile)
+	{
+		OpenFileHandleW(PathToFile, LocalHandle);
+	}
+
+	IOSRWin32FileSystem(LPCSTR PathToFile)
+	{
+		OpenHandle(PathToFile, LocalHandle);
+	}
+
+	~IOSRWin32FileSystem()
+	{
+		CloseThisHandle(LocalHandle);
+	}
+
+	// allocating by AdvanceAlloc (can be VirtualAlloc or HeapAlloc)
+	void Open(const char* PathToFile, u8*& pOutStream, size_t& OutSize) override
+	{
+		OpenFileToByteStreamA(PathToFile, pOutStream, OutSize);
+	}
+
+	void OpenFileToByteStreamA(const char* PathToFile, u8*& pOutStream, size_t& OutSize)
+	{
+		if (!PathToFile) { return; }
+
+		WSTRING_PATH szPath = { 0 };
+		DWORD OutSizeword = 0;
+		LARGE_INTEGER largeCount = { 0 };
+		size_t uSize = 0;
+
+		if (MultiByteToWideChar(CP_UTF8, 0, PathToFile, strlen(PathToFile), szPath, sizeof(WSTRING_PATH)))
+		{
+			// open handle and read audio file to buffer
+			LocalHandle = CreateFileW(szPath, GENERIC_READ, NULL, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+			if (!LocalHandle && LocalHandle == INVALID_HANDLE_VALUE) { return; }
+
+			GetFileSizeEx(LocalHandle, &largeCount);
+			uSize = largeCount.QuadPart;
+
+			// allocate pointer and get data to it
+			pOutStream = (u8*)FastAlloc(uSize);
+
+			if (!ReadFile(LocalHandle, pOutStream, uSize, &OutSizeword, nullptr))
+			{
+				FREEKERNELHEAP(pOutStream);
+				CloseHandle(LocalHandle);
+				return;
+			}
+
+			CloseHandle(LocalHandle);
+		}
+	}
+
+	void OpenFileToByteStreamW(const wchar_t* PathToFile, u8*& pOutStream, size_t& OutSize)
+	{
+		if (!PathToFile) { return; }
+
+		DWORD OutSizeword = 0;
+		LARGE_INTEGER largeCount = { 0 };
+		size_t uSize = 0;
+
+		// open handle and read audio file to buffer
+		LocalHandle = CreateFileW(PathToFile, GENERIC_READ, NULL, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+		if (!LocalHandle && LocalHandle == INVALID_HANDLE_VALUE) { return; }
+
+		GetFileSizeEx(LocalHandle, &largeCount);
+		uSize = largeCount.QuadPart;
+
+		// allocate pointer and get data to it
+		pOutStream = (u8*)FastAlloc(uSize);
+
+		if (!ReadFile(LocalHandle, pOutStream, uSize, &OutSizeword, nullptr))
+		{
+			FREEKERNELHEAP(pOutStream);
+			CloseHandle(LocalHandle);
+			return;
+		}
+
+		CloseHandle(LocalHandle);
+		LocalHandle = nullptr;
+	}
+
+	void OpenHandle(const char* PathToFile, OSRHandle& OutHandle) override
+	{
+		OpenFileHandleA(PathToFile, OutHandle);
+	}
+
+	void OpenFileHandleA(const char* PathToFile, OSRHandle& OutHandle)
+	{
+		WSTRING_PATH szPath = { 0 };
+
+		if (MultiByteToWideChar(CP_UTF8, 0, PathToFile, strlen(PathToFile), szPath, sizeof(WSTRING_PATH)))
+		{
+			OutHandle = CreateFileW(szPath, GENERIC_READ | GENERIC_WRITE, NULL, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+			if (OutHandle == INVALID_HANDLE_VALUE) { OutHandle = nullptr; return; }
+			LocalHandle = OutHandle;
+		}
+	}
+
+	void OpenFileHandleW(const wchar_t* PathToFile, OSRHandle& OutHandle)
+	{
+		OutHandle = CreateFileW(PathToFile, GENERIC_READ | GENERIC_WRITE, NULL, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+		if (OutHandle == INVALID_HANDLE_VALUE) { OutHandle = nullptr; return;}
+		LocalHandle = OutHandle;
+	}
+
+	void SetPosition(OSRHandle& Handle, size_t FilePosition) override
+	{
+		LARGE_INTEGER largeInt = { NULL };
+		GetFileSizeEx(Handle, &largeInt);
+		
+		if (largeInt.QuadPart >= FilePosition)
+		{
+			largeInt.QuadPart = FilePosition;
+			SetFilePointerEx(Handle, largeInt, nullptr, FILE_BEGIN);
+		}
+	}
+
+	void Read(OSRHandle& Handle, u8*& pOutStream, size_t& OutSize) override
+	{
+		if (!Handle) { return; };
+		DWORD OutSizeword = 0;
+		LARGE_INTEGER largeCount = { 0 };
+
+		GetFileSizeEx(Handle, &largeCount);
+		OutSize = largeCount.QuadPart;
+
+		// allocate pointer and get data to it
+		pOutStream = (u8*)FastAlloc(OutSize);
+
+		if (!ReadFile(Handle, pOutStream, OutSize, &OutSizeword, nullptr))
+		{
+			FREEKERNELHEAP(pOutStream);
+			CloseHandle(Handle);
+			Handle = nullptr;
+			return;
+		}
+	}
+
+	void ReadSize(OSRHandle& Handle, size_t& SizeToRead, void*& pOutFile) override
+	{
+		if (!Handle) { return; };
+		DWORD OutSizeword = 0;
+		SIZE_T OutSize = 0;
+		LARGE_INTEGER largeCount = { 0 };
+
+		GetFileSizeEx(Handle, &largeCount);
+		OutSize = largeCount.QuadPart;
+		
+		if (OutSize > SizeToRead)
+		{
+			// allocate pointer and get data to it
+			pOutFile = (u8*)FastAlloc(SizeToRead);
+
+			if (!ReadFile(Handle, pOutFile, SizeToRead, &OutSizeword, nullptr))
+			{
+				FREEKERNELHEAP(pOutFile);
+				CloseHandle(Handle);
+				Handle = nullptr;
+				return;
+			}
+		}
+		else
+		{
+			// allocate pointer and get data to it
+			pOutFile = (u8*)FastAlloc(OutSize);
+
+			if (!ReadFile(Handle, pOutFile, OutSize, &OutSizeword, nullptr))
+			{
+				FREEKERNELHEAP(pOutFile);
+				CloseHandle(Handle);
+				Handle = nullptr;
+				return;
+			}
+
+			SizeToRead = OutSizeword;
+		}
+	}
+
+	void Write(OSRHandle& Handle, u8*& pOutStream, size_t& OutSize) override
+	{
+		if (!Handle) { return; };
+
+		DWORD OutSizeword = 0;
+
+		if (!WriteFile(Handle, pOutStream, OutSize, &OutSizeword, nullptr))
+		{
+			CloseHandle(Handle);
+			Handle = nullptr;
+			return;
+		}
+	}
+
+	void GetPathUTF8(OSRHandle& OutHandle, const char*& OutString, size_t& OutStringSize) override
+	{
+		BOOL bSuccess = FALSE;
+		WSTRING_PATH FileNameWideChar = { 0 };
+		HANDLE hFileMap;
+		DWORD dwFileSizeHi = 0;
+		DWORD dwFileSizeLo = 0;
+		LARGE_INTEGER FileSize = { 0 };
+
+		GetFileSizeEx(OutHandle, &FileSize);
+		dwFileSizeLo = FileSize.QuadPart;
+
+		hFileMap = CreateFileMapping(OutHandle, nullptr, PAGE_READONLY, 0, 1, nullptr);
+		if (hFileMap)
+		{
+			// create a file mapping to get the file name.
+			void* pMem = MapViewOfFile(hFileMap, FILE_MAP_READ, 0, 0, 1);
+
+			if (pMem)
+			{
+				if (GetMappedFileNameW(GetCurrentProcess(), pMem, FileNameWideChar, MAX_PATH))
+				{
+					// translate path with device name to drive letters.
+					WCHAR szTemp[520];
+					szTemp[0] = '\0';
+
+					if (GetLogicalDriveStringsW(520 - 1, szTemp))
+					{
+						WSTRING_PATH szName;
+						WCHAR szDrive[3] = L" :";
+						BOOL bFound = FALSE;
+						WCHAR* p = szTemp;
+
+						do
+						{
+							// copy the drive letter to the template string
+							*szDrive = *p;
+
+							// look up each device name
+							if (QueryDosDeviceW(szDrive, szName, MAX_PATH))
+							{
+								size_t uNameLen = wcslen(szName);
+
+								if (uNameLen < MAX_PATH)
+								{
+									bFound = _wcsnicmp(FileNameWideChar, szName, uNameLen) == 0 && *(FileNameWideChar + uNameLen) == L'\\';
+
+									if (bFound)
+									{
+										// reconstruct pszFilename using szTempFile
+										// replace device path with DOS path
+										WSTRING_PATH szTempFile;
+										StringCchPrintfW(szTempFile,
+											MAX_PATH,
+											L"%s%s",
+											szDrive,
+											FileNameWideChar + uNameLen);
+										StringCchCopyNW(FileNameWideChar, MAX_PATH + 1, szTempFile, wcslen(szTempFile));
+									}
+								}
+							}
+
+							// go to the next NULL character.
+							while (*p++);
+						} while (!bFound && *p); // end of string
+					}
+				}
+				bSuccess = TRUE;
+				UnmapViewOfFile(pMem);
+			}
+
+			CloseHandle(hFileMap);
+		}
+
+		if (bSuccess)
+		{
+			// we need to get size of data to allocate
+			OutStringSize = WideCharToMultiByte(CP_UTF8, 0, FileNameWideChar, -1, nullptr, 0, nullptr, nullptr);
+
+			if (OutStringSize)
+			{
+				// allocate new string at kernel heap
+				OutString = (LPSTR)FastAlloc(++OutStringSize);
+
+				ASSERT2(WideCharToMultiByte(CP_UTF8, 0, FileNameWideChar, -1, const_cast<LPSTR>(OutString), OutStringSize, nullptr, nullptr), L"Can't convert wchar_t to char");
+			}
+		}
+	}
+
+	void GetPathUTF16(OSRHandle& OutHandle, WSTRING_PATH& OutString)
+	{
+		BOOL bSuccess = FALSE;
+		HANDLE hFileMap;
+		DWORD dwFileSizeHi = 0;
+		DWORD dwFileSizeLo = 0;
+		LARGE_INTEGER FileSize = { 0 };
+
+		GetFileSizeEx(OutHandle, &FileSize);
+		dwFileSizeLo = FileSize.QuadPart;
+
+		hFileMap = CreateFileMapping(OutHandle, nullptr, PAGE_READONLY, 0, 1, nullptr);
+		if (hFileMap)
+		{
+			// create a file mapping to get the file name.
+			void* pMem = MapViewOfFile(hFileMap, FILE_MAP_READ, 0, 0, 1);
+
+			if (pMem)
+			{
+				if (GetMappedFileNameW(GetCurrentProcess(), pMem, OutString, MAX_PATH))
+				{
+					// translate path with device name to drive letters.
+					WCHAR szTemp[520];
+					szTemp[0] = '\0';
+
+					if (GetLogicalDriveStringsW(520 - 1, szTemp))
+					{
+						WSTRING_PATH szName;
+						WCHAR szDrive[3] = L" :";
+						BOOL bFound = FALSE;
+						WCHAR* p = szTemp;
+
+						do
+						{
+							// copy the drive letter to the template string
+							*szDrive = *p;
+
+							// look up each device name
+							if (QueryDosDeviceW(szDrive, szName, MAX_PATH))
+							{
+								size_t uNameLen = wcslen(szName);
+
+								if (uNameLen < MAX_PATH)
+								{
+									bFound = _wcsnicmp(OutString, szName, uNameLen) == 0 && *(OutString + uNameLen) == L'\\';
+
+									if (bFound)
+									{
+										// reconstruct pszFilename using szTempFile
+										// replace device path with DOS path
+										WSTRING_PATH szTempFile;
+										StringCchPrintfW(szTempFile,
+											MAX_PATH,
+											L"%s%s",
+											szDrive,
+											OutString + uNameLen);
+										StringCchCopyNW(OutString, MAX_PATH + 1, szTempFile, wcslen(szTempFile));
+									}
+								}
+							}
+
+							// go to the next NULL character.
+							while (*p++);
+						} while (!bFound && *p); // end of string
+					}
+				}
+				bSuccess = TRUE;
+				UnmapViewOfFile(pMem);
+			}
+
+			CloseHandle(hFileMap);
+		}
+	}
+
+	bool IsAudio(const char* PathToFile) override
+	{
+		return IsFileIsAudioA(PathToFile);
+	}
+
+	bool IsFileIsAudioA(const char* PathToFile)
+	{
+		int StringSize = 0;
+		int TypeSize = 0;
+		WSTRING_PATH szPath = { 0 };
+		LPCWSTR szTypes[] = { 
+		L"mp3", L"MP3", L"wav", L"WAV", L"flac", L"FLAC", L"aiff", L"AIFF", L"ogg", L"OGG", L"opus", L"OPUS", L"alac", L"ALAC", L"aac", L"AAC", L"m4a", L"M4A" };
+
+		if ((StringSize = MultiByteToWideChar(CP_UTF8, 0, PathToFile, strlen(PathToFile), szPath, sizeof(WSTRING_PATH))))
+		{
+			for (size_t i = wcslen(szPath); i > 0; i--)
+			{
+				WCHAR cbSymbol = szPath[i];
+			
+				if (cbSymbol == L'.') { break; }
+
+				TypeSize++;
+			}
+		
+			if (TypeSize)
+			{
+				for (LPCWSTR CurrentType : szTypes)
+				{
+					if (!wcscmp(CurrentType, (&szPath[0] + StringSize - TypeSize)))
+					{
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	bool IsFileIsAudioW(const wchar_t* PathToFile)
+	{
+		int StringSize = 0;
+		int TypeSize = 0;
+		LPCWSTR szTypes[] = {
+		L"mp3", L"MP3", L"wav", L"WAV", L"flac", L"FLAC", L"aiff", L"AIFF", L"ogg", L"OGG", L"opus", L"OPUS", L"alac", L"ALAC", L"aac", L"AAC", L"m4a", L"M4A" };
+
+		if (PathToFile)
+		{
+			for (size_t i = wcslen(PathToFile); i > 0; i--)
+			{
+				WCHAR cbSymbol = PathToFile[i];
+
+				if (cbSymbol == L'.') { break; }
+
+				TypeSize++;
+			}
+
+			if (TypeSize)
+			{
+				for (LPCWSTR CurrentType : szTypes)
+				{
+					if (!wcscmp(CurrentType, (&PathToFile[0] + StringSize - TypeSize)))
+					{
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	void CloseThisHandle(OSRHandle& OutHandle) override
+	{
+		if (OutHandle) { CloseHandle(OutHandle); };
+	}
+};
+#else 
+class IOSRPosixFileSystem : IOSRFileSystem
+{
+
+};
+#endif
+
+class IAllocatorPool
+{
+public:
+	void* new_pull(void* Data, size_t Size) 
+	{
+		void* LocalData = nullptr;
+		size_t TempSize = CurrentSize + Size;
+		ptrdiff_t PointerTo = 0;
+
+		LocalData = AdvanceAlloc(TempSize, HEAP_MEMORY_ALLOC);
+		PointerTo = ptrdiff_t(LocalData) + CurrentSize;
+
+		memcpy_s(LocalData, TempSize, CurrentPointer, CurrentSize);
+		memcpy_s((void*)PointerTo, Size, Data, Size);
+
+		FREEKERNELHEAP(CurrentPointer);
+		CurrentPointer = LocalData;
+		CurrentSize = TempSize;
+
+		return LocalData;
+	}
+
+	void* create_pointer()
+	{
+		void* LocalPointer = nullptr;
+		
+		LocalPointer = AdvanceAlloc(CurrentSize, HEAP_MEMORY_ALLOC);
+		memcpy_s(LocalPointer, CurrentSize, CurrentPointer, CurrentSize);
+
+		FREEKERNELHEAP(CurrentPointer);
+		CurrentPointer = LocalPointer;
+
+		return LocalPointer;
+	}
+
+private:
+	void* CurrentPointer;
+	size_t CurrentSize;
+};

@@ -103,7 +103,6 @@ enum WindowTypes
 class Math
 {
 public:
-	VOID BuildWindow(WindowTypes windowType, float* pData, float* pFFT, size_t DataSize);
-	VOID GetVUValue(u8* pData, float* pVUValue, u32 dwSampleRate, u32 dwBlockSize, u8 cbChannels, u8 cbBits);
-
+	void BuildWindow(WindowTypes windowType, float* pData, float* pFFT, size_t DataSize);
+	void GetVUValue(u8* pData, float* pVUValue, u32 dwSampleRate, u32 dwBlockSize, u8 cbChannels, u8 cbBits);
 };

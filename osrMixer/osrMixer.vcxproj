@@ -59,14 +59,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>DEBUG;ENGINE_EXPORTS;_DEBUG;OSRMIXER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\osrKernel;$(SolutionDir)\osrDecoder;$(SolutionDir)\osrPlugins;$(SolutionDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\osrKernel;$(SolutionDir)\osrDecoder;$(SolutionDir)\osrPlugins;$(SolutionDir)\include;$(SolutionDir)\include\soxr\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)\debug\;$(SolutionDir)\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>osrDecoder.lib;osrPlugins.lib;osrKernel.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;winmm.lib;dsound.lib;avrt.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>osrDecoder.lib;osrPlugins.lib;osrKernel.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;winmm.lib;dsound.lib;avrt.lib;dxguid.lib;%(AdditionalDependencies);libsoxr-1.lib</AdditionalDependencies>
       <OutputFile>$(OutDir)\osrMixer.dll</OutputFile>
     </Link>
   </ItemDefinitionGroup>
@@ -80,7 +80,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>ENGINE_EXPORTS;NDEBUG;OSRMIXER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\osrKernel;$(SolutionDir)\osrDecoder;$(SolutionDir)\osrPlugins;$(SolutionDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\osrKernel;$(SolutionDir)\osrDecoder;$(SolutionDir)\osrPlugins;$(SolutionDir)\include;$(SolutionDir)\include\soxr\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
@@ -90,7 +90,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>$(OutDir)\osrMixer.dll</OutputFile>
       <AdditionalLibraryDirectories>$(SolutionDir)\release\;$(SolutionDir)\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>osrDecoder.lib;osrPlugins.lib;osrKernel.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;winmm.lib;dsound.lib;avrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>osrDecoder.lib;osrPlugins.lib;osrKernel.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;winmm.lib;dsound.lib;avrt.lib;%(AdditionalDependencies);libsoxr-1.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

@@ -20,6 +20,7 @@ bool Window_Flag_Resizeing = false;
 DLL_API bool IsBlur = false;
 DLL_API bool IsLoad = false;
 DLL_API float ProgressBartest = 0.0;
+DiscordNetwork disc = {};
 
 DropTarget dropTarget;
 OSR::Mixer OutMixer;
@@ -134,14 +135,18 @@ CycleFunc()
 
 	if (bDemo)
 	{
-		float f = 0.0f;
+		static float f = 0.0f;
 		int counter = 0;
 
 		ImGui::Begin("Test Window");
 
 		ImGui::Text("File dialog");
 
-		ImGui::SliderFloat("Track Position", &f, 0.0f, 1.0f);
+		if (ImGui::SliderFloat("Track Position", &f, 0.0f, 1.0f))
+		{
+			OutMixer.SetAudioPosition(f);
+		}
+
 		ImGui::ColorEdit3("Clear color", (float*)&clear_color);
 
 		if (ImGui::Button("Play Audio"))
@@ -331,10 +336,8 @@ OSR::UserInterface::CreateMainWindow()
 	}
 	io.Fonts->Build();
 
-	OutMixer.CreateMixer(MainHwnd);
+	OutMixer.CreateMixer(MainHwnd, (LPVOID)&disc);
 
-
-	DiscordNetwork disc = {};
 	disc.Init();
 	disc.SetStatus(DiscordNetwork::StatusNumber::Waiting);
 
@@ -357,9 +360,9 @@ OSR::UserInterface::CreateMainWindow()
 		}
 		else
 		{
-			Sleep(1);
-		}
 
+		}
+		Sleep(1);
 		CycleFunc();
 		//g_pSwapChain->Present(0, 0); // Present without vsync
 	}

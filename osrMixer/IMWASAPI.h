@@ -161,7 +161,7 @@ public:
 
 		_RELEASE(pAudioRenderClient);
 		_RELEASE(pAudioClient);
-		_RELEASE(pRenderStream);
+		_RELEASE(pRenderStream);  
 		_RELEASE(pOutVol);
 
 		if (pHost)
@@ -183,6 +183,8 @@ public:
 	OSRCODE CreateDefaultDevice(REFERENCE_TIME referTime);
 	OSRCODE StartDevice(LPVOID pProc);
 	OSRCODE StopDevice();
+	OSRCODE SetAudioPosition(f32 Position);
+	OSRCODE GetAudioPosition(f32& Position);
 
 	OSRCODE RestartDevice(REFERENCE_TIME referTime)
 	{
@@ -192,13 +194,6 @@ public:
 		_RELEASE(pAudioClient);
 		_RELEASE(pRenderStream);
 		_RELEASE(pOutVol);
-
-		if (pHost)
-		{
-			pHost->SuspendPlugin();
-			pHost->ClosePluginWindow();
-			pHost->DestroyPluginWindow();
-		}
 
 		return CreateDefaultDevice(referTime);
 	}
