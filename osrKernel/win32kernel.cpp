@@ -121,7 +121,7 @@ CreateTempDirectory()
 
 	// get program directory to create 'temp' directory
 	GetApplicationDirectory(&szFullPath);
-	_snwprintf_s(szPathTemp, sizeof(WSTRING_PATH), L"%s%s", szFullPath, L"\\Temp");
+	_snwprintf_s(szPathTemp, sizeof(WSTRING_PATH), L"%s%s", szFullPath, L"\\Temp"); //-V575
 
 	DWORD dwGetDir = GetFileAttributesW(szPathTemp);
 	if (dwGetDir == INVALID_FILE_ATTRIBUTES || !(dwGetDir & FILE_ATTRIBUTE_DIRECTORY))
@@ -155,7 +155,7 @@ GetTimeString(
 	SYSTEMTIME sysTime = { NULL };
 	GetSystemTime(&sysTime);
 	
-	_snwprintf_s(szTimeString, sizeof(WSTRING128), L"%d%d%d%d%d", sysTime.wYear, sysTime.wMonth, sysTime.wDay, sysTime.wHour, sysTime.wMinute);
+	_snwprintf_s(szTimeString, sizeof(WSTRING128), L"%d%d%d%d%d", sysTime.wYear, sysTime.wMonth, sysTime.wDay, sysTime.wHour, sysTime.wMinute); //-V575
 
 	memcpy((LPVOID)lpString, szTimeString, sizeof(WSTRING128));
 }
@@ -174,7 +174,7 @@ CreateMinidump(
 	GetApplicationDirectory(&pr);
 	memcpy(szPath, pr, 520);
 
-	_snwprintf_s(szTemp, sizeof(WSTRING512), L"%s%s", szPath, L"\\Dump");
+	_snwprintf_s(szTemp, sizeof(WSTRING512), L"%s%s", szPath, L"\\Dump"); //-V575
 
 	// create new path "dump"
 	DWORD dwGetDir = GetFileAttributesW(szTemp);
@@ -196,12 +196,12 @@ CreateMinidump(
 	GetTimeString(szTime);
 
 	// create minidump file handle
-	_snwprintf_s(szFullPath, sizeof(WSTRING512), L"%s%s%s%s%s%s%s", szTemp, L"\\", L"OpenSoundRefenation_", szName, L"_", szTime, L".mdmp");
+	_snwprintf_s(szFullPath, sizeof(WSTRING512), L"%s%s%s%s%s%s%s", szTemp, L"\\", L"OpenSoundRefenation_", szName, L"_", szTime, L".mdmp"); //-V575
 	HANDLE hFile = CreateFileW(szFullPath, GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
-		_snwprintf_s(szFullPath, sizeof(WSTRING512), L"%s%s%s%s%s%s%s", szPath, L"\\", L"OpenSoundRefenation_", szName, L"_", szTime, L".mdmp");
+		_snwprintf_s(szFullPath, sizeof(WSTRING512), L"%s%s%s%s%s%s%s", szPath, L"\\", L"OpenSoundRefenation_", szName, L"_", szTime, L".mdmp"); //-V575
 		hFile = CreateFileW(szFullPath, GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 	}
 
@@ -217,7 +217,7 @@ CreateMinidump(
 		// write the dump
 		if (MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile, dump_flags, &ExInfo, nullptr, nullptr))
 		{
-			_snwprintf_s(szTemp, sizeof(WSTRING512), L"%s%s%s", L"Minidump saved at (", szFullPath, L")");
+			_snwprintf_s(szTemp, sizeof(WSTRING512), L"%s%s%s", L"Minidump saved at (", szFullPath, L")"); //-V575
 			MessageBoxW(nullptr, szTemp, L"Minidump saved", MB_OK | MB_ICONINFORMATION);
 			return EXCEPTION_EXECUTE_HANDLER;
 		}

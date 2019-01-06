@@ -1,5 +1,5 @@
 ﻿  VSTWindows.cpp
-i:\osr\opensoundrefenation\osrplugins\vstwindows.cpp(488): warning C4244: аргумент: преобразование "const LONG_PTR" в "DWORD", возможна потеря данных
-i:\osr\opensoundrefenation\osrplugins\vstwindows.cpp(538): warning C4244: аргумент: преобразование "LONG_PTR" в "DWORD", возможна потеря данных
-i:\osr\opensoundrefenation\osrplugins\vstwindows.cpp(396): warning C4715: VSTHost::CheckPlugin: значение возвращается не при всех путях выполнения
+i:\osr\opensoundrefenation\osrplugins\vstwindows.cpp(487): warning C4244: аргумент: преобразование "const LONG_PTR" в "DWORD", возможна потеря данных
+i:\osr\opensoundrefenation\osrplugins\vstwindows.cpp(549): warning C4244: аргумент: преобразование "LONG_PTR" в "DWORD", возможна потеря данных
+i:\osr\opensoundrefenation\osrplugins\vstwindows.cpp(396): warning C4715: IWin32VSTHost::CheckPlugin: значение возвращается не при всех путях выполнения
   osrPlugins.vcxproj -> I:\OSR\OpenSoundRefenation\\debug\osrPlugins.dll

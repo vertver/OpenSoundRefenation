@@ -4,6 +4,7 @@
 #include "DiscordPart.h"
 
 DiscordNetwork* pNetwork;
+IVSTHost* pHost = nullptr;
 MMEngine mmEngine;
 IMEngine eEngine;
 LOOP_INFO lInfo;
@@ -67,9 +68,9 @@ OSR::Mixer::CreateMixer(
 	eEngine.CreateDefaultDevice(600000);
 
 #ifdef TEST_VST
-	static VSTHost vstHost = {};
-	pVSTHost = &vstHost;
-	eEngine.pHost = (VSTHost*)pVSTHost;
+	pHost = new IWin32VSTHost();
+	pVSTHost = pHost;
+	eEngine.pHost = (IWin32VSTHost*)pVSTHost;
 	if (OSRSUCCEDDED(OpenFileDialog(&pathToDll)))
 	{
 		eEngine.pHost->LoadPlugin(pathToDll);
@@ -145,4 +146,24 @@ void
 OSR::Mixer::SetAudioPosition(f32 Position)
 {
 	eEngine.SetAudioPosition(Position);
+}
+
+void
+OSR::Mixer::OpenPlugin(bool& isOpen)
+{
+	if (pVSTHost)
+	{
+		IVSTHost* pLocalHost = (IVSTHost*)pVSTHost;
+
+		if (!isOpen)
+		{
+			pLocalHost->ClosePluginWindow();
+		}
+		else
+		{
+			pLocalHost->OpenPluginWindow();
+		}
+
+		isOpen = !isOpen;
+	}
 }

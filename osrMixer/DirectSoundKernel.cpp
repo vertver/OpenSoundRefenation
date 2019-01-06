@@ -15,7 +15,8 @@ DEngine::DEngine() :
 	pDirectSound(nullptr), 
 	pDirectBuffer(nullptr), 
 	pSupportBuffer(nullptr),
-	pBuffer(nullptr)
+	pBuffer(nullptr),
+	dwBufferSize(0)
 {
 
 }

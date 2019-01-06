@@ -142,7 +142,7 @@ struct DiyFp {
             uint64_t u64;
         }u;
         const uint64_t be = (e == kDpDenormalExponent && (f & kDpHiddenBit) == 0) ? 0 : 
-            static_cast<uint64_t>(e + kDpExponentBias);
+            static_cast<uint64_t>(e + kDpExponentBias); //-V1028
         u.u64 = (f & kDpSignificandMask) | (be << kDpSignificandSize);
         return u.d;
     }

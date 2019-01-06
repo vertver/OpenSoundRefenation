@@ -147,8 +147,6 @@ LONG WINAPI NtReadVirtualMemory(HANDLE hProcess, PVOID pAddressToRead, PVOID pAd
 class DLL_API ProcessManager
 {
 public:
-	ProcessManager() { dwNumberOfProcesses = NULL; }
-
 	VOID CreateNewProcess(BOOL bUseShellExecute, BOOL bRunAsAdmin, LPCWSTR lpFullPathToModule, LPCWSTR lpCmdLine, LPDWORD lpProcessId);
 	VOID CreateSharedMemory(LPVOID* lpSharedMemory, LPVOID lpSharedData, DWORD dwSharedMemorySize, LPCWSTR lpSharedMemoryName);
 	DWORD GetProcessesNumber() { return dwNumberOfProcesses; }
@@ -157,8 +155,8 @@ public:
 	VOID WriteUserSharedMemory(LPCWSTR lpSharedMemoryName, LPVOID lpSharedData, DWORD dwSharedMemorySizeToWrite);
 
 private:
-	DWORD dwNumberOfProcesses;
-	PEB64 pebStruct;
+	DWORD dwNumberOfProcesses = 0;
+	PEB64 pebStruct = { 0 };
 };
 
 extern DLL_API ProcessManager processManager;

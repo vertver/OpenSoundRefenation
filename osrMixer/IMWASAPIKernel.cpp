@@ -49,7 +49,7 @@ WASAPIThreadProc(
 	Sample = pProc->pSample;
 
 	u32 s = dwSampleRate - (dwSampleRate / (1000 / (1000 / (dwSampleRate / (FrameSize)))));
-	u32 InputSize = pProc->pLoopInfo->waveFormat.nSamplesPerSec / (1000 / (1000 / (dwSampleRate / (FrameSize))));
+	//u32 InputSize = pProc->pLoopInfo->waveFormat.nSamplesPerSec / (1000 / (1000 / (dwSampleRate / (FrameSize))));
 
 	if (!Sample && pProc->pLoopInfo)
 	{
@@ -168,7 +168,7 @@ WASAPIThreadProc(
 						dwSampleRate,
 						Sample->BufferSizeOutput,
 						Sample->ChannelsOutput,
-						pProc->pEngine->pHost
+						(IWin32VSTHost*)pProc->pEngine->pHost
 					);
 				}
 
@@ -409,7 +409,6 @@ IMEngine::StartDevice(
 			if (hThreadExitEvent) { ResetEvent(hThreadExitEvent); }
 			if (hThreadLoadSamplesEvent) { ResetEvent(hThreadLoadSamplesEvent); }
 			SetEvent(hStart);
-			while (!hThreadLoadSamplesEvent) { Sleep(0); }
 			SetEvent(hThreadLoadSamplesEvent);
 		}
 	}

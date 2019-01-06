@@ -152,7 +152,7 @@ DropTarget::Drop(
 
 			if (dwFileCount < 2)
 			{
-				for (DWORD i = 0; i < dwFileCount; i++)
+				for (DWORD i = 0; i < dwFileCount; i++) //-V1008
 				{
 					DWORD dwPathSize = DragQueryFileW(hDrop, i, nullptr, 0);
 

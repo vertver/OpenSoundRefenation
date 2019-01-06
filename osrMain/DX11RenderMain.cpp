@@ -91,7 +91,7 @@ DX11Render::CreateRenderWindow(HWND WindowHandle)
 
 	if (FAILED(hr))
 	{
-		FAILEDX2(
+		FAILEDX2( //-V568
 			D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE,
 			NULL, NULL, &pFeatureLevels[1], sizeof(pFeatureLevels) / sizeof(pFeatureLevels[0] - 1),
 			D3D11_SDK_VERSION, &sd, &m_pDXGISwapChain, &m_pDevice, &FeatureLevel, &m_pContext
@@ -103,7 +103,6 @@ DX11Render::CreateRenderWindow(HWND WindowHandle)
 	m_pDevice->CreateRenderTargetView(pBackBuffer, NULL, &m_pRenderTargetView);
 	_RELEASE(pBackBuffer);
 
-	if (!m_pDevice) { return DX_OSR_BAD_DEVICE; }
 	return OSR_SUCCESS;
 }
 
@@ -122,7 +121,7 @@ DX11Render::LoadShader(
 	GetApplicationDirectory(&StaticBuf);
 	memcpy(szPathToDir, StaticBuf, 520);
 
-	_snwprintf_s(szPathToDir, sizeof(WSTRING_PATH), L"%s%s", szPathToDir, L"\\Shaders");
+	_snwprintf_s(szPathToDir, sizeof(WSTRING_PATH), L"%s%s", szPathToDir, L"\\Shaders"); //-V575
 
 	DWORD dwGetDir = GetFileAttributesW(szPathToDir);
 	if (dwGetDir == INVALID_FILE_ATTRIBUTES || !(dwGetDir & FILE_ATTRIBUTE_DIRECTORY))
@@ -145,7 +144,7 @@ DX11Render::LoadShader(
 	}  
 	else
 	{
-		_snwprintf_s(szPathToDir, sizeof(WSTRING_PATH), L"%s%s%s", szPathToDir, L"\\", lpShaderName);
+		_snwprintf_s(szPathToDir, sizeof(WSTRING_PATH), L"%s%s%s", szPathToDir, L"\\", lpShaderName); //-V575
 
 		HANDLE hFile = CreateFileW(szPathToDir, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (!hFile || hFile == INVALID_HANDLE_VALUE) { return FS_OSR_BAD_HANDLE; }

@@ -49,6 +49,8 @@ public:
 		BufferSizeOutput = 0;
 		SampleRateInput = 0;
 		SampleRateOutput = 0;
+		SamplePosition = 0;
+		ToEndFileSize = 0;
 
 		for (u8 i = 0; i < 16; i++)
 		{
@@ -316,6 +318,7 @@ public:
 
 class IOSRWin32FileSystem : public IOSRFileSystem
 {
+public:
 	IOSRWin32FileSystem() {};
 	IOSRWin32FileSystem(LPCWSTR PathToFile)
 	{
@@ -388,12 +391,7 @@ class IOSRWin32FileSystem : public IOSRFileSystem
 		// allocate pointer and get data to it
 		pOutStream = (u8*)FastAlloc(uSize);
 
-		if (!ReadFile(LocalHandle, pOutStream, uSize, &OutSizeword, nullptr))
-		{
-			FREEKERNELHEAP(pOutStream);
-			CloseHandle(LocalHandle);
-			return;
-		}
+		if (!ReadFile(LocalHandle, pOutStream, uSize, &OutSizeword, nullptr)) { FREEKERNELHEAP(pOutStream); }
 
 		CloseHandle(LocalHandle);
 		LocalHandle = nullptr;
@@ -494,6 +492,11 @@ class IOSRWin32FileSystem : public IOSRFileSystem
 
 			SizeToRead = OutSizeword;
 		}
+	}
+
+	size_t GetCurrentSize(OSRHandle& Handle) override
+	{
+		return 0;
 	}
 
 	void Write(OSRHandle& Handle, u8*& pOutStream, size_t& OutSize) override
@@ -610,7 +613,7 @@ class IOSRWin32FileSystem : public IOSRFileSystem
 		GetFileSizeEx(OutHandle, &FileSize);
 		dwFileSizeLo = FileSize.QuadPart;
 
-		hFileMap = CreateFileMapping(OutHandle, nullptr, PAGE_READONLY, 0, 1, nullptr);
+		hFileMap = CreateFileMappingW(OutHandle, nullptr, PAGE_READONLY, 0, 1, nullptr);
 		if (hFileMap)
 		{
 			// create a file mapping to get the file name.
@@ -750,10 +753,41 @@ class IOSRWin32FileSystem : public IOSRFileSystem
 		if (OutHandle) { CloseHandle(OutHandle); };
 	}
 };
-#else 
-class IOSRPosixFileSystem : IOSRFileSystem
-{
 
+#else
+class IOSRPosixFileSystem : public IOSRFileSystem
+{
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <io.h>
+#include <stdio.h>
+
+public:
+	void Open(const char* PathToFile, u8*& pOutStream, size_t& OutSize) override
+	{
+		int FileHandle = 0;
+		int err = 0;
+		size_t CurrentPos = 0;
+
+		if ((FileHandle = _open(PathToFile, O_WRONLY | O_CREAT, S_IREAD | S_IWRITE)) == -1) { return; }
+		CurrentPos = lseek(FileHandle, 0, SEEK_CUR);
+		OutSize = lseek(FileHandle, 0, SEEK_END);	// get size 
+
+		pOutStream = (u8*)FastAlloc(OutSize);
+
+		if ((err = read(FileHandle, pOutStream, OutSize)) == -1) { FREEKERNELHEAP(pOutStream); return; }
+	}
+
+	void OpenHandle(const char* PathToFile, OSRHandle& OutHandle) override
+	{
+		int FileHandle = 0;
+		int err = 0;
+		size_t CurrentPos = 0;
+
+		if ((FileHandle = _open(PathToFile, O_WRONLY | O_CREAT, S_IREAD | S_IWRITE)) == -1) { return; }
+		OutHandle = (OSRHandle)FileHandle;
+	}
 };
 #endif
 

@@ -308,7 +308,7 @@ ReadAudioFileEx(
 	}
 
 	DWORD dwHeaderId = (*(LPDWORD)*lpData);
-	if (dwHeaderId != 0x46464952 || dwHeaderId != 0x45564157 || dwHeaderId != 0x20746d66)
+	if (dwHeaderId != 0x46464952 && dwHeaderId != 0x45564157 && dwHeaderId != 0x20746d66)
 	{
 		THROW4(L"Can't open file, because this is not sound file.");
 		FreePointer(*lpData, (UINT64)largeSize.QuadPart, VIRTUAL_MEMORY_ALLOC);
@@ -445,7 +445,11 @@ WriteFileFromBuffer(
 	LARGE_INTEGER largeSize = { NULL };
 	largeSize.QuadPart = dwSize;
 
-	if (!GetDiskUsage(largeSize, lpPath)) { return FS_OSR_NO_SPACE; }
+	if (!GetDiskUsage(largeSize, lpPath))
+	{
+		CloseHandle(hFile);
+		return FS_OSR_NO_SPACE; 
+	}
 
 	DWORD dwFileWritten = NULL;
 	DWORD dwHeaderSize = NULL;

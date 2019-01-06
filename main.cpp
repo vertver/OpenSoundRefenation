@@ -26,9 +26,11 @@ WinMain(
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(nShowCmd);
 
-	if (strstr(lpCmdLine, "-admin") || strstr(lpCmdLine, "-a") || strstr(lpCmdLine, "-adm")) { RunWithAdminPrivilege(); }
+	if (strstr(lpCmdLine, "-admin")) { RunWithAdminPrivilege(); }
 
 	// critical section
 	InitApplication();
 	Userinterface.CreateMainWindow();
+
+	return TRUE;
 }

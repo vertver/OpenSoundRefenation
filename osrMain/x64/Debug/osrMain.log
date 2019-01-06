@@ -1,19 +1,19 @@
 ﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(944,5): warning MSB8027: два или более файлов с именем dllmain.cpp выводят результаты в одно и то же расположение. Это может стать причиной неверного результата сборки.  Включенные файлы — ..\include\discord-presence\src\dllmain.cpp, dllmain.cpp.
   stdafx.cpp
-i:\osr\opensoundrefenation\osrkernel\osrsystem.h(180): warning C4018: >: несоответствие типов со знаком и без знака
-i:\osr\opensoundrefenation\osrkernel\osrsystem.h(350): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
-i:\osr\opensoundrefenation\osrkernel\osrsystem.h(362): warning C4267: аргумент: преобразование из "size_t" в "DWORD"; возможна потеря данных
-i:\osr\opensoundrefenation\osrkernel\osrsystem.h(391): warning C4267: аргумент: преобразование из "size_t" в "DWORD"; возможна потеря данных
-i:\osr\opensoundrefenation\osrkernel\osrsystem.h(411): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
-i:\osr\opensoundrefenation\osrkernel\osrsystem.h(431): warning C4018: >=: несоответствие типов со знаком и без знака
-i:\osr\opensoundrefenation\osrkernel\osrsystem.h(450): warning C4267: аргумент: преобразование из "size_t" в "DWORD"; возможна потеря данных
-i:\osr\opensoundrefenation\osrkernel\osrsystem.h(474): warning C4267: аргумент: преобразование из "size_t" в "DWORD"; возможна потеря данных
-i:\osr\opensoundrefenation\osrkernel\osrsystem.h(487): warning C4244: аргумент: преобразование "SIZE_T" в "DWORD", возможна потеря данных
-i:\osr\opensoundrefenation\osrkernel\osrsystem.h(505): warning C4267: аргумент: преобразование из "size_t" в "DWORD"; возможна потеря данных
-i:\osr\opensoundrefenation\osrkernel\osrsystem.h(523): warning C4244: =: преобразование "LONGLONG" в "DWORD", возможна потеря данных
-i:\osr\opensoundrefenation\osrkernel\osrsystem.h(597): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
-i:\osr\opensoundrefenation\osrkernel\osrsystem.h(611): warning C4244: =: преобразование "LONGLONG" в "DWORD", возможна потеря данных
-i:\osr\opensoundrefenation\osrkernel\osrsystem.h(689): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
+i:\osr\opensoundrefenation\osrkernel\osrsystem.h(182): warning C4018: >: несоответствие типов со знаком и без знака
+i:\osr\opensoundrefenation\osrkernel\osrsystem.h(353): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
+i:\osr\opensoundrefenation\osrkernel\osrsystem.h(365): warning C4267: аргумент: преобразование из "size_t" в "DWORD"; возможна потеря данных
+i:\osr\opensoundrefenation\osrkernel\osrsystem.h(394): warning C4267: аргумент: преобразование из "size_t" в "DWORD"; возможна потеря данных
+i:\osr\opensoundrefenation\osrkernel\osrsystem.h(409): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
+i:\osr\opensoundrefenation\osrkernel\osrsystem.h(429): warning C4018: >=: несоответствие типов со знаком и без знака
+i:\osr\opensoundrefenation\osrkernel\osrsystem.h(448): warning C4267: аргумент: преобразование из "size_t" в "DWORD"; возможна потеря данных
+i:\osr\opensoundrefenation\osrkernel\osrsystem.h(472): warning C4267: аргумент: преобразование из "size_t" в "DWORD"; возможна потеря данных
+i:\osr\opensoundrefenation\osrkernel\osrsystem.h(485): warning C4244: аргумент: преобразование "SIZE_T" в "DWORD", возможна потеря данных
+i:\osr\opensoundrefenation\osrkernel\osrsystem.h(508): warning C4267: аргумент: преобразование из "size_t" в "DWORD"; возможна потеря данных
+i:\osr\opensoundrefenation\osrkernel\osrsystem.h(526): warning C4244: =: преобразование "LONGLONG" в "DWORD", возможна потеря данных
+i:\osr\opensoundrefenation\osrkernel\osrsystem.h(600): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
+i:\osr\opensoundrefenation\osrkernel\osrsystem.h(614): warning C4244: =: преобразование "LONGLONG" в "DWORD", возможна потеря данных
+i:\osr\opensoundrefenation\osrkernel\osrsystem.h(692): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
   imgui.cpp
   imgui_demo.cpp
   imgui_draw.cpp
@@ -28,22 +28,21 @@ i:\osr\opensoundrefenation\osrkernel\osrsystem.h(689): warning C4267: аргум
   rpc_connection.cpp
   serialization.cpp
   DX11RenderMain.cpp
+i:\osr\opensoundrefenation\osrmain\dx11rendermain.cpp(290): warning C4244: =: преобразование "DWORD" в "FLOAT", возможна потеря данных
 i:\osr\opensoundrefenation\osrmain\dx11rendermain.cpp(291): warning C4244: =: преобразование "DWORD" в "FLOAT", возможна потеря данных
-i:\osr\opensoundrefenation\osrmain\dx11rendermain.cpp(292): warning C4244: =: преобразование "DWORD" в "FLOAT", возможна потеря данных
-i:\osr\opensoundrefenation\osrmain\dx11rendermain.cpp(298): warning C4838: преобразование из "DWORD" в "LONG" требует сужающего преобразования
-i:\osr\opensoundrefenation\osrmain\dx11rendermain.cpp(301): warning C4838: преобразование из "DWORD" в "float" требует сужающего преобразования
-i:\osr\opensoundrefenation\osrmain\dx11rendermain.cpp(301): warning C4244: инициализация: преобразование "DWORD" в "float", возможна потеря данных
+i:\osr\opensoundrefenation\osrmain\dx11rendermain.cpp(297): warning C4838: преобразование из "DWORD" в "LONG" требует сужающего преобразования
+i:\osr\opensoundrefenation\osrmain\dx11rendermain.cpp(300): warning C4838: преобразование из "DWORD" в "float" требует сужающего преобразования
+i:\osr\opensoundrefenation\osrmain\dx11rendermain.cpp(300): warning C4244: инициализация: преобразование "DWORD" в "float", возможна потеря данных
   DragAndDrop.cpp
   OSRMixer.cpp
-i:\osr\opensoundrefenation\osrmixer\asyncreader.h(75): warning C4101: odone: неиспользованная локальная переменная
   OSRUI.cpp
 i:\osr\opensoundrefenation\osrmain\osrui.cpp(83): warning C4244: аргумент: преобразование "float" в "DWORD", возможна потеря данных
 i:\osr\opensoundrefenation\osrmain\osrui.cpp(106): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
 i:\osr\opensoundrefenation\osrmain\osrui.cpp(107): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
 i:\osr\opensoundrefenation\osrmain\osrui.cpp(127): warning C4244: аргумент: преобразование "double" в "float", возможна потеря данных
 i:\osr\opensoundrefenation\osrmain\osrui.cpp(132): warning C4305: +=: усечение из "double" в "float"
-i:\osr\opensoundrefenation\osrmain\osrui.cpp(187): warning C4244: аргумент: преобразование "double" в "float", возможна потеря данных
-i:\osr\opensoundrefenation\osrmain\osrui.cpp(201): warning C4244: аргумент: преобразование "float" в "DWORD", возможна потеря данных
+i:\osr\opensoundrefenation\osrmain\osrui.cpp(193): warning C4244: аргумент: преобразование "double" в "float", возможна потеря данных
+i:\osr\opensoundrefenation\osrmain\osrui.cpp(207): warning C4244: аргумент: преобразование "float" в "DWORD", возможна потеря данных
   VUMeter.cpp
 i:\osr\opensoundrefenation\osrmain\vumeter.cpp(26): warning C4244: =: преобразование "double" в "float", возможна потеря данных
 i:\osr\opensoundrefenation\osrmain\vumeter.cpp(27): warning C4244: =: преобразование "double" в "float", возможна потеря данных

@@ -109,9 +109,7 @@ CPUExt::SwapData(
 			// SSSE3
 			for (DWORD64 j = i; j < ((uSize / 2) / 16); j++)
 			{
-				const __m128i xmmShuffleRev = _mm_set_epi8(
-					0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
-				);
+				const __m128i xmmShuffleRev = _mm_set_epi8(0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF);
 
 				__m128i xmmLow = _mm_loadu_si128(reinterpret_cast<__m128i*>(&Array8[i]));
 				__m128i xmmUp = _mm_loadu_si128(reinterpret_cast<__m128i*>(&Array8[uSize - i - 16]));
@@ -173,15 +171,15 @@ CPUExt::SwapData(
 	}
 	else
 	{
-		// very slow, but stable
-		BYTE* pLocalByte = (BYTE*)*pData;
-
-		for (DWORD i = 0; i < uSize; i++)
-		{
-			byteVector.push_back(pLocalByte[i]);
-		}
-		std::reverse(std::begin(byteVector), std::end(byteVector));
-		*pData = (BYTE*)byteVector[0];
+// 		// very slow, but stable
+// 		BYTE* pLocalByte = (BYTE*)*pData;
+// 
+// 		for (DWORD i = 0; i < uSize; i++)
+// 		{
+// 			byteVector.push_back(pLocalByte[i]);
+// 		}
+// 		std::reverse(std::begin(byteVector), std::end(byteVector));
+// 		*pData = (BYTE*)byteVector[0];
 	}
 }
 #endif

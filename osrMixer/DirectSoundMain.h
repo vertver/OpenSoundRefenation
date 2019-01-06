@@ -32,7 +32,7 @@ class DLL_API DMixer
 {
 public:
 	DMixer() {};
-	DMixer(DEngine customEngine) { engine = customEngine; }
+	DMixer(DEngine customEngine) { engine = customEngine; } //-V1002
 	~DMixer() {};
 
 	OSRCODE InitMixer(HWND hwnd, WAVEFORMATEX waveFormat, DWORD dwDataSize);

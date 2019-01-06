@@ -35,6 +35,7 @@ namespace OSR
 		Mixer(u32 SampleRate, u32 BufferSize) { MixerSampleRate = SampleRate; MixerBufferSize = BufferSize; }
 
 		void SetAudioPosition(f32 Position);
+		void OpenPlugin(bool& isOpen);
 		void CreateMixer(HWND hwnd, LPVOID network);
 		void LoadSample(LPCWSTR lpPath);
 		void PlaySample();

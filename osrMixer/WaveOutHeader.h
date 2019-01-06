@@ -48,7 +48,9 @@ class DLL_API MMEngine
 public:
 	MMEngine() : MaxDevices(0), OutDevices(0), InDevices(0), hBufferEvent(NULL), 
 		hInput(NULL), hOutput(NULL), WaveOutThreadId(0), pFirstBuffer(nullptr),
-		pSecondBuffer(nullptr), InputBufferSize(0), OutputBufferSize(0), pTaskValue(nullptr), pHost(nullptr)
+		pSecondBuffer(nullptr), InputBufferSize(0), OutputBufferSize(0), pTaskValue(nullptr), pHost(nullptr),
+		DefaultInputDeviceId(0), CurrentInputDeviceId(0), DefaultOutputDeviceId(0), CurrentOutputDeviceId(0),
+		OutputDevicesInfo(nullptr), InputDevicesInfo(nullptr)
 	{
 		memset(&InputHeader, 0, sizeof(WAVEHDR));
 		memset(&OutputHeader, 0, sizeof(WAVEHDR));
@@ -87,7 +89,7 @@ public:
 	}
 
 	TaskbarValue* pTaskValue;
-	VSTHost* pHost;
+	IVSTHost* pHost;
 
 private:
 	int MaxDevices;

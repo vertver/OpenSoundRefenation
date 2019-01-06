@@ -8,7 +8,7 @@ typedef AEffect* (VSTCALLBACK *PluginMain) (audioMasterCallback audioMaster);
 AEffect* pCustomEffect;
 
 VSTHOST_API HANDLE hPluginHandle = nullptr;
-VSTHOST_API VSTHost PluginHost = {};
+VSTHOST_API IWin32VSTHost PluginHost = {};
 
 PluginVst2xId 
 NewPluginVst2xId()
@@ -150,7 +150,7 @@ VSTMasterAudioCallback(
 	case audioMasterIdle:
 	{ 
 		effect->dispatcher(effect, effEditIdle, 0, 0, NULL, 0.0f);
-		return 0; 
+		return 0;  //-V773
 	}
 		break;
 	case audioMasterGetTime: 
@@ -218,14 +218,14 @@ VSTMasterAudioCallback(
 		break;
 	}
 
-	if (pluginId->szIdString) { HeapFree(GetProcessHeap(), 0, pluginId->szIdString); }
+	if (pluginId->szIdString) { HeapFree(GetProcessHeap(), 0, pluginId->szIdString); } //-V595
 	if (pluginId) { HeapFree(GetProcessHeap(), 0, pluginId); }
 
 	return result;
 }
 
 BOOL
-VSTHost::LoadPlugin(
+IWin32VSTHost::LoadPlugin(
 	LPCWSTR lpPathToPlugin
 )
 {
@@ -246,7 +246,7 @@ VSTHost::LoadPlugin(
 	// checking for VST host
 	if (!pVSTEntryPoint)
 	{
-		pVSTEntryPoint = GetProcAddress(hPlugin, "VSTPluginMain");
+		pVSTEntryPoint = GetProcAddress((HMODULE)hPlugin, "VSTPluginMain");
 		if (!pVSTEntryPoint)
 		{
 			return FALSE;
@@ -254,7 +254,7 @@ VSTHost::LoadPlugin(
 	}
 	if (!pVSTFunc)
 	{
-		pVSTFunc = GetProcAddress(hPlugin, "GetPluginFactory");
+		pVSTFunc = GetProcAddress((HMODULE)hPlugin, "GetPluginFactory");
 		if (!pVSTFunc)
 		{
 			IsInterfaceEnabled = false;
@@ -288,7 +288,7 @@ VSTHost::LoadPlugin(
 	}
 	else
 	{
-		if (!GetModuleFileNameW(hPlugin, szPluginName, sizeof(szPluginName)))
+		if (!GetModuleFileNameW((HMODULE)hPlugin, szPluginName, sizeof(szPluginName)))
 		{
 			wchar_t szOut[256] = { NULL };
 
@@ -302,7 +302,7 @@ VSTHost::LoadPlugin(
 	// is our plugin is instrument
 	if (pCustomEffect->flags & effFlagsIsSynth)
 	{
-		if (hPlugin) { FreeLibrary(hPlugin); }
+		if (hPlugin) { FreeLibrary((HMODULE)hPlugin); }
 		return FALSE;
 	}
 
@@ -310,7 +310,7 @@ VSTHost::LoadPlugin(
 }
 
 BOOL
-VSTHost::CheckPlugin(
+IWin32VSTHost::CheckPlugin(
 	LPCWSTR lpPathToPlugin,
 	LPBOOL isFactoryEnable
 )
@@ -330,16 +330,16 @@ VSTHost::CheckPlugin(
 	if (!pVSTEntryPoint)
 	{
 		//#TODO: create VSTi host
-		pVSTEntryPoint = GetProcAddress(hPlugin, "VSTPluginMain");
+		pVSTEntryPoint = GetProcAddress((HMODULE)hPlugin, "VSTPluginMain");
 		
 		if (!pVSTEntryPoint)
 		{
-			if (hPlugin) { FreeLibrary(hPlugin); }
+			if (hPlugin) { FreeLibrary((HMODULE)hPlugin); }
 		}
 	}
 	if (!pVSTFunc)
 	{
-		pVSTFunc = GetProcAddress(hPlugin, "GetPluginFactory");
+		pVSTFunc = GetProcAddress((HMODULE)hPlugin, "GetPluginFactory");
 		if (!pVSTFunc)
 		{
 			IsInterfaceEnabled = false;
@@ -375,7 +375,7 @@ VSTHost::CheckPlugin(
 	}
 	else
 	{
-		if (!GetModuleFileNameW(hPlugin, szPluginName, sizeof(szPluginName)))
+		if (!GetModuleFileNameW((HMODULE)hPlugin, szPluginName, sizeof(szPluginName)))
 		{
 			wchar_t szOut[256] = { NULL };
 
@@ -387,16 +387,16 @@ VSTHost::CheckPlugin(
 	}
 
 	// is our plugin is instrument
-	if (pCustomEffect->flags | effFlagsIsSynth)
+	if (pCustomEffect->flags & effFlagsIsSynth)
 	{
 		pEffect = nullptr;
-		if (hPlugin) { FreeLibrary(hPlugin); }
+		if (hPlugin) { FreeLibrary((HMODULE)hPlugin); }
 		return FALSE;
 	}
 }
 
 VOID
-VSTHost::ProcessAudio(
+IWin32VSTHost::ProcessAudio(
 	float** pAudioInput,
 	float** pAudioOutput,
 	DWORD dwSampleFrames
@@ -413,7 +413,7 @@ VSTHost::ProcessAudio(
 }
 
 BOOL
-VSTHost::InitPlugin(
+IWin32VSTHost::InitPlugin(
 	DWORD dwSampleRate, 
 	DWORD dwBlockSize
 )
@@ -444,7 +444,7 @@ VSTHost::InitPlugin(
 }
 
 VOID
-VSTHost::ResumePlugin()
+IWin32VSTHost::ResumePlugin()
 {
 	AEffect* pCurrentEffect = (AEffect*)pEffect;
 
@@ -454,7 +454,7 @@ VSTHost::ResumePlugin()
 }
 
 VOID
-VSTHost::SuspendPlugin()
+IWin32VSTHost::SuspendPlugin()
 {
 	AEffect* pCurrentEffect = (AEffect*)pEffect;
 
@@ -464,16 +464,15 @@ VSTHost::SuspendPlugin()
 }
 
 VOID   
-VSTHost::OpenPluginWindow() 
+IWin32VSTHost::OpenPluginWindow()
 {
 	ERect* rec = nullptr;
 	AEffect* pCurrentEffect = (AEffect*)pEffect;
 
-	if (!pCurrentEffect) return;
-	if (!PluginWindowHandle) return;
+	if (!pCurrentEffect || !PluginWindowHandle) return;
 
 	// set window handle and get plugin rect
-	pCurrentEffect->dispatcher(pCurrentEffect, effEditOpen, 0, 0, (LPVOID)PluginWindowHandle, 0.0f);
+	pCurrentEffect->dispatcher(pCurrentEffect, effEditOpen, 0, 0, PluginWindowHandle, 0.0f);
 	pCurrentEffect->dispatcher(pCurrentEffect, effEditGetRect, 1, 0, &rec, 0);
 
 	PluginRc.bottom = rec->bottom;
@@ -481,24 +480,35 @@ VSTHost::OpenPluginWindow()
 	PluginRc.right = rec->right;
 	PluginRc.top = rec->top;
 
-	const auto style = GetWindowLongPtrW(PluginWindowHandle, GWL_STYLE);
-	const auto exStyle = GetWindowLongPtrW(PluginWindowHandle, GWL_EXSTYLE);
+	const auto style = GetWindowLongPtrW((HWND)PluginWindowHandle, GWL_STYLE);
+	const auto exStyle = GetWindowLongPtrW((HWND)PluginWindowHandle, GWL_EXSTYLE);
 
 	// set custom rect and show window
 	AdjustWindowRectEx(&PluginRc, style, NULL, exStyle);
-	MoveWindow(PluginWindowHandle, 0, 0, PluginRc.right - PluginRc.left, PluginRc.bottom - PluginRc.top, TRUE);
-	ShowWindow(PluginWindowHandle, SW_SHOWDEFAULT);
-	UpdateWindow(PluginWindowHandle);
+
+	// get previous rect for get last position
+	RECT MainWindowRect = { 0 };
+	GetWindowRect((HWND)PluginWindowHandle, &MainWindowRect);
+
+	// update window with new rect
+	MoveWindow((HWND)PluginWindowHandle, MainWindowRect.left, MainWindowRect.top, PluginRc.right - PluginRc.left, PluginRc.bottom - PluginRc.top, TRUE);
+	ShowWindow((HWND)PluginWindowHandle, SW_SHOWDEFAULT);
+	UpdateWindow((HWND)PluginWindowHandle);
 }
 
 VOID 
-VSTHost::ClosePluginWindow() 
+IWin32VSTHost::ClosePluginWindow()
 {
 	AEffect* pCurrentEffect = (AEffect*)pEffect;
 
 	// close plugin window handle
-	if (!pCurrentEffect || pCurrentEffect->dispatcher) return;
-	pCurrentEffect->dispatcher(pCurrentEffect, effEditOpen, 0, 0, nullptr, 0.0f);
+	if (pCurrentEffect && pCurrentEffect->dispatcher)
+	{
+		pCurrentEffect->dispatcher(pCurrentEffect, effEditClose, 0, 0, nullptr, 0.0f);
+
+		ShowWindow((HWND)PluginWindowHandle, SW_HIDE);
+		UpdateWindow((HWND)PluginWindowHandle);
+	}
 }
 
 LRESULT
@@ -517,6 +527,7 @@ PluginProc(
 		return 0;
 	case WM_SIZE:
 	{
+		// we can't manually set rect by windows messages at VST2
 		return 0;
 	}
 	case WM_PAINT:
@@ -538,17 +549,10 @@ PluginProc(
 			AdjustWindowRectEx(&PluginRc, GetWindowLongPtrW(hWnd, GWL_STYLE), NULL, GetWindowLongPtrW(hWnd, GWL_EXSTYLE));
 			MoveWindow(hWnd, winRect.left, winRect.top, PluginRc.right - PluginRc.left, PluginRc.bottom - PluginRc.top, TRUE);
 		}
-
-		//HMENU hMenu = GetSystemMenu(hWnd, FALSE);
-		//MENUITEMINFOW info = { 0 };
-		//info.fMask = MIIM_STRING | MIIM_CHECKMARKS;
-		//info.fType = MFT_STRING | MFT_RADIOCHECK;
-		//info.fState = MFS_ENABLED | MFS_CHECKED;
-		//info.wID = 0x444;
-
-		//InsertMenuItemW(hMenu, 0x444, FALSE, &info);
-		//DWORD LastError = GetLastError();
-
+	}
+	//#TODO: close messages after running
+	case WM_CLOSE:
+	{
 	}
 	default:
 		break;
@@ -558,7 +562,7 @@ PluginProc(
 }
 
 VOID 
-VSTHost::CreatePluginWindow()
+IWin32VSTHost::CreatePluginWindow()
 {
 	// register plugin window class
 	WNDCLASSEXW wc = { sizeof(WNDCLASSEXW), CS_CLASSDC, PluginProc, 0L, 0L, GetModuleHandleW(L"osrPlugins.dll"), nullptr, nullptr, nullptr, nullptr, L"OSR_PLUGIN", nullptr };
@@ -585,16 +589,16 @@ VSTHost::CreatePluginWindow()
 		wc.hInstance,
 		nullptr
 	);
-
 }
 
 VOID
-VSTHost::DestroyPluginWindow()
+IWin32VSTHost::DestroyPluginWindow()
 {
 	// if window handle is exist - destroy it
 	if (PluginWindowHandle)
 	{
-		DestroyWindow(PluginWindowHandle);
+		DestroyWindow((HWND)PluginWindowHandle);
 		UnregisterClassW(L"OSR_PLUGIN", GetModuleHandleW(L"osrPlugins.dll"));
+		PluginWindowHandle = nullptr;
 	}
 }

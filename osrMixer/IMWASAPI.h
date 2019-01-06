@@ -131,6 +131,9 @@ class DLL_API IMEngine
 public:
 	IMEngine()
 	{ 
+		pHost = nullptr;
+		WasapiThread = 0;
+		BufferSize = 0;
 		m_MixFormat = nullptr;
 		m_SampleReadyAsyncResult = nullptr;
 		DeviceCount = 0;
@@ -172,6 +175,7 @@ public:
 		}
 
 		if (pTaskValue) { delete pTaskValue; }
+		if (pHost) { delete pHost; }
 	}
 
 	DWORD GetAudioThreadId() { return WasapiThread; }
@@ -203,8 +207,8 @@ public:
 	IAudioRenderClient*		pAudioRenderClient;
 	IAudioEndpointVolume*	pOutVol;
 
-	TaskbarValue*		pTaskValue;
-	VSTHost*				pHost;
+	TaskbarValue*			pTaskValue;
+	IWin32VSTHost*				pHost;
 	IAudioCaptureClient*	pCaptureClientParent;
 	IStream*				PCaptureClientStream;
 	IAudioCaptureClient*	pCaptureClient;

@@ -13,6 +13,9 @@ Math::BuildWindow(
 	ASSERT2((DataSize != 1), L"Division on zero is impossible");
 	ASSERT2(DataSize, L"Division on zero is impossible");
 
+	if (!pData) { return; };
+	if (!pFFT) { return; };
+
 	float alpha = 0;
 	float alpha1 = 0;
 	float alpha2 = 0;
@@ -70,13 +73,10 @@ Math::BuildWindow(
 		break;
 	}
 
-	if (pData && pFFT && DataSize)
+	// apply our window to data
+	for (int i = 0; i < DataSize; i++)
 	{
-		// apply our window to data
-		for (int i = 0; i < DataSize; i++)
-		{
-			pFFT[i] *= pData[i];
-		}
+		pFFT[i] *= pData[i];
 	}
 }
 

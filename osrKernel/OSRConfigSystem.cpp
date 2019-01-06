@@ -20,18 +20,21 @@ GetConfigPath(
 {
 	if (!lpPath) { return FS_OSR_BAD_PTR; }
 
+	// get first current directory
 	LPWSTR lpPathT = nullptr;
 	WSTRING_PATH szPath = { 0 };
 	GetApplicationDirectory(&lpPathT);
 	memcpy(szPath, lpPath, 520);
 
-	_snwprintf_s(szPath, sizeof(WSTRING_PATH), L"%s%s", szPath, L"\\Configs");
+	_snwprintf_s(szPath, sizeof(WSTRING_PATH), L"%s%s", szPath, L"\\Configs"); //-V575
 
+	// find our file
 	WIN32_FIND_DATAW findData = { 0 };
 	HANDLE hFind = FindFirstFileW(szPath, &findData);
 
 	if (!hFind || hFind == INVALID_HANDLE_VALUE)
 	{
+		// if this path don't include any path - create new directory
 		if (!CreateDirectoryW(szPath, nullptr))
 		{
 			return FS_OSR_BAD_PATH;
@@ -39,12 +42,14 @@ GetConfigPath(
 	}
 	else
 	{
+		// get type of path
 		bool bDir = ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) > 0);
 		FindClose(hFind);
 
 		ASSERT2(bDir, L"The settings path can not be file");
 	}
 
+	// copy path string to input string
 	memcpy_s((LPVOID)lpPath, sizeof(WSTRING_PATH), szPath, sizeof(WSTRING_PATH));
 
 	return OSR_SUCCESS;
@@ -77,11 +82,11 @@ ConvertToPath(
 
 	if (lpConfigType && !strcmp(lpConfigType, ".ocfg"))
 	{
-		_snwprintf_s(szConfigPath, sizeof(WSTRING_PATH), L"%s%s%s", szConfigPath, L"\\", szConfigName);
+		_snwprintf_s(szConfigPath, sizeof(WSTRING_PATH), L"%s%s%s", szConfigPath, L"\\", szConfigName); //-V575
 	}
 	else
 	{
-		_snwprintf_s(szConfigPath, sizeof(WSTRING_PATH), L"%s%s%s%s", szConfigPath, L"\\", szConfigName, L".ocfg");
+		_snwprintf_s(szConfigPath, sizeof(WSTRING_PATH), L"%s%s%s%s", szConfigPath, L"\\", szConfigName, L".ocfg"); //-V575
 	}
 
 	memcpy_s((LPVOID)lpPath, sizeof(WSTRING_PATH), szConfigPath, sizeof(WSTRING_PATH));
@@ -162,9 +167,11 @@ WriteConfig(
 {
 	WSTRING_PATH szConfigPath = { 0 };
 
+	// open config
 	if (!lpConfigData || !DataSize) { return FS_OSR_BAD_PTR; }
 	if (!IsConfigExist(lpConfigName)) { return FS_OSR_BAD_PATH; }
 
+	// write custom data
 	OSRFAIL2(ConvertToPath(lpConfigName, szConfigPath), L"Can't convert string to path");
 	OSRFAIL2(CreateNewFileWithData(szConfigPath, lpConfigData, DataSize), L"Can't write data to config");
 
@@ -180,9 +187,11 @@ OpenConfig(
 {
 	WSTRING_PATH szConfigPath = { 0 };
 
+	// open config
 	if (!lpConfigData || !DataSize) { return FS_OSR_BAD_PTR; }
 	if (!IsConfigExist(lpConfigName)) { return FS_OSR_BAD_PATH; }
 
+	// read config data
 	OSRFAIL2(ConvertToPath(lpConfigName, szConfigPath), L"Can't convert string to path");
 	OSRFAIL2(ReadDataFromFile(szConfigPath, lpConfigData, DataSize), L"Can't read data from file");
 
@@ -196,8 +205,10 @@ DeleteConfig(
 {
 	WSTRING_PATH szConfigPath = { 0 };
 
+	// check for config
 	if (!IsConfigExist(lpConfigName)) { return FS_OSR_BAD_PATH; }
 
+	// delete config
 	OSRFAIL2(ConvertToPath(lpConfigName, szConfigPath), L"Can't convert string to path");
 	if (!DeleteFileW(szConfigPath)) { return FS_OSR_BAD_PATH; }
 
@@ -218,11 +229,14 @@ CreateParameter(
 	DWORD DataSize = 0;
 	DWORD DataSizeOut = 0;
 
+	// check for config
 	if (!IsConfigExist(lpConfigName)) { return FS_OSR_BAD_PATH; }
 
+	// open config
 	OSRFAIL2(ConvertToPath(lpConfigName, szConfigPath), L"Can't convert string to path");
 	OSRFAIL2(ReadDataFromFile(szConfigPath, &lpConfigData, &DataSize), L"Can't read data from file");
 
+	// check for magic dword
 	CONFIG_DATA* pConfigData = reinterpret_cast<CONFIG_DATA*>(lpConfigData);
 	if (pConfigData->dwMagic != 0x4746434F)
 	{
@@ -230,19 +244,24 @@ CreateParameter(
 		return FS_OSR_BAD_PTR;
 	}
 
+	// increment params count 
 	pConfigData->dwParamsCount++;
 
+	// copy params data header to local buffer
 	PARAMS_DATA paramData = { 0 };
 	memcpy_s(&paramData, sizeof(PARAMS_DATA), ParamsData, sizeof(PARAMS_DATA));
 	strcpy_s(paramData.cbParamName, strlen(lpParamName) + 1, lpParamName);
 
+	// get size of out file
 	DataSizeOut = DataSize + sizeof(PARAMS_DATA) + paramData.dwSharedMemorySize;
 
+	// allocate local buffer
 	lpOutData = FastAlloc(DataSizeOut + 8);
 	memcpy_s(lpOutData, DataSizeOut, lpConfigData, DataSize);
 
 	if (paramData.pSharedMemory || paramData.dwSharedMemorySize)
 	{
+		// copy local data
 		memcpy_s(LPVOID(size_t(lpOutData) + DataSize), DataSizeOut - DataSize, &paramData, size_t(sizeof(PARAMS_DATA) - 8));
 	}
 	else
@@ -250,11 +269,13 @@ CreateParameter(
 		memcpy_s(LPVOID(size_t(lpOutData) + DataSize), DataSizeOut, &paramData, size_t(sizeof(PARAMS_DATA)));
 	}
 
+	// copy shared data
 	if (paramData.pSharedMemory && paramData.dwSharedMemorySize)
 	{
 		memcpy(LPVOID(size_t(lpOutData) + DataSize + size_t(sizeof(PARAMS_DATA) - 8)), paramData.pSharedMemory, paramData.dwSharedMemorySize);
 	}
 
+	// write to file
 	if (OSRFAILED(CreateNewFileWithData(szConfigPath, lpOutData, DataSizeOut)))
 	{
 		FREEKERNELHEAP(lpConfigData);
@@ -284,13 +305,17 @@ WriteParameter(
 	DWORD CycleSize = 0;
 	DWORD DataSize = 0;
 
+	// copy string name 
 	strcpy_s(ConfigName, strlen(lpParamName) + 1, lpParamName);
 
+	// check for config
 	if (!IsConfigExist(lpConfigName)) { return FS_OSR_BAD_PATH; }
 
+	// open config
 	OSRFAIL2(ConvertToPath(lpConfigName, szConfigPath), L"Can't convert string to path");
 	OSRFAIL2(ReadDataFromFile(szConfigPath, &lpConfigData, &DataSize), L"Can't read data from file");
 
+	// check for magic dword
 	CONFIG_DATA* pConfigData = reinterpret_cast<CONFIG_DATA*>(lpConfigData);
 	if (pConfigData->dwMagic != 0x4746434F)
 	{
@@ -303,6 +328,7 @@ WriteParameter(
 	DWORD ArraySize = CycleSize;
 	PARAMS_DATA* pParams = nullptr;
 
+	// check for first parameter with this name
 	for (size_t i = 0; i < pConfigData->dwParamsCount; i++)
 	{
 		pParams = (PARAMS_DATA*)ptrdiff_t(u64(lpConfigData) + (DataSize - ArraySize));
@@ -320,7 +346,7 @@ WriteParameter(
 		{
 			FREEKERNELHEAP(lpConfigData);
 
-			return FS_OSR_BAD_PTR;
+			return FS_OSR_BAD_ALLOC;
 		}
 
 		if (!pParams->pSharedMemory)
@@ -335,15 +361,18 @@ WriteParameter(
 		CycleSize = ArraySize;
 	}
 
+	// if current parameter does exist - allocate temp buffer
 	if (isValid)
 	{
 		lpOutData = FastAlloc(DataSize);
 
-		memcpy(pParams, ParamsData, sizeof(PARAMS_DATA) - 8);
+		// copy all stuff to temp buffer
+		memcpy(pParams, ParamsData, sizeof(PARAMS_DATA) - 8); //-V512
 		memcpy(pParams->cbParamName, ConfigName, 32);
 		memcpy(&pParams->pSharedMemory, ParamsData->pSharedMemory, ParamsData->dwSharedMemorySize);
 		memcpy(lpOutData, lpConfigData, DataSize);
 
+		// write to file
 		if (OSRFAILED(CreateNewFileWithData(szConfigPath, lpOutData, DataSize)))
 		{
 			FREEKERNELHEAP(lpConfigData);
@@ -381,13 +410,17 @@ OpenParameter(
 
 	if (!ParamsData) { return FS_OSR_BAD_PTR; }
 
+	// copy string name
 	strcpy_s(ConfigName, strlen(lpParamName) + 1, lpParamName);
 
+	// check for config
 	if (!IsConfigExist(lpConfigName)) { return FS_OSR_BAD_PATH; }
 
+	// open config
 	OSRFAIL2(ConvertToPath(lpConfigName, szConfigPath), L"Can't convert string to path");
 	OSRFAIL2(ReadDataFromFile(szConfigPath, &lpConfigData, &DataSize), L"Can't read data from file");
 
+	// check for magic dword
 	CONFIG_DATA* pConfigData = reinterpret_cast<CONFIG_DATA*>(lpConfigData);
 	if (pConfigData->dwMagic != 0x4746434F)
 	{
@@ -400,6 +433,7 @@ OpenParameter(
 	DWORD ArraySize = CycleSize;
 	PARAMS_DATA* pParams = nullptr;
 
+	// check for first parameter with this name
 	for (size_t i = 0; i < pConfigData->dwParamsCount; i++)
 	{
 		pParams = (PARAMS_DATA*)ptrdiff_t(u64(lpConfigData) + (DataSize - ArraySize));
@@ -417,7 +451,7 @@ OpenParameter(
 		{
 			FREEKERNELHEAP(lpConfigData);
 
-			return FS_OSR_BAD_PTR;
+			return FS_OSR_BAD_ALLOC;
 		}
 
 		if (!pParams->pSharedMemory)
@@ -432,8 +466,10 @@ OpenParameter(
 		CycleSize = ArraySize;
 	}
 
+	// if this config iclude param with this name - open this
 	if (isValid)
 	{
+		// copy data from buffer
 		memcpy(ParamsData, pParams, sizeof(PARAMS_DATA));
 		memcpy(ParamsData->cbParamName, pParams->cbParamName, 32);
 
@@ -470,13 +506,17 @@ DeleteParameter(
 	DWORD CycleSize = 0;
 	DWORD DataSize = 0;
 
+	// copy string name
 	strcpy_s(ConfigName, strlen(lpParamName) + 1, lpParamName);
 
+	// check for config
 	if (!IsConfigExist(lpConfigName)) { return FS_OSR_BAD_PATH; }
 
+	// open config
 	OSRFAIL2(ConvertToPath(lpConfigName, szConfigPath), L"Can't convert string to path");
 	OSRFAIL2(ReadDataFromFile(szConfigPath, &lpConfigData, &DataSize), L"Can't read data from file");
 
+	// check for magic dword
 	CONFIG_DATA* pConfigData = reinterpret_cast<CONFIG_DATA*>(lpConfigData);
 	if (pConfigData->dwMagic != 0x4746434F)
 	{
@@ -487,6 +527,7 @@ DeleteParameter(
 	CycleSize = DataSize - sizeof(CONFIG_DATA);
 	PARAMS_DATA* pParams = nullptr;
 
+	// check for first parameter with this name
 	{
 		DWORD ArraySize = CycleSize;
 
@@ -507,7 +548,7 @@ DeleteParameter(
 			{
 				FREEKERNELHEAP(lpConfigData);
 
-				return FS_OSR_BAD_PTR;
+				return FS_OSR_BAD_ALLOC;
 			}
 
 			if (!pParams->pSharedMemory)
@@ -523,6 +564,7 @@ DeleteParameter(
 		}
 	}
 
+	// allocate temp buffer
 	lpOutData = FastAlloc(DataSize);
 
 	try
@@ -532,8 +574,10 @@ DeleteParameter(
 
 		pConfigData->dwParamsCount--;
 
+		// copy header of config
 		memcpy(lpOutData, lpConfigData, sizeof(CONFIG_DATA));
 
+		// copy data before param
 		memcpy(
 			lpConfigPointer,
 			LPVOID(u64(lpConfigData) + (sizeof(CONFIG_DATA))),
@@ -546,6 +590,7 @@ DeleteParameter(
 			(u64)LPVOID(u64(lpConfigData) + (sizeof(CONFIG_DATA)) + (DataSize - CycleSize - sizeof(CONFIG_DATA)) + pParams->dwSharedMemorySize + sizeof(PARAMS_DATA))
 		);		
 
+		// copy data after param
 		memcpy(
 			LPVOID(u64(lpConfigPointer) + (DataSize - CycleSize - sizeof(CONFIG_DATA))),
 			LPVOID(u64(lpConfigData) + (sizeof(CONFIG_DATA)) + (DataSize - CycleSize - sizeof(CONFIG_DATA)) + pParams->dwSharedMemorySize + sizeof(PARAMS_DATA)),
@@ -554,6 +599,7 @@ DeleteParameter(
 
 		OutSize = DataSize - CycleSize + LastSize;
 
+		// write to file
 		if (OSRFAILED(CreateNewFileWithData(szConfigPath, lpOutData, OutSize)))
 		{
 			FREEKERNELHEAP(lpConfigData);

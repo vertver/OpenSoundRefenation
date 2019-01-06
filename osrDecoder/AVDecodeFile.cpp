@@ -93,9 +93,13 @@ AVReader::OpenFileToBuffer(
 
 	// open our file
 	HANDLE hFile = CreateFileW(lpPath, GENERIC_READ, NULL, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (!hTempFile || hTempFile == (HANDLE)LONG_PTR(-1))
+	if (!hFile || hFile == (HANDLE)LONG_PTR(-1))
 	{
-		if (!THROW3(L"Application can't open this file because file handle is invalid. Continue?")) { return; }
+		if (!THROW3(L"Application can't open this file because file handle is invalid. Continue?")) 
+		{ 
+			if (hTempFile) { CloseHandle(hTempFile); }
+			return;
+		}
 	}
 
 	DWORD dwWrittenTemp = NULL;
@@ -188,8 +192,6 @@ AVReader::OpenFileToBuffer(
 		{
 			DecodeFrame(c, pkt, decoded_frame, hTempFile);
 		}
-
-		decoded_frame->sample_rate;
 
 		if (data_size < AUDIO_REFILL_THRESH)
 		{

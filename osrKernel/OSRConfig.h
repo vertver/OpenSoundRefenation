@@ -13,40 +13,137 @@
 
 typedef struct  
 {
-	DWORD dwMagic;				// magic 'OCFG' dword (0x4746434F)
-	DWORD dwParamsCount;		// count of parameters
-	DWORD dwParamsTreeCount;	// reserved
-	STRING64 szConfigName;		// 64 - 5 (size of '.ocfg' string) = 59 max symbols for name
+	DWORD dwMagic;					// magic 'OCFG' dword (0x4746434F)
+	DWORD dwParamsCount;			// count of parameters
+	DWORD dwParamsTreeCount;		// reserved
+	STRING64 szConfigName;			// 64 - 5 (size of '.ocfg' string) = 59 max symbols for name
 } CONFIG_DATA;
 
 typedef struct  
 {
-	CHAR cbParamName[32];		// parameter name
-	BYTE pData[128];			// static 128 byte data array
-	DWORD dwSharedMemorySize;	// size of shared memory (if 0 - without shared memory)
-	LPVOID pSharedMemory;		// pointer to shared memory (in file - first 8 bytes of data)
+	CHAR cbParamName[32];			// parameter name
+	BYTE pData[1024];				// static 1024 byte data array
+	DWORD dwSharedMemorySize;		// size of shared memory (if 0 - without shared memory)
+	LPVOID pSharedMemory;			// pointer to shared memory (in file - first 8 bytes of data)
 } PARAMS_DATA;
 
 typedef struct  
 {
 	BYTE Type;
 
-	f16 Float16Array[64];		// 1
-	f32 Float32Array[32];		// 2
-	f64 Float64Array[16];		// 3
+	f16 Float16Array[512];			// 1
+	f32 Float32Array[256];			// 2
+	f64 Float64Array[128];			// 3
 
-	CHAR AnsiString[128];		// 4
-	WCHAR WideString[64];		// 5
+	CHAR AnsiString[1024];			// 4
+	WCHAR WideString[512];			// 5
 
-	u8 ByteArray[128];			// 6
-	u16 WordArray[64];			// 7
-	u24 ThreeByteArray[42];		// 8
-	u32 DwordArray[32];			// 9
-	u64 QwordArray[16];			// 10
+	u8 ByteArray[1024];				// 6
+	u16 WordArray[512];				// 7
+	u24 ThreeByteArray[320];		// 8
+	u32 DwordArray[256];			// 9
+	u64 QwordArray[128];			// 10
 
-	BIT_BYTE BitBiteArray[128];	// 11
+	BIT_BYTE BitBiteArray[1024];	// 11
 
 } SETTINGS_DATA;
+
+typedef struct  
+{
+	RECT WindowRect;				// 4x4 bytes
+
+} UI_SETTINGS;
+
+/****************************************************
+* BoolSettings[0] - primary (output info)
+*
+* first 2 bits - type of output
+* 00 - WASAPI
+* 01 - WaveOut
+* 10 - DirectX
+* 11 - XAudio2
+*
+* 3-rd bit - with VST host 
+* 0 - no
+* 1 - yes
+*
+* 4-th bit - enable multiple VST Hosts (DAW mode)
+* 0 - no
+* 1 - yes
+*
+* 5-th bit - exclusive mode (WASAPI-only)
+* 0 - disable
+* 1 - enable
+*
+* 6-th bit - allocator type
+* 0 - use HeapAlloc (needy for medium buffers)
+* 1 - use VirtualAlloc (needy for large buffers)
+*
+* last 2 bits - type of window (for effects)
+* 00 - Hann window
+* 01 - Hamming window
+* 10 - Blackman window
+* 11 - Blackman-Harris window
+*
+***************************************************
+* BoolSettings[1] - primary (main settings)
+*
+* 1-st bit - temp folder settings
+* 0 - use custom temp folder (at working directory)
+* 1 - use windows temp folder
+*
+* 2-nd bit - use FFMpeg (deprecated)
+* 0 - no
+* 1 - yes
+*
+* 3-rd bit - DirectX device
+* 0 - D3D11
+* 1 - D3D9 (legacy)
+*
+* 4-th bit - always run as administrator
+* 0 - no
+* 1 - yes
+*
+* 5-th bit - use UTF-8 
+* 0 - no
+* 1 - yes
+*
+* 6-th bit - hide alt menu
+* 0 - no
+* 1 - yes
+*
+* 7-th bit - restart device every time
+* 0 - no
+* 1 - yes
+*
+* 8-th bit - almost top VST plugin window
+* 0 - no 
+* 1 - yes
+*
+***************************************************
+* BoolSettings[2] - system
+*
+* 1-st bit - use network library
+* 0 - no
+* 1 - yes
+*
+* 2-nd bit - use plugin library
+* 0 - no
+* 1 - yes
+*
+***************************************************/
+typedef struct  
+{
+	u64 MaxLocalBufferSize;			// 8 bytes
+	BIT_BYTE BoolSettings[4];		// 4 bytes
+	u32 LastKnownSampleRate;		// 4 bytes
+	u32 LastKnownBitsRate;			// 4 bytes
+	u32 LastKnownDeviceDelay;		// 4 bytes
+	f32 LastKnownVolume;			// 4 bytes
+
+	WSTRING_PATH PathToVST;			// 520 bytes
+
+} INTERNAL_SETTINGS;
 
 DLL_API OSRCODE GetConfigPath(LPCWSTR lpPath);
 DLL_API OSRCODE ConvertToPath(LPCSTR lpConfig, LPCWSTR lpPath);
@@ -155,8 +252,7 @@ public:
 	ConfigSystem(LPCSTR Config)
 	{
 		memset((LPVOID)ConfigData.szConfigName, 0, sizeof(STRING64));
-		memcpy(ConfigData.szConfigName, Config, strlen(Config));
-
+		strcpy_s(ConfigData.szConfigName, strlen(Config), Config);
 		CreateConfig(Config);
 	}
 
@@ -164,10 +260,8 @@ public:
 	{
 		try
 		{
-			memcpy(ConfigData.szConfigName, Config, strlen(Config));
-			CreateConfig(Config);
-
-			return OSR_SUCCESS;
+			strcpy_s(ConfigData.szConfigName, strlen(Config), Config);
+			return CreateConfig(Config);
 		}
 		catch (const std::exception& exc)
 		{
@@ -176,8 +270,11 @@ public:
 			SuspendMainThread();
 			_snprintf_s(szLog, 256, "The application throw exception with info: %s \n%s", exc.what(), "Please, open minidump file and send on our GitHub.");
 			MessageBoxA(NULL, szLog, "Application throw exception", MB_OK | MB_ICONERROR);
+			UnhandledExceptionFilter((_EXCEPTION_POINTERS*)_exception_info);
 			ResumeMainThread();
 		}
+
+		return OSR_SUCCESS;
 	}
 
 	OSRCODE create()
@@ -185,24 +282,30 @@ public:
 		return CreateConfig(ConfigData.szConfigName);
 	}
 
+	OSRCODE new_param(LPCSTR ParamName, void* Data, size_t size)
+	{
+		PARAMS_DATA Param = { 0 };
+		memcpy(Param.pData, Data, size);
+
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
+	}
+
 	OSRCODE new_param(LPCSTR ParamName, f16 Float)
 	{
 		PARAMS_DATA Param = { 0 };
-		memcpy(Param.pData, &Float, sizeof(f16));
+		f16* pV = (f16*)Param.pData;
+		(*pV) = Float;
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, f32 Float)
 	{
 		PARAMS_DATA Param = { 0 };
-		memcpy(Param.pData, &Float, sizeof(f32));
+		f32* pV = (f32*)Param.pData;
+		(*pV) = Float;
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, f64 Float)
@@ -210,9 +313,7 @@ public:
 		PARAMS_DATA Param = { 0 };
 		memcpy(Param.pData, &Float, sizeof(f64));
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, f16* Float, size_t Size)
@@ -220,9 +321,7 @@ public:
 		PARAMS_DATA Param = { 0 };
 		memcpy(Param.pData, Float, Size * sizeof(f16));
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, f32* Float, size_t Size)
@@ -230,9 +329,7 @@ public:
 		PARAMS_DATA Param = { 0 };
 		memcpy(Param.pData, Float, Size * sizeof(f32));
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, f64* Float, size_t Size)
@@ -240,9 +337,7 @@ public:
 		PARAMS_DATA Param = { 0 };
 		memcpy(Param.pData, Float, Size * sizeof(f64));
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, u8 Byte)
@@ -250,9 +345,7 @@ public:
 		PARAMS_DATA Param = { 0 };
 		memcpy(Param.pData, &Byte, sizeof(u8));
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, u16 Word)
@@ -260,19 +353,17 @@ public:
 		PARAMS_DATA Param = { 0 };
 		memcpy(Param.pData, &Word, sizeof(u16));
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, u24 Data)
 	{
 		PARAMS_DATA Param = { 0 };
-		memcpy(Param.pData, &Data, sizeof(u24));
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
+		u24* pV = (u24*)Param.pData;
+		(*pV) = Data;
 
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, u32 Dword)
@@ -280,9 +371,7 @@ public:
 		PARAMS_DATA Param = { 0 };
 		memcpy(Param.pData, &Dword, sizeof(u32));
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, u64 Qword)
@@ -290,9 +379,7 @@ public:
 		PARAMS_DATA Param = { 0 };
 		memcpy(Param.pData, &Qword, sizeof(u64));
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, u8* Byte, size_t Size)
@@ -300,9 +387,7 @@ public:
 		PARAMS_DATA Param = { 0 };
 		memcpy(Param.pData, Byte, Size * sizeof(u8));
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, u16* Word, size_t Size)
@@ -310,9 +395,7 @@ public:
 		PARAMS_DATA Param = { 0 };
 		memcpy(Param.pData, Word, Size * sizeof(u16));
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, u32* Dword, size_t Size)
@@ -320,9 +403,7 @@ public:
 		PARAMS_DATA Param = { 0 };
 		memcpy(Param.pData, Dword, Size * sizeof(u32));
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, u64* Qword, size_t Size)
@@ -330,9 +411,7 @@ public:
 		PARAMS_DATA Param = { 0 };
 		memcpy(Param.pData, Qword, Size * sizeof(u64));
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, CHAR* Data, size_t Size)
@@ -340,9 +419,7 @@ public:
 		PARAMS_DATA Param = { 0 };
 		memcpy(Param.pData, Data, Size * sizeof(CHAR));
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, WCHAR* Data, size_t Size)
@@ -350,19 +427,16 @@ public:
 		PARAMS_DATA Param = { 0 };
 		memcpy(Param.pData, Data, Size * sizeof(WCHAR));
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, BIT_BYTE Data)
 	{
 		PARAMS_DATA Param = { 0 };
-		memcpy(Param.pData, &Data, sizeof(BIT_BYTE));
+		BIT_BYTE* pV = (BIT_BYTE*)Param.pData;
+		(*pV) = Data;
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE new_param(LPCSTR ParamName, BIT_BYTE* Data, size_t Size)
@@ -370,9 +444,7 @@ public:
 		PARAMS_DATA Param = { 0 };
 		memcpy(Param.pData, Data, Size * sizeof(BIT_BYTE));
 
-		OSRFAIL2(CreateParameter(ConfigData.szConfigName, ParamName, &Param), L"Can't create parameter");
-
-		return OSR_SUCCESS;
+		return CreateParameter(ConfigData.szConfigName, ParamName, &Param);
 	}
 
 	OSRCODE edit_param(LPCSTR Param, void* Data, size_t Size, BYTE Type)

@@ -22,7 +22,7 @@ ProcessAudio(
 	DWORD SampleRate,
 	DWORD BufferSize,
 	DWORD Channels,
-	VSTHost* pHost
+	IWin32VSTHost* pHost
 )
 {
 	if (!pHost || !pHost->pEffect) { return;}
@@ -72,38 +72,38 @@ ResampleAudio(
 	f32* pOutData
 )
 {
-	size_t odone, written, need_input = 1;
-	void* obuf = malloc(DataSize * sizeof(f32));
-	void* ibuf = malloc(DataSize * sizeof(f32));
-	soxr_error_t error = 0;
-	static soxr_t SOxr = soxr_create(SampleRateIn, SampleRateOut, Channels, &error, nullptr, nullptr, nullptr);
+	//size_t odone, written, need_input = 1;
+	//void* obuf = malloc(DataSize * sizeof(f32));
+	//void* ibuf = malloc(DataSize * sizeof(f32));
+	//soxr_error_t error = 0;
+	//static soxr_t SOxr = soxr_create(SampleRateIn, SampleRateOut, Channels, &error, nullptr, nullptr, nullptr);
 
-	if (error) { return; }
+	//if (error) { return; }
 
-	do {
-		//size_t ilen1 = 0;
+	//do {
+	//	//size_t ilen1 = 0;
 
-		//if (need_input) 
-		//{
-		//	memcpy(ibuf, pData, DataSize);
+	//	//if (need_input) 
+	//	//{
+	//	//	memcpy(ibuf, pData, DataSize);
 
-		//	if (!DataSize) {     /* If the is no (more) input data available, */
-		//		free(ibuf);     /* set ibuf to NULL, to indicate end-of-input */
-		//		ibuf = NULL;    /* to the resampler. */
-		//	}
-		//}
+	//	//	if (!DataSize) {     /* If the is no (more) input data available, */
+	//	//		free(ibuf);     /* set ibuf to NULL, to indicate end-of-input */
+	//	//		ibuf = NULL;    /* to the resampler. */
+	//	//	}
+	//	//}
 
-		///* Copy data from the input buffer into the resampler, and resample
-		// * to produce as much output as is possible to the given output buffer: */
-		//error = soxr_process(SOxr, ibuf, DataSize, NULL, obuf, DataSize, &odone);
+	//	///* Copy data from the input buffer into the resampler, and resample
+	//	// * to produce as much output as is possible to the given output buffer: */
+	//	//error = soxr_process(SOxr, ibuf, DataSize, NULL, obuf, DataSize, &odone);
 
 
-		///* If the actual amount of data output is less than that requested, and
-		// * we have not already reached the end of the input data, then supply some
-		// * more input next time round the loop: */
-		//need_input = odone < olen && ibuf;
+	//	///* If the actual amount of data output is less than that requested, and
+	//	// * we have not already reached the end of the input data, then supply some
+	//	// * more input next time round the loop: */
+	//	//need_input = odone < olen && ibuf;
 
-	} while (!error && (need_input || written));
+	//} while (!error && (need_input || written));
 
 }
 
@@ -112,6 +112,7 @@ class DLL_API AsyncReader
 public:
 	AsyncReader()
 	{
+		SampleNum = 0;
 		CurrentSample = nullptr;
 
 		for (size_t i = 0; i < 128; i++)

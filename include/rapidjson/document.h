@@ -317,7 +317,7 @@ struct GenericStringRef {
 
     GenericStringRef(const GenericStringRef& rhs) : s(rhs.s), length(rhs.length) {}
 
-    GenericStringRef& operator=(const GenericStringRef& rhs) { s = rhs.s; length = rhs.length; }
+    GenericStringRef& operator=(const GenericStringRef& rhs) { s = rhs.s; length = rhs.length; } //-V591
 
     //! implicit conversion to plain CharType pointer
     operator const Ch *() const { return s; }
@@ -881,7 +881,7 @@ public:
             if (IsDouble() || rhs.IsDouble()) {
                 double a = GetDouble();     // May convert from integer to double.
                 double b = rhs.GetDouble(); // Ditto
-                return a >= b && a <= b;    // Prevent -Wfloat-equal
+                return a >= b && a <= b;    // Prevent -Wfloat-equal //-V590
             }
             else
                 return data_.n.u64 == rhs.data_.n.u64;
@@ -984,7 +984,7 @@ public:
                 || a > static_cast<double>(FLT_MAX))
             return false;
         double b = static_cast<double>(static_cast<float>(a));
-        return a >= b && a <= b;    // Prevent -Wfloat-equal
+        return a >= b && a <= b;    // Prevent -Wfloat-equal //-V590
     }
 
     //@}

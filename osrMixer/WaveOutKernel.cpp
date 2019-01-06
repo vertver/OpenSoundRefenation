@@ -124,7 +124,7 @@ WaveOutThreadProc(LPVOID pData)
 					Sample->SampleRateOutput,
 					Sample->BufferSizeOutput,
 					Sample->ChannelsOutput,
-					pProc->pEngine->pHost
+					(IWin32VSTHost*)pProc->pEngine->pHost
 				);
 			}
 			
@@ -316,7 +316,6 @@ MMEngine::GetAudioDevicesInfo()
 		}
 
 		memcpy(InputDevicesInfo[i + 1]->szDeviceId, capsA.szPname, 64);
-
 	}
 
 	// get output info
@@ -481,7 +480,6 @@ MMEngine::StartDevice(
 	// set playing event
 	if (hMThreadExitEvent) { ResetEvent(hMThreadExitEvent); }
 	if (hMThreadLoadSamplesEvent) { ResetEvent(hMThreadLoadSamplesEvent); }
-	while (!hMThreadLoadSamplesEvent) { Sleep(0); }
 	SetEvent(hMThreadLoadSamplesEvent);
 
 	return OSR_SUCCESS;

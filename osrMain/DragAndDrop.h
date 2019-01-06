@@ -15,7 +15,7 @@
 
 struct DropTarget : public IDropTarget
 {
-	DropTarget() : Counter(0), pHelper(nullptr), pObject(nullptr), Window(NULL)
+	DropTarget() : Counter(0), pHelper(nullptr), pObject(nullptr), Window(NULL), OutMixer(nullptr)
 	{
 		X = -1;
 		Y = -1;

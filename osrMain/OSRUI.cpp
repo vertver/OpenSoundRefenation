@@ -136,6 +136,7 @@ CycleFunc()
 	if (bDemo)
 	{
 		static float f = 0.0f;
+		static bool bClose = false;
 		int counter = 0;
 
 		ImGui::Begin("Test Window");
@@ -162,6 +163,11 @@ CycleFunc()
 		if (ImGui::Button("Blur On/Off"))
 		{
 			IsLoad = !IsLoad;
+		}
+
+		if (ImGui::Button("Open/Close Plugin window"))
+		{
+			OutMixer.OpenPlugin(bClose);
 		}
 
 		ImGui::SameLine();
@@ -225,7 +231,6 @@ WndProc(
 
 	switch (msg)
 	{
-	return 0;
 	case WM_COPY:
 		break;
 	case WM_ENTERSIZEMOVE:
@@ -290,7 +295,7 @@ OSR::UserInterface::CreateMainWindow()
 
 	MainHwnd = CreateWindowW(
 		L"OSR_DAW",
-		L"Open Sound Refenation 0.44A",
+		L"Open Sound Refenation 0.46A",
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
@@ -319,11 +324,14 @@ OSR::UserInterface::CreateMainWindow()
 	ImGuiIO& io = ImGui::GetIO();
 	io.Fonts->Clear();
 
-	LPWSTR lpPathe = nullptr;
-	GetApplicationDirectory(&lpPathe);
+	{
+		// init static string with application path
+		LPWSTR lpPathe = nullptr;
+		GetApplicationDirectory(&lpPathe);
+	}
 
 	GetCurrentDirectoryA(sizeof(STRING_PATH), szPath);
-	snprintf(szPath, sizeof(STRING_PATH), "%s%s", szPath, "\\arimo_reg.ttf");
+	snprintf(szPath, sizeof(STRING_PATH), "%s%s", szPath, "\\arimo_reg.ttf"); //-V541
 
 	ImFont* font = io.Fonts->AddFontFromFileTTF(szPath, 16.0f);
 	if (font) 

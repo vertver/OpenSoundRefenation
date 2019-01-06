@@ -2,9 +2,10 @@ i:\osr\opensoundrefenation\osrplugins\x64\debug\osrplugins.pch
 i:\osr\opensoundrefenation\osrplugins\x64\debug\vc141.pdb
 i:\osr\opensoundrefenation\osrplugins\x64\debug\vc141.idb
 i:\osr\opensoundrefenation\osrplugins\x64\debug\stdafx.obj
-i:\osr\opensoundrefenation\osrplugins\x64\debug\vstwindows.obj
 i:\osr\opensoundrefenation\osrplugins\x64\debug\osrplugins.obj
 i:\osr\opensoundrefenation\osrplugins\x64\debug\dllmain.obj
+i:\osr\opensoundrefenation\osrplugins\x64\debug\vstwindows.obj
+i:\osr\opensoundrefenation\osrplugins\x64\debug\vstfindplugin.obj
 i:\osr\opensoundrefenation\debug\osrplugins.dll
 i:\osr\opensoundrefenation\debug\osrplugins.ilk
 i:\osr\opensoundrefenation\debug\osrplugins.pdb

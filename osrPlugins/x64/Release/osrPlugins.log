@@ -1,15 +1,14 @@
 ﻿  stdafx.cpp
-  dllmain.cpp
-  osrPlugins.cpp
   VSTFindPlugin.cpp
   VSTWindows.cpp
 i:\osr\opensoundrefenation\osrplugins\vstwindows.cpp(488): warning C4244: аргумент: преобразование "const LONG_PTR" в "DWORD", возможна потеря данных
 i:\osr\opensoundrefenation\osrplugins\vstwindows.cpp(538): warning C4244: аргумент: преобразование "LONG_PTR" в "DWORD", возможна потеря данных
+  dllmain.cpp
+  osrPlugins.cpp
      Создается библиотека I:\OSR\OpenSoundRefenation\\release\osrPlugins.lib и объект I:\OSR\OpenSoundRefenation\\release\osrPlugins.exp
   Создание кода
-i:\osr\opensoundrefenation\osrplugins\vstwindows.cpp(396): warning C4715: VSTHost::CheckPlugin: значение возвращается не при всех путях выполнения
-  10 of 29 functions (34.5%) were compiled, the rest were copied from previous compilation.
-    1 functions were new in current compilation
+  0 of 33 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
     0 functions had inline decision re-evaluated but remain unchanged
   Создание кода завершено
   osrPlugins.vcxproj -> I:\OSR\OpenSoundRefenation\\release\osrPlugins.dll

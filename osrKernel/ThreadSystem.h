@@ -305,6 +305,7 @@ public:
 
 	VOID EnterSection() { EnterCriticalSection(&CriticalSection); }
 	VOID LeaveSection() { LeaveCriticalSection(&CriticalSection); }
+
 private:
 	DWORD dwNumberOfThreads;
 	CRITICAL_SECTION CriticalSection;
