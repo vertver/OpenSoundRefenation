@@ -61,7 +61,7 @@ typedef struct
 * 00 - WASAPI
 * 01 - WaveOut
 * 10 - DirectX
-* 11 - XAudio2
+* 11 - ASIO
 *
 * 3-rd bit - with VST host 
 * 0 - no

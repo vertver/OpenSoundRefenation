@@ -12,6 +12,8 @@
 #include "stdafx.h"
 #include <dsound.h>
 
+
+
 class DLL_API DEngine
 {
 public:

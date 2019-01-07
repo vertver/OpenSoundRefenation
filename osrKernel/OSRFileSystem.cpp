@@ -334,28 +334,28 @@ ReadAudioFileEx(
 }
 #endif
 
-RIFFChunk* FindSoundChunk(
-	_In_reads_bytes_(sizeBytes) BYTE* data,
-	_In_ size_t sizeBytes,
-	_In_ UINT tag
-)
-{
-	if (!data) { return NULL; }
-
-	BYTE* ptr = data;
-	BYTE* end = data + sizeBytes;
-
-	while (end > (ptr + sizeof(RIFFChunk)))
-	{
-		RIFFChunk* header = reinterpret_cast<RIFFChunk*>(ptr);
-		if (header->tag == tag) { return header; }
-
-		ptrdiff_t offset = header->size + sizeof(RIFFChunk);
-		ptr += offset;
-	}
-
-	return nullptr;
-}
+//RIFFChunk* FindSoundChunk(
+//	_In_reads_bytes_(sizeBytes) BYTE* data,
+//	_In_ size_t sizeBytes,
+//	_In_ UINT tag
+//)
+//{
+//	if (!data) { return NULL; }
+//
+//	BYTE* ptr = data;
+//	BYTE* end = data + sizeBytes;
+//
+//	while (end > (ptr + sizeof(RIFFChunk)))
+//	{
+//		RIFFChunk* header = reinterpret_cast<RIFFChunk*>(ptr);
+//		if (header->tag == tag) { return header; }
+//
+//		ptrdiff_t offset = header->size + sizeof(RIFFChunk);
+//		ptr += offset;
+//	}
+//
+//	return nullptr;
+//}
 
 OSRCODE
 GetWaveFormatExtented(
@@ -364,65 +364,65 @@ GetWaveFormatExtented(
 	WAVEFORMATEX* waveFormat
 )
 {
-	// check RIFF tag
-	RIFFChunk* riffChunk = FindSoundChunk(lpWaveFile, dwFileSize, FOURCC_RIFF_TAG);
+	//// check RIFF tag
+	//RIFFChunk* riffChunk = FindSoundChunk(lpWaveFile, dwFileSize, FOURCC_RIFF_TAG);
 
-	// if chunk is empty or size smaller than 4 - take message
-	if (!riffChunk || riffChunk->size < 4) { return FS_OSR_BAD_PTR; }
+	//// if chunk is empty or size smaller than 4 - take message
+	//if (!riffChunk || riffChunk->size < 4) { return FS_OSR_BAD_PTR; }
 
-	// get RIFF chunk header info
-	BYTE* wavEnd = lpWaveFile + dwFileSize;
-	RIFFChunkHeader* riffHeader = reinterpret_cast<RIFFChunkHeader*>(riffChunk);
+	//// get RIFF chunk header info
+	//BYTE* wavEnd = lpWaveFile + dwFileSize;
+	//RIFFChunkHeader* riffHeader = reinterpret_cast<RIFFChunkHeader*>(riffChunk);
 
-	// if this file isn't RIFF - take message
-	if (riffHeader->riff != FOURCC_WAVE_FILE_TAG && riffHeader->riff != FOURCC_XWMA_FILE_TAG) { return FS_OSR_BAD_PTR; }
+	//// if this file isn't RIFF - take message
+	//if (riffHeader->riff != FOURCC_WAVE_FILE_TAG && riffHeader->riff != FOURCC_XWMA_FILE_TAG) { return FS_OSR_BAD_PTR; }
 
-	// locate 'fmt ' at file
-	BYTE* ptr = reinterpret_cast<BYTE*>(riffHeader) + sizeof(RIFFChunkHeader);
+	//// locate 'fmt ' at file
+	//BYTE* ptr = reinterpret_cast<BYTE*>(riffHeader) + sizeof(RIFFChunkHeader);
 
-	if ((ptr + sizeof(RIFFChunk)) > wavEnd) { return FS_OSR_BAD_PTR; }
+	//if ((ptr + sizeof(RIFFChunk)) > wavEnd) { return FS_OSR_BAD_PTR; }
 
-	// find fmt chunk
-	RIFFChunk* fmtChunk = FindSoundChunk(ptr, riffHeader->size, FOURCC_FORMAT_TAG);
+	//// find fmt chunk
+	//RIFFChunk* fmtChunk = FindSoundChunk(ptr, riffHeader->size, FOURCC_FORMAT_TAG);
 
-	// if chunk is empty or size smaller than size of PCMWAVEFORMAT - take message
-	if (!fmtChunk || fmtChunk->size < sizeof(PCMWAVEFORMAT)) { return FS_OSR_BAD_PTR; }
+	//// if chunk is empty or size smaller than size of PCMWAVEFORMAT - take message
+	//if (!fmtChunk || fmtChunk->size < sizeof(PCMWAVEFORMAT)) { return FS_OSR_BAD_PTR; }
 
-	// reinterpret fmt chunk to pointer
-	ptr = reinterpret_cast<BYTE*>(fmtChunk) + sizeof(RIFFChunk);
-	if (ptr + fmtChunk->size > wavEnd) { return FS_OSR_BAD_PTR; }
+	//// reinterpret fmt chunk to pointer
+	//ptr = reinterpret_cast<BYTE*>(fmtChunk) + sizeof(RIFFChunk);
+	//if (ptr + fmtChunk->size > wavEnd) { return FS_OSR_BAD_PTR; }
 
-	WAVEFORMAT* wf = reinterpret_cast<WAVEFORMAT*>(ptr);
+	//WAVEFORMAT* wf = reinterpret_cast<WAVEFORMAT*>(ptr);
 
-	// check formatTag
-	switch (wf->wFormatTag)
-	{
-	case WAVE_FORMAT_PCM:
-	case 0x0002:
-		break;
-	default:
-	{
-		if (fmtChunk->size < sizeof(WAVEFORMATEX)) { return FS_OSR_BAD_PTR; }
-		WAVEFORMATEX* wfx = reinterpret_cast<WAVEFORMATEX*>(ptr);
+	//// check formatTag
+	//switch (wf->wFormatTag)
+	//{
+	//case WAVE_FORMAT_PCM:
+	//case 0x0002:
+	//	break;
+	//default:
+	//{
+	//	if (fmtChunk->size < sizeof(WAVEFORMATEX)) { return FS_OSR_BAD_PTR; }
+	//	WAVEFORMATEX* wfx = reinterpret_cast<WAVEFORMATEX*>(ptr);
 
-		if (fmtChunk->size < (sizeof(WAVEFORMATEX) + wfx->cbSize)) { return FS_OSR_BAD_PTR; }
-	}
-	}
+	//	if (fmtChunk->size < (sizeof(WAVEFORMATEX) + wfx->cbSize)) { return FS_OSR_BAD_PTR; }
+	//}
+	//}
 
-	// reinterpretate RIFF header to pointer
-	ptr = reinterpret_cast<BYTE*>(riffHeader) + sizeof(RIFFChunkHeader);
-	if ((ptr + sizeof(RIFFChunk)) > wavEnd) { return FS_OSR_BAD_PTR; }
+	//// reinterpretate RIFF header to pointer
+	//ptr = reinterpret_cast<BYTE*>(riffHeader) + sizeof(RIFFChunkHeader);
+	//if ((ptr + sizeof(RIFFChunk)) > wavEnd) { return FS_OSR_BAD_PTR; }
 
-	// find 'data' chunk
-	RIFFChunk* dataChunk = FindSoundChunk(ptr, riffChunk->size, FOURCC_DATA_TAG);
-	if (!dataChunk || !dataChunk->size) { return FS_OSR_BAD_PTR; }
+	//// find 'data' chunk
+	//RIFFChunk* dataChunk = FindSoundChunk(ptr, riffChunk->size, FOURCC_DATA_TAG);
+	//if (!dataChunk || !dataChunk->size) { return FS_OSR_BAD_PTR; }
 
-	// reinterpretate 'data' header to pointer
-	ptr = reinterpret_cast<BYTE*>(dataChunk) + sizeof(RIFFChunk);
-	if (ptr + dataChunk->size > wavEnd) { return FS_OSR_BAD_PTR; }
+	//// reinterpretate 'data' header to pointer
+	//ptr = reinterpret_cast<BYTE*>(dataChunk) + sizeof(RIFFChunk);
+	//if (ptr + dataChunk->size > wavEnd) { return FS_OSR_BAD_PTR; }
 
-	*waveFormat = *reinterpret_cast<WAVEFORMATEX*>(wf);
-	waveFormat->cbSize = sizeof(WAVEFORMATEX);
+	//*waveFormat = *reinterpret_cast<WAVEFORMATEX*>(wf);
+	//waveFormat->cbSize = sizeof(WAVEFORMATEX);
 
 	return OSR_SUCCESS;
 }

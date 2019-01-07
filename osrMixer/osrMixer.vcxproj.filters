@@ -66,6 +66,9 @@
     <ClInclude Include="WaveOutHeader.h">
       <Filter>Mixer\MME</Filter>
     </ClInclude>
+    <ClInclude Include="MixerBase.h">
+      <Filter>Mixer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

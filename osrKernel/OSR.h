@@ -1,5 +1,5 @@
 /*********************************************************
-* Copyright (C) VERTVER, 2018. All rights reserved.
+* Copyright (C) VERTVER, 2019. All rights reserved.
 * OpenSoundRefenation - WINAPI open-source DAW
 * MIT-License
 **********************************************************
@@ -320,70 +320,6 @@ typedef struct
 	WIN32_FIND_DATAW FindData;
 } FILE_INFO;
 
-typedef struct
-{
-	unsigned int			tag;				// tag of RIFF chunk
-	unsigned int			size;				// chunk size
-} RIFFChunk;
-
-typedef struct
-{
-	unsigned int			tag;				// tag of RIFF chunk header
-	unsigned int			size;				// chunk header size
-	unsigned int			riff;				// RIFF info
-} RIFFChunkHeader;
-
-typedef struct
-{
-	static const unsigned int LOOP_TYPE_FORWARD			= 0x00000000;
-	static const unsigned int LOOP_TYPE_RELEASE			= 0x00000001;
-
-	unsigned int			size;				// chunk size
-	unsigned int			loopType;			// chunk loop type
-	unsigned int			loopStart;			// chunk loop start
-	unsigned int			loopLength;			// chunk length
-} DLSLoop;
-
-typedef struct
-{
-	static const unsigned int OPTIONS_NOTRUNCATION		= 0x00000001;
-	static const unsigned int OPTIONS_NOCOMPRESSION		= 0x00000002;
-
-	unsigned int			size;
-	unsigned short			unityNote;
-	short					fineTune;
-	int						gain;
-	unsigned int			options;
-	unsigned int			loopCount;
-} RIFFDLSSample;
-
-typedef struct
-{
-	static const unsigned int LOOP_TYPE_FORWARD			= 0x00000000;
-	static const unsigned int LOOP_TYPE_ALTERNATING		= 0x00000001;
-	static const unsigned int LOOP_TYPE_BACKWARD		= 0x00000002;
-
-	unsigned int			cuePointId;
-	unsigned int			type;
-	unsigned int			start;
-	unsigned int			end;
-	unsigned int			fraction;
-	unsigned int			playCount;
-} MIDILoop;
-
-typedef struct
-{
-	unsigned int	        manufacturerId;
-	unsigned int	        productId;
-	unsigned int	        samplePeriod;
-	unsigned int	        unityNode;
-	unsigned int	        pitchFraction;
-	unsigned int	        SMPTEFormat;
-	unsigned int	        SMPTEOffset;
-	unsigned int	        loopCount;
-	unsigned int	        samplerData;
-} RIFFMIDISample;
-
 struct WAV_RIFF_HEADER 
 {
 	DWORD	dwRIFFId;
@@ -489,3 +425,12 @@ private:
 #undef _RELEASE1
 };
 #endif
+
+class IObject
+{
+public:
+	virtual IObject* CloneObject() = 0;
+	virtual void Release() = 0;
+
+};
+

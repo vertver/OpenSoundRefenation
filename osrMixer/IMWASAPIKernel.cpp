@@ -1,5 +1,5 @@
 /*********************************************************
-* Copyright (C) VERTVER, 2018. All rights reserved.
+* Copyright (C) VERTVER, 2019. All rights reserved.
 * OpenSoundRefenation - WINAPI open-source DAW
 * MIT-License
 **********************************************************
@@ -10,12 +10,7 @@
 *********************************************************/
 #include "stdafx.h"
 #include "IMWASAPI.h"
-
-DLL_API HANDLE hThreadExitEvent = NULL;
-DLL_API HANDLE hThreadLoadSamplesEvent = NULL;
-
-OSRSample* SampleArray[128] = { nullptr };
-f32 CurrentPosition = 0.f;
+#include <Functiondiscoverykeys_devpkey.h>
 
 DWORD
 WINAPIV
@@ -23,417 +18,1753 @@ WASAPIThreadProc(
 	LPVOID pParam
 )
 {
-	// blockalign = channels * bits / 8
-	if (!hThreadExitEvent) hThreadExitEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-	if (!hThreadLoadSamplesEvent) hThreadLoadSamplesEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-	
-	HRESULT hr = 0;
-	DWORD dwTask = 0;
-	DWORD dwSampleNumber = 0;
-	HANDLE hMMCSS = NULL;
-	BOOL isPlaying = TRUE;
-	OSRSample* Sample = nullptr;
-	HANDLE hHandlesArray[] = { hThreadExitEvent, hThreadLoadSamplesEvent };
-	WASAPI_SAMPLE_PROC* pProc = reinterpret_cast<WASAPI_SAMPLE_PROC*>(pParam);
-	BYTE* pData = nullptr;
-
-	DWORD dwChannels = pProc->pEngine->GetOutputInfo()->waveFormat.nChannels;
-	DWORD dwBits = pProc->pEngine->GetOutputInfo()->waveFormat.wBitsPerSample;
-	DWORD dwSampleRate = pProc->pEngine->GetOutputInfo()->waveFormat.nSamplesPerSec;
-	DWORD BlockAlign = pProc->pEngine->GetOutputInfo()->waveFormat.nBlockAlign;
-	DWORD FrameSize = 0;
-	pProc->pEngine->pAudioClient->GetBufferSize((UINT32*)&FrameSize);
-
-	pData = (BYTE*)FastAlloc(FrameSize * dwChannels * sizeof(f32));
-
-	Sample = pProc->pSample;
-
-	u32 s = dwSampleRate - (dwSampleRate / (1000 / (1000 / (dwSampleRate / (FrameSize)))));
-	//u32 InputSize = pProc->pLoopInfo->waveFormat.nSamplesPerSec / (1000 / (1000 / (dwSampleRate / (FrameSize))));
-
-	if (!Sample && pProc->pLoopInfo)
-	{
-		Sample = new OSRSample(
-			pProc->pLoopInfo->waveFormat.wBitsPerSample,
-			pProc->pLoopInfo->waveFormat.nChannels,
-			FrameSize * dwChannels,
-			pProc->pLoopInfo->waveFormat.nSamplesPerSec
-		);
-
-		Sample->LoadSample(
-			(void*)pProc->pLoopInfo->pSample,
-			FrameSize * dwChannels,
-			pProc->pLoopInfo->waveFormat.wBitsPerSample,
-			pProc->pLoopInfo->waveFormat.nChannels,
-			pProc->pLoopInfo->waveFormat.nSamplesPerSec
-		);
-
-		SampleArray[0] = Sample;
-	}
-	else if (Sample && !pProc->pLoopInfo)
-	{
-		// play only this sample. No more
-	}
-	else if (Sample && pProc->pLoopInfo)
-	{
-		// do nothing
-	}
-	else
-	{
-		THROW1(L"Can't play audio because no loop info");
-	}
-
-	hMMCSS = AvSetMmThreadCharacteristicsW(L"Audio", &dwTask);
-	ASSERT2(hMMCSS, L"Can't init MMCSS");
-
-	AvSetMmThreadPriority(hMMCSS, AVRT_PRIORITY_CRITICAL);
-
-	Sample->ConvertToPlay((VOID*)pData, 32);
-
-	REFERENCE_TIME hndActual = 500000 * FrameSize * dwSampleRate;
-	size_t Samples = 0;
-
-	while (isPlaying)
-	{
-		DWORD dwWait = WaitForMultipleObjects(2, hHandlesArray, FALSE, INFINITY);
-		BYTE* pByte = nullptr;
-
-		switch (dwWait)
-		{
-		case WAIT_OBJECT_0:
-			isPlaying = FALSE;
-			break;
-		case WAIT_OBJECT_0 + 1:
-		{
-			DWORD dwPadding = 0;
-			DWORD dwSleep = hndActual / 200000000;
-			Sleep((dwSleep / 2));
-
-			hr = pProc->pEngine->pAudioClient->GetCurrentPadding((UINT32*)&dwPadding);
-
-			DWORD dwFramesToWrite = FrameSize;
-
-			if (SUCCEEDED(hr))
-			{		
-				hr = pProc->pEngine->pAudioRenderClient->GetBuffer(dwFramesToWrite, &pByte);
-
-				if (hr == AUDCLNT_E_BUFFER_TOO_LARGE) { continue; }
-
-				if (pByte)
-				{
-					memcpy(pByte, pData, dwFramesToWrite * dwChannels * sizeof(f32));
-				}
-
-				hr = pProc->pEngine->pAudioRenderClient->ReleaseBuffer(dwFramesToWrite, 0);
-			}
-			
-			if (FAILED(hr)) 
-			{ 
-				isPlaying = FALSE; 
-			}
-			else
-			{
-				if (dwSampleNumber > 127)
-				{
-					for (size_t i = 0; i < 127; i++)
-					{
-						if (SampleArray[i]) 
-						{
-							delete SampleArray[i]; 
-							SampleArray[i] = nullptr;
-						}
-					}
-
-					SampleArray[0] = SampleArray[127];
-					dwSampleNumber = 0;
-				}
-
-				if (pProc->pEngine->pTaskValue) 
-				{
-					pProc->pEngine->pTaskValue->SetValue(Sample->SamplePosition, pProc->pLoopInfo->SampleSize);
-				}
-
-				//Sample->SamplePosition = (pProc->pLoopInfo->SampleSize / sizeof(f32) / pProc->pLoopInfo->waveFormat.nChannels) * CurrentPosition;
-				//Sample->ToEndFileSize = pProc->pLoopInfo->SampleSize - Sample->SamplePosition;
-
-				SampleArray[dwSampleNumber + 1] = Sample->OnBufferEnd(pProc->pLoopInfo);
-				dwSampleNumber++;
-				Sample = SampleArray[dwSampleNumber];
-
-				if (pProc->pEngine->pHost)
-				{
-					ProcessAudio(
-						Sample->pOutputBuffer,
-						Sample->pOutputBuffer,
-						dwSampleRate,
-						Sample->BufferSizeOutput,
-						Sample->ChannelsOutput,
-						(IWin32VSTHost*)pProc->pEngine->pHost
-					);
-				}
-
-				Sample->ConvertToPlay(pData, 32);
-				Samples++;
-			}
-		}
-		break;
-		default:
-			break;
-		}
-	}
-
-	pProc->pEngine->pTaskValue->SetCompleted();
-	FREEKERNELHEAP(pData);
-	if (hMMCSS) { AvRevertMmThreadCharacteristics(hMMCSS); }
-
-	if (!Sample) { delete Sample; Sample = nullptr; }
-	
-	DWORD dwSampleN = dwSampleNumber + 1;
-	if (dwSampleN > 127) { dwSampleN = 127; }
-	for (size_t i = 0; i < dwSampleN; i++)
-	{
-		if (SampleArray[i])
-		{
-			delete SampleArray[i]; 
-			SampleArray[i] = nullptr;
-		}
-	}
-
-	return 0;
+	// implement thread proc here
 }
 
 OSRCODE
-IMEngine::SetAudioPosition(
-	f32 Position
+ISoundInterfaceWASAPI::EnumerateAudioInput(
+	AUDIO_HOST** pHostsList,
+	u32& HostCounts
 )
 {
-	CurrentPosition = Position;
-	return OSR_SUCCESS;
-}
-
-OSRCODE
-IMEngine::GetAudioPosition(f32& Position)
-{
-	Position = CurrentPosition;
-	return OSR_SUCCESS;
-}
-
-OSRCODE
-IMEngine::InitEngine(
-	HWND hwnd
-)
-{
-	DWORD dwInputState = 0;
-	DWORD dwOutputState = 0;
-	DWORD dwRenderCount = 0;
+	UINT CountOfInputs = 0;
 	IMMDeviceEnumerator* deviceEnumerator = nullptr;
 	IMMDeviceCollection* pEndPoints = nullptr;
 
-	{ 
-		IMMDevice* pRenderer = nullptr;
-
-		if (!pTaskValue) { pTaskValue = new TaskbarValue(hwnd); }
-
-		// create instance for enumerator
-		if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&deviceEnumerator))))
-		{
-			// get default output device
-			FAILEDX2(deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &pRenderer));
-
-			// get device id
-			WCHAR* pDeviceId = nullptr;
-			FAILEDX2(pRenderer->GetId(&pDeviceId));
-			FAILEDX2(pRenderer->GetState(&dwOutputState));
-
-			// copy to device info and free com pointer
-			wcsncpy_s(OutputDeviceInfo.szDeviceId, pDeviceId, sizeof(WSTRING512) - 1);
-			CoTaskMemFree(pDeviceId);
-			_RELEASE(pRenderer);
-		}
-		else
-		{
-			return MXR_OSR_NO_OUT;
-		}
-	}
-
-	{
-		IMMDevice* pCapturer = nullptr;
-		
-		// get default input device
-		if (SUCCEEDED(deviceEnumerator->GetDefaultAudioEndpoint(eCapture, eMultimedia, &pCapturer)))
-		{
-			// get device id
-			WCHAR* pDeviceId = nullptr;
-			FAILEDX2(pCapturer->GetId(&pDeviceId));
-			FAILEDX2(pCapturer->GetState(&dwInputState));
-
-			// copy to device info and free com pointer
-			wcsncpy_s(InputDeviceInfo.szDeviceId, pDeviceId, sizeof(WSTRING512) - 1);
-			CoTaskMemFree(pDeviceId);
-			_RELEASE(pCapturer);
-		}
-	}
-
-	// get count of output devices
-	FAILEDX2(deviceEnumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &pEndPoints));
-	FAILEDX2(pEndPoints->GetCount((UINT*)&dwRenderCount));
-	_RELEASE(pEndPoints);
-
-	// get count of all devices
-	FAILEDX2(deviceEnumerator->EnumAudioEndpoints(eAll, DEVICE_STATE_ACTIVE, &pEndPoints));
-	FAILEDX2(pEndPoints->GetCount((UINT*)&DeviceCount));
-	DeviceCount += dwRenderCount;
-
-	_RELEASE(pEndPoints);
-	_RELEASE(deviceEnumerator);
-
-	return OSR_SUCCESS;
-}
-
-static REFERENCE_TIME MakeHnsPeriod(UINT32 nFrames, DWORD nSamplesPerSec)
-{
-	return (REFERENCE_TIME)((10000.0 * 1000 / nSamplesPerSec * nFrames) + 0.5);
-}
-
-OSRCODE
-IMEngine::CreateDefaultDevice(
-	REFERENCE_TIME referTime
-)
-{
-	HRESULT hr = 0;	
-	DWORD dwFrames = 0;	
-	PROPVARIANT value = {};	
-	IMMDevice* pRenderer = nullptr;
-	REFERENCE_TIME refTime = 0;
-	IPropertyStore *pProperty = nullptr;
-	IMMDeviceEnumerator*& deviceEnumerator = enumerator;
-
-	// create instance for enumerator
+	// create enumerator 
 	if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&deviceEnumerator))))
 	{
-		// get default device
-		FAILEDX2(deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &pRenderer));
-		OutputDeviceInfo.device = pRenderer;
+		deviceEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE, &pEndPoints);
+		pEndPoints->GetCount(&CountOfInputs);
 	}
 	else
 	{
 		return MXR_OSR_NO_OUT;
 	}
 
-	// activate audio client and get property to search a lot of information
-	FAILEDX2(pRenderer->Activate(*GetAudioClientIID(), CLSCTX_ALL, nullptr, (LPVOID*)&pAudioClient));
-	FAILEDX2(pRenderer->OpenPropertyStore(STGM_READ, &pProperty));
-	
-	// init variant to get WAVEFORMATEX
-	PropVariantInit(&value);
-	FAILEDX2(pProperty->GetValue(PKEY_AudioEngine_DeviceFormat, &value));
+	HostCounts = CountOfInputs;
+	if (!HostCounts) { return MXR_OSR_NO_OUT; }
 
-	// copy our WAVEFORMAT to device format
-	memcpy(&OutputDeviceInfo.waveFormat, value.blob.pBlobData, min(sizeof(OutputDeviceInfo.waveFormat), value.blob.cbSize));
-	PropVariantClear(&value);
-	_RELEASE(pProperty);
+	pHostsList = (AUDIO_HOST**)FastAlloc(sizeof(AUDIO_HOST*) * (CountOfInputs + 1));
 
-	//#NOTE: can be failed on AC97. Be careful
-	if (FAILED(pAudioClient->GetDevicePeriod(&OutputDeviceInfo.DefaultDevicePeriod, &OutputDeviceInfo.MinimumDevicePeriod)))
+	// allocate space for host list
+	for (size_t i = 0; i < CountOfInputs + 1; i++)
 	{
-		OutputDeviceInfo.DefaultDevicePeriod = 1000000;
-		OutputDeviceInfo.MinimumDevicePeriod = 300000;
+		pHostsList[i] = (AUDIO_HOST*)FastAlloc(sizeof(AUDIO_HOST));
 	}
 
-	WAVEFORMATEX* closeFormat = nullptr;
-	pAudioClient->GetMixFormat(&closeFormat);
-
-	memcpy(&OutputDeviceInfo.waveFormat, closeFormat, sizeof(WAVEFORMATEX));
-
-	// init audio client
-	hr = pAudioClient->Initialize(
-		AUDCLNT_SHAREMODE_SHARED, 
-		0,
-		referTime,		
-		0,
-		closeFormat,
-		nullptr
-	);
-
-	// get current buffer size
-	pAudioClient->GetBufferSize((UINT32*)&dwFrames);
-
-	//#NOTE: can be triggered on Windows 7+ systems
-	if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED)
+	for (size_t i = 0; i < CountOfInputs; i++)
 	{
-		_RELEASE(pAudioClient);
+		WAVEFORMATEX waveFormat = { 0 };
+		PROPVARIANT value = { 0 };
+		IMMDevice* pDevice = nullptr;
+		IPropertyStore* pProperty = nullptr;
+		IAudioClient* pAudioClient = nullptr;
 
-		// activate audio client
-		pRenderer->Activate(*GetAudioClientIID(), CLSCTX_ALL, nullptr, (LPVOID*)&pAudioClient);
+		// get device
+		pEndPoints->Item(i, &pDevice);
 
-		// create optimal period for device and init it
-		refTime = MakeHnsPeriod(dwFrames, OutputDeviceInfo.waveFormat.nSamplesPerSec);
-		hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTime, 0, closeFormat, nullptr);
-		if (FAILED(hr)) { return MXR_OSR_NO_OUT; }
-	}
-
-	pAudioClient->GetBufferSize((UINT32*)&dwFrames);
-	BufferSize = dwFrames;
-
-	// get render client and set event for output
-	FAILEDX2(pAudioClient->GetService(IID_PPV_ARGS(&pAudioRenderClient)));
-
-	hOutput = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-	CoTaskMemFree(closeFormat);
-
-	return OSR_SUCCESS;
-}
-
-ThreadSystem thread;
-
-OSRCODE
-IMEngine::StartDevice(
-	LPVOID pProc
-)
-{
-	static DWORD dwStart = 0;
-	WASAPI_SAMPLE_PROC* pProce = (WASAPI_SAMPLE_PROC*)pProc;
-
-	if (pProce->pLoopInfo->pSample)
-	{
-		if (!WasapiThread)
+		if (pDevice)
 		{
-			static const wchar_t* WasapiString = L"OSR WASAPI worker thread";
-			WasapiThread = thread.CreateUserThread(nullptr, (ThreadFunc*)(WASAPIThreadProc), (LPVOID)pProc, WasapiString);
-
-			if (FAILED(pAudioClient->Start()))
+			pHostsList[i]->DeviceNumber = i;
+			pHostsList[i]->DeviceType = InputDevice;
+			
+			pDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void**)&pAudioClient);
+			
+			// get property store for format and device name
+			if (SUCCEEDED(pDevice->OpenPropertyStore(STGM_READ, &pProperty)))
 			{
-				return MXR_OSR_NO_OUT;
+				{
+					PropVariantInit(&value);
+
+					// get wave format
+					if (SUCCEEDED(pProperty->GetValue(PKEY_AudioEngine_DeviceFormat, &value)))
+					{
+						memcpy(&waveFormat, value.blob.pBlobData, min(sizeof(WAVEFORMATEX), value.blob.cbSize));
+					}
+
+					PropVariantClear(&value);
+				}
+
+				{
+					PropVariantInit(&value);
+
+					// get device name
+					if (SUCCEEDED(pProperty->GetValue(PKEY_Device_FriendlyName, &value)))
+					{
+						if (value.vt == VT_LPWSTR)
+						{
+							// we need to get size of data to allocate
+							int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, NULL, NULL);
+							LPSTR lpNewString = nullptr;
+
+							if (StringSize && StringSize < sizeof(STRING256))
+							{
+								// allocate new string at kernel heap
+								lpNewString = (LPSTR)FastAlloc(++StringSize);
+
+								// convert to UTF-8
+								if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, NULL, NULL))
+								{
+									strcpy_s(pHostsList[i]->DeviceName, sizeof(STRING256), lpNewString);
+								}
+
+								FREEKERNELHEAP(lpNewString);
+							}
+						}
+					}
+
+					PropVariantClear(&value);
+				}
+
+				_RELEASE(pProperty);
 			}
 
-			if (hThreadExitEvent) { ResetEvent(hThreadExitEvent); }
-			if (hThreadLoadSamplesEvent) { ResetEvent(hThreadLoadSamplesEvent); }
-			SetEvent(hStart);
-			SetEvent(hThreadLoadSamplesEvent);
+			// we didn't need to have WAVEFORMATEX struct
+			pHostsList[i]->FormatType = ConvertToSingleFormat(waveFormat);
+			
+			if (pAudioClient)
+			{
+				UINT32 HostSize = 0;
+				pAudioClient->GetBufferSize(&HostSize);
+
+				pHostsList[i]->BufferSize = HostSize;
+			}
 		}
+
+		_RELEASE(pAudioClient);
+		_RELEASE(pDevice);
 	}
 
-	dwStart++;
+	_RELEASE(deviceEnumerator);
+	_RELEASE(pEndPoints);
 
 	return OSR_SUCCESS;
 }
 
 OSRCODE
-IMEngine::StopDevice()
+ISoundInterfaceWASAPI::EnumerateAudioOutputs(
+	AUDIO_HOST** pHostsList, 
+	u32& HostCounts
+)
 {
-	if (pAudioClient)
+	UINT CountOfOutputs = 0;
+	IMMDeviceEnumerator* deviceEnumerator = nullptr;
+	IMMDeviceCollection* pEndPoints = nullptr;
+
+	if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&deviceEnumerator))))
 	{
-		if (FAILED(pAudioClient->Stop()))
-		{
-			return MXR_OSR_NO_OUT;
-		}
+		deviceEnumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &pEndPoints);
+		pEndPoints->GetCount(&CountOfOutputs);
+	}
+	else
+	{
+		return MXR_OSR_NO_OUT;
 	}
 
-	WasapiThread = 0;
+	HostCounts = CountOfOutputs;
+	if (!HostCounts) { return MXR_OSR_NO_OUT; }
 
-	if (hThreadLoadSamplesEvent)	{ ResetEvent(hThreadLoadSamplesEvent); }
-	if (hThreadExitEvent)			{ SetEvent(hThreadExitEvent); }
-	Sleep(100);
+	pHostsList = (AUDIO_HOST**)FastAlloc(sizeof(AUDIO_HOST*) * (CountOfOutputs + 1));
+
+	// allocate space for host list
+	for (size_t i = 0; i < CountOfOutputs + 1; i++)
+	{
+		pHostsList[i] = (AUDIO_HOST*)FastAlloc(sizeof(AUDIO_HOST));
+	}
+
+	for (size_t i = 0; i < CountOfOutputs; i++)
+	{
+		WAVEFORMATEX waveFormat = { 0 };
+		PROPVARIANT value = { 0 };
+		IMMDevice* pDevice = nullptr;
+		IPropertyStore* pProperty = nullptr;
+		IAudioClient* pAudioClient = nullptr;
+
+		// get device
+		pEndPoints->Item(i, &pDevice);
+
+		if (pDevice)
+		{
+			pHostsList[i]->DeviceNumber = i;
+			pHostsList[i]->DeviceType = OutputDevice;
+
+			pDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void**)&pAudioClient);
+
+			// get property store for format and device name
+			if (SUCCEEDED(pDevice->OpenPropertyStore(STGM_READ, &pProperty)))
+			{
+				{
+					PropVariantInit(&value);
+
+					// get wave format
+					if (SUCCEEDED(pProperty->GetValue(PKEY_AudioEngine_DeviceFormat, &value)))
+					{
+						memcpy(&waveFormat, value.blob.pBlobData, min(sizeof(WAVEFORMATEX), value.blob.cbSize));
+					}
+
+					PropVariantClear(&value);
+				}
+
+				{
+					PropVariantInit(&value);
+
+					// get device name
+					if (SUCCEEDED(pProperty->GetValue(PKEY_Device_FriendlyName, &value)))
+					{
+						if (value.vt == VT_LPWSTR)
+						{
+							// we need to get size of data to allocate
+							int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, NULL, NULL);
+							LPSTR lpNewString = nullptr;
+
+							if (StringSize && StringSize < sizeof(STRING256))
+							{
+								// allocate new string at kernel heap
+								lpNewString = (LPSTR)FastAlloc(++StringSize);
+
+								// convert to UTF-8
+								if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, NULL, NULL))
+								{
+									strcpy_s(pHostsList[i]->DeviceName, sizeof(STRING256), lpNewString);
+								}
+
+								FREEKERNELHEAP(lpNewString);
+							}
+						}
+					}
+
+					PropVariantClear(&value);
+				}
+
+				_RELEASE(pProperty);
+			}
+
+			// we didn't need to have WAVEFORMATEX struct
+			pHostsList[i]->FormatType = ConvertToSingleFormat(waveFormat);
+
+			if (pAudioClient)
+			{
+				UINT32 HostSize = 0;
+				pAudioClient->GetBufferSize(&HostSize);
+
+				pHostsList[i]->BufferSize = HostSize;
+			}
+		}
+
+		_RELEASE(pAudioClient);
+		_RELEASE(pDevice);
+	}
+
+	_RELEASE(deviceEnumerator);
+	_RELEASE(pEndPoints);
 
 	return OSR_SUCCESS;
 }
+
+OSRCODE
+ISoundInterfaceWASAPI::GetDefaultDevice(
+	u32& DeviceNumber
+)
+{
+	// not implemented now 
+	return OSR_SUCCESS;
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::GetHostDeviceOutInfo(
+	u32 DeviceNumber, 
+	AUDIO_HOST& HostInfo
+)
+{
+	UINT CountOfOutputs = 0;
+	WAVEFORMATEX waveFormat = { 0 };
+	PROPVARIANT value = { 0 };
+	IMMDeviceEnumerator* deviceEnumerator = nullptr;
+	IMMDeviceCollection* pEndPoints = nullptr;
+	IPropertyStore* pProperty = nullptr;
+	IAudioClient* pAudioClient = nullptr;
+	IMMDevice* pDevice = nullptr;
+
+	// create enumerator for single device object
+	if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&deviceEnumerator))))
+	{
+		deviceEnumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &pEndPoints);
+	}
+
+	// get device
+	pEndPoints->Item(DeviceNumber, &pDevice);
+
+	if (pDevice)
+	{
+		HostInfo.DeviceNumber = DeviceNumber;
+		HostInfo.DeviceType = InputDevice;
+
+		pDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void**)&pAudioClient);
+
+		// get property store for format and device name
+		if (SUCCEEDED(pDevice->OpenPropertyStore(STGM_READ, &pProperty)))
+		{
+			{
+				PropVariantInit(&value);
+
+				// get wave format
+				if (SUCCEEDED(pProperty->GetValue(PKEY_AudioEngine_DeviceFormat, &value)))
+				{
+					memcpy(&waveFormat, value.blob.pBlobData, min(sizeof(WAVEFORMATEX), value.blob.cbSize));
+				}
+
+				PropVariantClear(&value);
+			}
+
+			{
+				PropVariantInit(&value);
+
+				// get device name
+				if (SUCCEEDED(pProperty->GetValue(PKEY_Device_FriendlyName, &value)))
+				{
+					if (value.vt == VT_LPWSTR)
+					{
+						// we need to get size of data to allocate
+						int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, NULL, NULL);
+						LPSTR lpNewString = nullptr;
+
+						if (StringSize && StringSize < sizeof(STRING256))
+						{
+							// allocate new string at kernel heap
+							lpNewString = (LPSTR)FastAlloc(++StringSize);
+
+							// convert to UTF-8
+							if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, NULL, NULL))
+							{
+								strcpy_s(HostInfo.DeviceName, sizeof(STRING256), lpNewString);
+							}
+
+							FREEKERNELHEAP(lpNewString);
+						}
+					}
+				}
+
+				PropVariantClear(&value);
+			}
+
+			_RELEASE(pProperty);
+		}
+
+		// we didn't need to have WAVEFORMATEX struct
+		HostInfo.FormatType = ConvertToSingleFormat(waveFormat);
+
+		if (pAudioClient)
+		{
+			UINT32 HostSize = 0;
+			pAudioClient->GetBufferSize(&HostSize);
+
+			HostInfo.BufferSize = HostSize;
+		}
+	}
+
+	_RELEASE(pAudioClient);
+	_RELEASE(pDevice);
+	_RELEASE(deviceEnumerator);
+	_RELEASE(pEndPoints);
+
+	return OSR_SUCCESS;
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::GetHostDeviceInInfo(
+	u32 DeviceNumber,
+	AUDIO_HOST& HostInfo
+)
+{
+	WAVEFORMATEX waveFormat = { 0 };
+	PROPVARIANT value = { 0 };
+	IMMDeviceEnumerator* deviceEnumerator = nullptr;
+	IMMDeviceCollection* pEndPoints = nullptr;
+	IPropertyStore* pProperty = nullptr;
+	IAudioClient* pAudioClient = nullptr;
+	IMMDevice* pDevice = nullptr;
+
+	// create enumerator for single device object
+	if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&deviceEnumerator))))
+	{
+		deviceEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE, &pEndPoints);
+	}
+	
+	// get device
+	pEndPoints->Item(DeviceNumber, &pDevice);
+
+	if (pDevice)
+	{
+		HostInfo.DeviceNumber = DeviceNumber;
+		HostInfo.DeviceType = InputDevice;
+
+		pDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void**)&pAudioClient);
+
+		// get property store for format and device name
+		if (SUCCEEDED(pDevice->OpenPropertyStore(STGM_READ, &pProperty)))
+		{
+			{
+				PropVariantInit(&value);
+
+				// get wave format
+				if (SUCCEEDED(pProperty->GetValue(PKEY_AudioEngine_DeviceFormat, &value)))
+				{
+					memcpy(&waveFormat, value.blob.pBlobData, min(sizeof(WAVEFORMATEX), value.blob.cbSize));
+				}
+
+				PropVariantClear(&value);
+			}
+
+			{
+				PropVariantInit(&value);
+
+				// get device name
+				if (SUCCEEDED(pProperty->GetValue(PKEY_Device_FriendlyName, &value)))
+				{
+					if (value.vt == VT_LPWSTR)
+					{
+						// we need to get size of data to allocate
+						int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, NULL, NULL);
+						LPSTR lpNewString = nullptr;
+
+						if (StringSize && StringSize < sizeof(STRING256))
+						{
+							// allocate new string at kernel heap
+							lpNewString = (LPSTR)FastAlloc(++StringSize);
+
+							// convert to UTF-8
+							if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, NULL, NULL))
+							{
+								strcpy_s(HostInfo.DeviceName, sizeof(STRING256), lpNewString);
+							}
+
+							FREEKERNELHEAP(lpNewString);
+						}
+					}
+				}
+
+				PropVariantClear(&value);
+			}
+
+			_RELEASE(pProperty);
+		}
+
+		// we didn't need to have WAVEFORMATEX struct
+		HostInfo.FormatType = ConvertToSingleFormat(waveFormat);
+
+		if (pAudioClient)
+		{
+			UINT32 HostSize = 0;
+			pAudioClient->GetBufferSize(&HostSize);
+
+			HostInfo.BufferSize = HostSize;
+		}
+	}
+
+	_RELEASE(pAudioClient);
+	_RELEASE(pDevice);
+	_RELEASE(deviceEnumerator);
+	_RELEASE(pEndPoints);
+
+	return OSR_SUCCESS;
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::GetHostDevicesOutCount(
+	u32& DeviceCount
+)
+{
+	UINT CountOfOutputs = 0;
+	IMMDeviceEnumerator* deviceEnumerator = nullptr;
+	IMMDeviceCollection* pEndPoints = nullptr;
+
+	// create enumerator for single device object
+	if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&deviceEnumerator))))
+	{
+		deviceEnumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &pEndPoints);
+		pEndPoints->GetCount(&CountOfOutputs);
+		_RELEASE(pEndPoints);
+		_RELEASE(deviceEnumerator);
+	}
+
+	DeviceCount = CountOfOutputs;
+
+	return OSR_SUCCESS;
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::GetHostDevicesInCount(
+	u32& DeviceCount
+)
+{
+	UINT CountOfOutputs = 0;
+	IMMDeviceEnumerator* deviceEnumerator = nullptr;
+	IMMDeviceCollection* pEndPoints = nullptr;
+
+	// create enumerator for single device object
+	if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&deviceEnumerator))))
+	{
+		deviceEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE, &pEndPoints);
+		pEndPoints->GetCount(&CountOfOutputs);
+		_RELEASE(pEndPoints);
+		_RELEASE(deviceEnumerator);
+	}
+
+	DeviceCount = CountOfOutputs;
+
+	return OSR_SUCCESS;
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::GetVolumeLevel(
+	f32& Volume
+)
+{
+	// not implemented now 
+	return OSR_SUCCESS;
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::CreateCaptureSoundDevice(f64 HostDelay, u32 DeviceNumber)
+{
+	PROPVARIANT value = { 0 };
+	WAVEFORMATEX waveFormat = { 0 };
+	IPropertyStore* pProperty = nullptr;
+	HRESULT hr = 0;
+
+	{
+		IMMDeviceEnumerator* deviceEnumerator = nullptr;
+		IMMDeviceCollection* pEndPoints = nullptr;
+
+		// create enumerator for single device object
+		if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&deviceEnumerator))))
+		{
+			deviceEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE, &pEndPoints);
+
+			IMMDevice* pDevice = nullptr;
+			pEndPoints->Item(DeviceNumber, &pDevice);
+			pDevice->QueryInterface(IID_PPV_ARGS(&pInputDevice));
+
+			_RELEASE(pDevice);
+			_RELEASE(deviceEnumerator);
+			_RELEASE(pEndPoints);
+		}
+		else
+		{
+			return MXR_OSR_BAD_LIB;
+		}
+	}
+
+	pInputDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void**)&pInputClient);
+
+	if (SUCCEEDED(pInputDevice->OpenPropertyStore(STGM_READ, &pProperty)))
+	{
+		{
+			PropVariantInit(&value);
+
+			if (SUCCEEDED(pProperty->GetValue(PKEY_AudioEngine_DeviceFormat, &value)))
+			{
+				memcpy(&waveFormat, value.blob.pBlobData, min(sizeof(WAVEFORMATEX), value.blob.cbSize));
+			}
+
+			PropVariantClear(&value);
+		}
+
+		{
+			PropVariantInit(&value);
+
+			if (SUCCEEDED(pProperty->GetValue(PKEY_Device_FriendlyName, &value)))
+			{
+				if (value.vt == VT_LPWSTR)
+				{
+					// we need to get size of data to allocate
+					int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, NULL, NULL);
+					LPSTR lpNewString = nullptr;
+
+					if (StringSize && StringSize < sizeof(STRING256))
+					{
+						// allocate new string at kernel heap
+						lpNewString = (LPSTR)FastAlloc(++StringSize);
+
+						// convert to UTF-8
+						if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, NULL, NULL))
+						{
+							strcpy_s(InputHost.DeviceName, sizeof(STRING256), lpNewString);
+						}
+
+						FREEKERNELHEAP(lpNewString);
+					}
+				}
+			}
+
+			PropVariantClear(&value);
+		}
+
+		_RELEASE(pProperty);
+	}
+
+	// copy format before mix format
+	InputHost.FormatType = ConvertToSingleFormat(waveFormat);
+
+	WAVEFORMATEX* pWave = nullptr;
+	if (SUCCEEDED(pInputClient->GetMixFormat(&pWave)))
+	{
+		memcpy(&waveFormat, pWave, sizeof(WAVEFORMATEX));
+		CoTaskMemFree(pWave);
+	}
+
+	REFERENCE_TIME refTimeMin = 0;
+	REFERENCE_TIME refTimeDefault = 0;
+
+	if (HostDelay)
+	{
+		refTimeDefault = HostDelay * 10000;		// HostDelay must be in milliseconds
+	}
+	else
+	{
+		// it's can be failed, if device is AC97 
+		if (FAILED(pInputClient->GetDevicePeriod(&refTimeDefault, &refTimeMin)))
+		{
+			refTimeDefault = 1000000;			// default device period - 100 msecs
+		}
+	}
+
+	hr = pInputClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTimeDefault, 0, &waveFormat, nullptr);
+
+	if (FAILED(hr))
+	{
+		// can be throwed on Windows 7+
+		if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED)
+		{
+			// it's can be failed, if device is AC97 
+			if (FAILED(pInputClient->GetDevicePeriod(&refTimeDefault, &refTimeMin)))
+			{
+				refTimeDefault = 1000000;
+			}
+
+			hr = pInputClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTimeDefault, 0, &waveFormat, nullptr);
+
+			if (FAILED(hr))
+			{
+				_RELEASE(pInputClient);
+				_RELEASE(pInputDevice);
+				return MXR_OSR_UNSUPPORTED_FMT;
+			};
+		}
+		else
+		{
+			_RELEASE(pInputClient);
+			_RELEASE(pInputDevice);
+			return MXR_OSR_UNSUPPORTED_FMT;
+		}
+	}
+
+	u32 Frames = 0;
+	pInputClient->GetBufferSize(&Frames);
+
+	InputHost.BufferSize = Frames;
+	InputHost.DeviceNumber = DeviceNumber;
+	InputHost.DeviceType = InputDevice;
+
+	if (FAILED(pInputClient->GetService(IID_PPV_ARGS(&pCaptureClient))))
+	{
+		return MXR_OSR_BAD_WFX;
+	}
+
+	return OSR_SUCCESS;
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::CreateRenderSoundDevice(
+	f64 HostDelay,
+	u32 DeviceNumber
+)
+{
+	PROPVARIANT value = { 0 };
+	WAVEFORMATEX waveFormat = { 0 };
+	IPropertyStore* pProperty = nullptr;
+	HRESULT hr = 0;
+
+	{
+		IMMDeviceEnumerator* deviceEnumerator = nullptr;
+		IMMDeviceCollection* pEndPoints = nullptr;
+
+		// create enumerator for single device object
+		if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&deviceEnumerator))))
+		{
+			deviceEnumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &pEndPoints);
+
+			IMMDevice* pDevice = nullptr;
+			pEndPoints->Item(DeviceNumber, &pDevice);
+			pDevice->QueryInterface(IID_PPV_ARGS(&pOutputDevice));
+
+			_RELEASE(pDevice);
+			_RELEASE(deviceEnumerator);
+			_RELEASE(pEndPoints);
+		}
+		else
+		{
+			return MXR_OSR_BAD_LIB;
+		}
+	}
+
+	pOutputDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void**)&pOutputClient);
+
+	if (SUCCEEDED(pOutputDevice->OpenPropertyStore(STGM_READ, &pProperty)))
+	{
+		{
+			PropVariantInit(&value);
+
+			if (SUCCEEDED(pProperty->GetValue(PKEY_AudioEngine_DeviceFormat, &value)))
+			{
+				memcpy(&waveFormat, value.blob.pBlobData, min(sizeof(WAVEFORMATEX), value.blob.cbSize));
+			}
+
+			PropVariantClear(&value);
+		}
+
+		{
+			PropVariantInit(&value);
+
+			if (SUCCEEDED(pProperty->GetValue(PKEY_Device_FriendlyName, &value)))
+			{
+				if (value.vt == VT_LPWSTR)
+				{
+					// we need to get size of data to allocate
+					int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, NULL, NULL);
+					LPSTR lpNewString = nullptr;
+
+					if (StringSize && StringSize < sizeof(STRING256))
+					{
+						// allocate new string at kernel heap
+						lpNewString = (LPSTR)FastAlloc(++StringSize);
+
+						// convert to UTF-8
+						if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, NULL, NULL))
+						{
+							strcpy_s(OutputHost.DeviceName, sizeof(STRING256), lpNewString);
+						}
+
+						FREEKERNELHEAP(lpNewString);
+					}
+				}
+			}
+
+			PropVariantClear(&value);
+		}
+
+		_RELEASE(pProperty);
+	}
+
+	// copy format before mix format
+	OutputHost.FormatType = ConvertToSingleFormat(waveFormat);
+
+	WAVEFORMATEX* pWave = nullptr;
+	if (SUCCEEDED(pInputClient->GetMixFormat(&pWave)))
+	{
+		memcpy(&waveFormat, pWave, sizeof(WAVEFORMATEX));
+		CoTaskMemFree(pWave);
+	}
+
+	REFERENCE_TIME refTimeMin = 0;
+	REFERENCE_TIME refTimeDefault = 0;
+
+	if (HostDelay)
+	{
+		refTimeDefault = HostDelay * 10000;		// HostDelay must be in milliseconds
+	}
+	else
+	{
+		// it's can be failed, if device is AC97 
+		if (FAILED(pOutputClient->GetDevicePeriod(&refTimeDefault, &refTimeMin)))
+		{
+			refTimeDefault = 1000000;			// default device period - 100 msecs
+		}
+	}
+
+	hr = pOutputClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTimeDefault, 0, &waveFormat, nullptr);
+
+	if (FAILED(hr))
+	{
+		// can be throwed on Windows 7+
+		if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED)
+		{
+			// it's can be failed, if device is AC97 
+			if (FAILED(pOutputClient->GetDevicePeriod(&refTimeDefault, &refTimeMin)))
+			{
+				refTimeDefault = 1000000;
+			}
+
+			hr = pOutputClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTimeDefault, 0, &waveFormat, nullptr);
+
+			if (FAILED(hr))
+			{
+				_RELEASE(pOutputClient);
+				_RELEASE(pOutputDevice);
+				return MXR_OSR_UNSUPPORTED_FMT;
+			};
+		}
+		else
+		{
+			_RELEASE(pOutputClient);
+			_RELEASE(pOutputDevice);
+			return MXR_OSR_UNSUPPORTED_FMT;
+		}
+	}
+
+	u32 Frames = 0;
+	pOutputClient->GetBufferSize(&Frames);
+
+	OutputHost.BufferSize = Frames;
+	OutputHost.DeviceNumber = DeviceNumber;
+	OutputHost.DeviceType = OutputDevice;
+
+	if (FAILED(pOutputClient->GetService(IID_PPV_ARGS(&pRenderClient))))
+	{
+		return MXR_OSR_BAD_WFX;
+	}
+
+	return OSR_SUCCESS;
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::SetDelayLevel(
+	f64 HostDelay
+)
+{
+	// not implemented now 
+	return OSR_SUCCESS;
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::SetVolumeLevel(
+	f32 Volume
+)
+{
+	// not implemented now 
+	return OSR_SUCCESS;
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::CreateCaptureDefaultSoundDevice(
+	f64 HostDelay
+)
+{
+	PROPVARIANT value = { 0 };
+	WAVEFORMATEX waveFormat = { 0 };
+	IPropertyStore* pProperty = nullptr;
+	HRESULT hr = 0;
+
+	{
+		IMMDeviceEnumerator* deviceEnumerator = nullptr;
+		IMMDeviceCollection* pEndPoints = nullptr;
+
+		// create enumerator for single device object
+		if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&deviceEnumerator))))
+		{
+			IMMDevice* pDevice = nullptr;
+			deviceEnumerator->GetDefaultAudioEndpoint(eCapture, eMultimedia, &pDevice);	
+			pDevice->QueryInterface(IID_PPV_ARGS(&pInputDevice));
+
+			_RELEASE(pDevice);
+			_RELEASE(deviceEnumerator);
+			_RELEASE(pEndPoints);
+		}
+		else
+		{
+			return MXR_OSR_BAD_LIB;
+		}
+	}
+
+	pInputDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void**)&pInputClient);
+
+	if (SUCCEEDED(pInputDevice->OpenPropertyStore(STGM_READ, &pProperty)))
+	{
+		{
+			PropVariantInit(&value);
+
+			if (SUCCEEDED(pProperty->GetValue(PKEY_AudioEngine_DeviceFormat, &value)))
+			{
+				memcpy(&waveFormat, value.blob.pBlobData, min(sizeof(WAVEFORMATEX), value.blob.cbSize));
+			}
+
+			PropVariantClear(&value);
+		}
+
+		{
+			PropVariantInit(&value);
+
+			if (SUCCEEDED(pProperty->GetValue(PKEY_Device_FriendlyName, &value)))
+			{
+				if (value.vt == VT_LPWSTR)
+				{
+					// we need to get size of data to allocate
+					int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, NULL, NULL);
+					LPSTR lpNewString = nullptr;
+
+					if (StringSize && StringSize < sizeof(STRING256))
+					{
+						// allocate new string at kernel heap
+						lpNewString = (LPSTR)FastAlloc(++StringSize);
+
+						// convert to UTF-8
+						if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, NULL, NULL))
+						{
+							strcpy_s(InputHost.DeviceName, sizeof(STRING256), lpNewString);
+						}
+
+						FREEKERNELHEAP(lpNewString);
+					}
+				}
+			}
+
+			PropVariantClear(&value);
+		}
+
+		_RELEASE(pProperty);
+	}
+
+	// copy format before mix format
+	InputHost.FormatType = ConvertToSingleFormat(waveFormat);
+
+	WAVEFORMATEX* pWave = nullptr;
+	if (SUCCEEDED(pInputClient->GetMixFormat(&pWave)))
+	{
+		memcpy(&waveFormat, pWave, sizeof(WAVEFORMATEX));
+		CoTaskMemFree(pWave);
+	};
+
+	REFERENCE_TIME refTimeMin = 0;
+	REFERENCE_TIME refTimeDefault = 0;
+
+	if (HostDelay)
+	{
+		refTimeDefault = HostDelay * 10000;		// HostDelay must be in milliseconds
+	}
+	else
+	{
+		// it's can be failed, if device is AC97 
+		if (FAILED(pInputClient->GetDevicePeriod(&refTimeDefault, &refTimeMin)))
+		{
+			refTimeDefault = 1000000;			// default device period - 100 msecs
+		}
+	}
+
+	hr = pInputClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTimeDefault, 0, &waveFormat, nullptr);
+
+	if (FAILED(hr))
+	{
+		// can be throwed on Windows 7+
+		if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED)
+		{
+			// it's can be failed, if device is AC97 
+			if (FAILED(pInputClient->GetDevicePeriod(&refTimeDefault, &refTimeMin)))
+			{
+				refTimeDefault = 1000000;
+			}
+
+			hr = pInputClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTimeDefault, 0, &waveFormat, nullptr);
+
+			if (FAILED(hr))
+			{
+				_RELEASE(pInputClient);
+				_RELEASE(pInputDevice);
+				return MXR_OSR_UNSUPPORTED_FMT;
+			};
+		}
+		else
+		{
+			_RELEASE(pInputClient);
+			_RELEASE(pInputDevice);
+			return MXR_OSR_UNSUPPORTED_FMT;
+		}
+	}
+
+	u32 Frames = 0;
+	pInputClient->GetBufferSize(&Frames);
+
+	InputHost.BufferSize = Frames;
+	InputHost.DeviceNumber = 0;
+	InputHost.DeviceType = InputDevice;
+
+	if (FAILED(pInputClient->GetService(IID_PPV_ARGS(&pCaptureClient))))
+	{
+		return MXR_OSR_BAD_WFX;
+	}
+
+	return OSR_SUCCESS;
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::CreateRenderDefaultSoundDevice(f64 HostDelay)
+{
+
+	PROPVARIANT value = { 0 };
+	WAVEFORMATEX waveFormat = { 0 };
+	IPropertyStore* pProperty = nullptr;
+	HRESULT hr = 0;
+
+	{
+		IMMDeviceEnumerator* deviceEnumerator = nullptr;
+		IMMDeviceCollection* pEndPoints = nullptr;
+
+		// create enumerator for single device object
+		if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&deviceEnumerator))))
+		{
+			IMMDevice* pDevice = nullptr;
+			deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &pDevice);
+			pDevice->QueryInterface(IID_PPV_ARGS(&pOutputDevice));
+
+			_RELEASE(pDevice);
+			_RELEASE(deviceEnumerator);
+			_RELEASE(pEndPoints);
+		}
+		else
+		{
+			return MXR_OSR_BAD_LIB;
+		}
+	}
+
+	pOutputDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void**)&pOutputClient);
+
+	if (SUCCEEDED(pOutputDevice->OpenPropertyStore(STGM_READ, &pProperty)))
+	{
+		{
+			PropVariantInit(&value);
+
+			if (SUCCEEDED(pProperty->GetValue(PKEY_AudioEngine_DeviceFormat, &value)))
+			{
+				memcpy(&waveFormat, value.blob.pBlobData, min(sizeof(WAVEFORMATEX), value.blob.cbSize));
+			}
+
+			PropVariantClear(&value);
+		}
+
+		{
+			PropVariantInit(&value);
+
+			if (SUCCEEDED(pProperty->GetValue(PKEY_Device_FriendlyName, &value)))
+			{
+				if (value.vt == VT_LPWSTR)
+				{
+					// we need to get size of data to allocate
+					int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, NULL, NULL);
+					LPSTR lpNewString = nullptr;
+
+					if (StringSize && StringSize < sizeof(STRING256))
+					{
+						// allocate new string at kernel heap
+						lpNewString = (LPSTR)FastAlloc(++StringSize);
+
+						// convert to UTF-8
+						if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, NULL, NULL))
+						{
+							strcpy_s(OutputHost.DeviceName, sizeof(STRING256), lpNewString);
+						}
+
+						FREEKERNELHEAP(lpNewString);
+					}
+				}
+			}
+
+			PropVariantClear(&value);
+		}
+
+		_RELEASE(pProperty);
+	}
+
+	// copy format before mix format
+	OutputHost.FormatType = ConvertToSingleFormat(waveFormat);
+
+	WAVEFORMATEX* pWave = nullptr;
+	if (SUCCEEDED(pInputClient->GetMixFormat(&pWave)))
+	{
+		memcpy(&waveFormat, pWave, sizeof(WAVEFORMATEX));
+		CoTaskMemFree(pWave);
+	}
+
+	REFERENCE_TIME refTimeMin = 0;
+	REFERENCE_TIME refTimeDefault = 0;
+
+	if (HostDelay)
+	{
+		refTimeDefault = HostDelay * 10000;		// HostDelay must be in milliseconds
+	}
+	else
+	{
+		// it's can be failed, if device is AC97 
+		if (FAILED(pOutputClient->GetDevicePeriod(&refTimeDefault, &refTimeMin)))
+		{
+			refTimeDefault = 1000000;			// default device period - 100 msecs
+		}
+	}
+
+	hr = pOutputClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTimeDefault, 0, &waveFormat, nullptr);
+
+	if (FAILED(hr))
+	{
+		// can be throwed on Windows 7+
+		if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED)
+		{
+			// it's can be failed, if device is AC97 
+			if (FAILED(pOutputClient->GetDevicePeriod(&refTimeDefault, &refTimeMin)))
+			{
+				refTimeDefault = 1000000;
+			}
+
+			hr = pOutputClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTimeDefault, 0, &waveFormat, nullptr);
+
+			if (FAILED(hr))
+			{
+				_RELEASE(pOutputClient);
+				_RELEASE(pOutputDevice);
+				return MXR_OSR_UNSUPPORTED_FMT;
+			};
+		}
+		else
+		{
+			_RELEASE(pOutputClient);
+			_RELEASE(pOutputDevice);
+			return MXR_OSR_UNSUPPORTED_FMT;
+		}
+	}
+
+	u32 Frames = 0;
+	pOutputClient->GetBufferSize(&Frames);
+
+	OutputHost.BufferSize = Frames;
+	OutputHost.DeviceNumber = 0;
+	OutputHost.DeviceType = OutputDevice;
+
+	if (FAILED(pOutputClient->GetService(IID_PPV_ARGS(&pRenderClient))))
+	{
+		return MXR_OSR_BAD_WFX;
+	}
+
+	return OSR_SUCCESS;
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::RestartCaptureDefaultSoundDevice(
+	f64 HostDelay
+)
+{
+	OSRFAIL2(CloseCaptureSoundDevice(), L"Can't close capture device");
+
+	return CreateCaptureDefaultSoundDevice(HostDelay);
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::RestartCaptureSoundDevice(
+	f64 HostDelay,
+	u32 DeviceNumber
+)
+{
+	OSRFAIL2(CloseCaptureSoundDevice(), L"Can't close capture device");
+
+	return CreateCaptureSoundDevice(HostDelay, DeviceNumber);
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::RestartRenderDefaultSoundDevice(
+	f64 HostDelay
+)
+{
+	OSRFAIL2(CloseRenderSoundDevice(), L"Can't close render device");
+
+	return CreateRenderDefaultSoundDevice(HostDelay);
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::RestartRenderSoundDevice(
+	f64 HostDelay,
+	u32 DeviceNumber
+)
+{
+	OSRFAIL2(CloseRenderSoundDevice(), L"Can't close render device");
+
+	return CreateRenderSoundDevice(HostDelay, DeviceNumber);
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::CloseCaptureSoundDevice()
+{
+	_RELEASE(pCaptureClient);
+	_RELEASE(pInputClient);
+	_RELEASE(pInputDevice);
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::CloseRenderSoundDevice()
+{
+	StopHost();
+
+	_RELEASE(pCaptureClient);
+	_RELEASE(pInputClient);
+	_RELEASE(pInputDevice);
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::PlayHost()
+{
+	pOutputClient->Start();
+
+	ResetEvent(hOutputExit);
+	SetEvent(hOutputStart);
+
+	return OSR_SUCCESS;
+}
+
+OSRCODE
+ISoundInterfaceWASAPI::StopHost()
+{
+	pOutputClient->Stop();
+
+	ResetEvent(hOutputStart);
+	SetEvent(hOutputExit);
+
+	return OSR_SUCCESS;
+}
+
+int CurrentNumber = 0;
+const char* CurrentString = __FILE__;
+
+OSRCODE
+ISoundInterfaceWASAPI::RecvPacket(
+	void* pData, 
+	PacketType Type, 
+	size_t DataSize		// in bytes
+)
+{
+	u64 SpecialData = (u64)pData;
+
+	switch (Type)
+	{
+	case SoundData:
+		if (DataSize > 8)
+		{
+			try
+			{
+				CurrentNumber = __LINE__; memcpy(pOutputBuffer, pData, DataSize);
+			}
+			catch (...)
+			{
+				STRING512 szString = { 0 };
+				WSTRING512 szString2 = { 0 };
+
+				_snprintf(
+					szString,
+					512,
+					"The application thrown the exception at %i line. File: %s. Are you sure to continue use application?",
+					CurrentNumber,
+					CurrentString
+				);
+
+				for (size_t i = 0; i < 512; i++)
+				{
+					szString2[i] = (WCHAR)szString[i];
+				}
+
+				if (THROW2(szString2))
+				{
+					WMSG_LOG(L"\n");
+					WMSG_LOG(szString2);
+					WMSG_LOG(L"\n");
+				}
+				else
+				{
+					DestroyApplication(0x2224);
+				}
+			}
+
+			// set event than we are end to load data
+			SetEvent(hOutputLoadEvent);
+		}
+		break;
+	case DeviceInputData:
+		switch (SpecialData)
+		{
+		case InputData::AcceptData:
+			// nothing there
+			break;
+
+		case InputData::DiscardData:
+			// nothing there
+			break;
+
+		case InputData::FlushBuffers:
+			// nothing there
+			break;
+
+		case InputData::StartRecording:
+			SetEvent(hInputStart);
+			ResetEvent(hInputExit);
+			break;
+
+		case InputData::StopRecording:
+			SetEvent(hInputExit);
+			ResetEvent(hInputStart);
+			break;
+		}
+		break;
+	case DeviceOutputData:
+		switch (SpecialData)
+		{
+		case OutputData::AcceptData:
+			// nothing there
+			break;
+
+		case OutputData::DiscardData:
+			// nothing there
+			break;
+
+		case OutputData::FlushBuffers:
+			memset(pOutputBuffer, 0, DataSize);
+
+			// set event than we are end to load data
+			SetEvent(hOutputLoadEvent);
+			break;
+
+		case OutputData::StartPlay:
+			ThreadId = thread.CreateUserThread(nullptr, (ThreadFunc*)(WASAPIThreadProc), (LPVOID)this, L"OSR WASAPI worker thread");
+			break;
+
+		case OutputData::StopPlay:
+			
+			break;
+		}
+
+		default:
+			break;
+		}
+
+	return OSR_SUCCESS;
+}
+
+//DLL_API HANDLE hThreadExitEvent = NULL;
+//DLL_API HANDLE hThreadLoadSamplesEvent = NULL;
+//
+//OSRSample* SampleArray[128] = { nullptr };
+//f32 CurrentPosition = 0.f;
+//
+//DWORD
+//WINAPIV
+//WASAPIThreadProc(
+//	LPVOID pParam
+//)
+//{
+//	// blockalign = channels * bits / 8
+//	if (!hThreadExitEvent) hThreadExitEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+//	if (!hThreadLoadSamplesEvent) hThreadLoadSamplesEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+//	
+//	HRESULT hr = 0;
+//	DWORD dwTask = 0;
+//	DWORD dwSampleNumber = 0;
+//	HANDLE hMMCSS = NULL;
+//	BOOL isPlaying = TRUE;
+//	OSRSample* Sample = nullptr;
+//	HANDLE hHandlesArray[] = { hThreadExitEvent, hThreadLoadSamplesEvent };
+//	WASAPI_SAMPLE_PROC* pProc = reinterpret_cast<WASAPI_SAMPLE_PROC*>(pParam);
+//	BYTE* pData = nullptr;
+//
+//	DWORD dwChannels = pProc->pEngine->GetOutputInfo()->waveFormat.nChannels;
+//	DWORD dwBits = pProc->pEngine->GetOutputInfo()->waveFormat.wBitsPerSample;
+//	DWORD dwSampleRate = pProc->pEngine->GetOutputInfo()->waveFormat.nSamplesPerSec;
+//	DWORD BlockAlign = pProc->pEngine->GetOutputInfo()->waveFormat.nBlockAlign;
+//	DWORD FrameSize = 0;
+//	pProc->pEngine->pAudioClient->GetBufferSize((UINT32*)&FrameSize);
+//
+//	pData = (BYTE*)FastAlloc(FrameSize * dwChannels * sizeof(f32));
+//
+//	Sample = pProc->pSample;
+//
+//	u32 s = dwSampleRate - (dwSampleRate / (1000 / (1000 / (dwSampleRate / (FrameSize)))));
+//	//u32 InputSize = pProc->pLoopInfo->waveFormat.nSamplesPerSec / (1000 / (1000 / (dwSampleRate / (FrameSize))));
+//
+//	if (!Sample && pProc->pLoopInfo)
+//	{
+//		Sample = new OSRSample(
+//			pProc->pLoopInfo->waveFormat.wBitsPerSample,
+//			pProc->pLoopInfo->waveFormat.nChannels,
+//			FrameSize * dwChannels,
+//			pProc->pLoopInfo->waveFormat.nSamplesPerSec
+//		);
+//
+//		Sample->LoadSample(
+//			(void*)pProc->pLoopInfo->pSample,
+//			FrameSize * dwChannels,
+//			pProc->pLoopInfo->waveFormat.wBitsPerSample,
+//			pProc->pLoopInfo->waveFormat.nChannels,
+//			pProc->pLoopInfo->waveFormat.nSamplesPerSec
+//		);
+//
+//		SampleArray[0] = Sample;
+//	}
+//	else if (Sample && !pProc->pLoopInfo)
+//	{
+//		// play only this sample. No more
+//	}
+//	else if (Sample && pProc->pLoopInfo)
+//	{
+//		// do nothing
+//	}
+//	else
+//	{
+//		THROW1(L"Can't play audio because no loop info");
+//	}
+//
+//	hMMCSS = AvSetMmThreadCharacteristicsW(L"Audio", &dwTask);
+//	ASSERT2(hMMCSS, L"Can't init MMCSS");
+//
+//	AvSetMmThreadPriority(hMMCSS, AVRT_PRIORITY_CRITICAL);
+//
+//	Sample->ConvertToPlay((VOID*)pData, 32);
+//
+//	REFERENCE_TIME hndActual = 500000 * FrameSize * dwSampleRate;
+//	size_t Samples = 0;
+//
+//	while (isPlaying)
+//	{
+//		DWORD dwWait = WaitForMultipleObjects(2, hHandlesArray, FALSE, INFINITY);
+//		BYTE* pByte = nullptr;
+//
+//		switch (dwWait)
+//		{
+//		case WAIT_OBJECT_0:
+//			isPlaying = FALSE;
+//			break;
+//		case WAIT_OBJECT_0 + 1:
+//		{
+//			DWORD dwPadding = 0;
+//			DWORD dwSleep = hndActual / 200000000;
+//			Sleep((dwSleep / 2));
+//
+//			hr = pProc->pEngine->pAudioClient->GetCurrentPadding((UINT32*)&dwPadding);
+//
+//			DWORD dwFramesToWrite = FrameSize;
+//
+//			if (SUCCEEDED(hr))
+//			{		
+//				hr = pProc->pEngine->pAudioRenderClient->GetBuffer(dwFramesToWrite, &pByte);
+//
+//				if (hr == AUDCLNT_E_BUFFER_TOO_LARGE) { continue; }
+//
+//				if (pByte)
+//				{
+//					memcpy(pByte, pData, dwFramesToWrite * dwChannels * sizeof(f32));
+//				}
+//
+//				hr = pProc->pEngine->pAudioRenderClient->ReleaseBuffer(dwFramesToWrite, 0);
+//			}
+//			
+//			if (FAILED(hr)) 
+//			{ 
+//				isPlaying = FALSE; 
+//			}
+//			else
+//			{
+//				if (dwSampleNumber > 127)
+//				{
+//					for (size_t i = 0; i < 127; i++)
+//					{
+//						if (SampleArray[i]) 
+//						{
+//							delete SampleArray[i]; 
+//							SampleArray[i] = nullptr;
+//						}
+//					}
+//
+//					SampleArray[0] = SampleArray[127];
+//					dwSampleNumber = 0;
+//				}
+//
+//				if (pProc->pEngine->pTaskValue) 
+//				{
+//					pProc->pEngine->pTaskValue->SetValue(Sample->SamplePosition, pProc->pLoopInfo->SampleSize);
+//				}
+//
+//				//Sample->SamplePosition = (pProc->pLoopInfo->SampleSize / sizeof(f32) / pProc->pLoopInfo->waveFormat.nChannels) * CurrentPosition;
+//				//Sample->ToEndFileSize = pProc->pLoopInfo->SampleSize - Sample->SamplePosition;
+//
+//				SampleArray[dwSampleNumber + 1] = Sample->OnBufferEnd(pProc->pLoopInfo);
+//				dwSampleNumber++;
+//				Sample = SampleArray[dwSampleNumber];
+//
+//				if (pProc->pEngine->pHost)
+//				{
+//					ProcessAudio(
+//						Sample->pOutputBuffer,
+//						Sample->pOutputBuffer,
+//						dwSampleRate,
+//						Sample->BufferSizeOutput,
+//						Sample->ChannelsOutput,
+//						(IWin32VSTHost*)pProc->pEngine->pHost
+//					);
+//				}
+//
+//				Sample->ConvertToPlay(pData, 32);
+//				Samples++;
+//			}
+//		}
+//		break;
+//		default:
+//			break;
+//		}
+//	}
+//
+//	pProc->pEngine->pTaskValue->SetCompleted();
+//	FREEKERNELHEAP(pData);
+//	if (hMMCSS) { AvRevertMmThreadCharacteristics(hMMCSS); }
+//
+//	if (!Sample) { delete Sample; Sample = nullptr; }
+//	
+//	DWORD dwSampleN = dwSampleNumber + 1;
+//	if (dwSampleN > 127) { dwSampleN = 127; }
+//	for (size_t i = 0; i < dwSampleN; i++)
+//	{
+//		if (SampleArray[i])
+//		{
+//			delete SampleArray[i]; 
+//			SampleArray[i] = nullptr;
+//		}
+//	}
+//
+//	return 0;
+//}
+//
+//OSRCODE
+//IMEngine::SetAudioPosition(
+//	f32 Position
+//)
+//{
+//	CurrentPosition = Position;
+//	return OSR_SUCCESS;
+//}
+//
+//OSRCODE
+//IMEngine::GetAudioPosition(f32& Position)
+//{
+//	Position = CurrentPosition;
+//	return OSR_SUCCESS;
+//}
+//
+//OSRCODE
+//IMEngine::InitEngine(
+//	HWND hwnd
+//)
+//{
+//	DWORD dwInputState = 0;
+//	DWORD dwOutputState = 0;
+//	DWORD dwRenderCount = 0;
+//	IMMDeviceEnumerator* deviceEnumerator = nullptr;
+//	IMMDeviceCollection* pEndPoints = nullptr;
+//
+//	{ 
+//		IMMDevice* pRenderer = nullptr;
+//
+//		if (!pTaskValue) { pTaskValue = new TaskbarValue(hwnd); }
+//
+//		// create instance for enumerator
+//		if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&deviceEnumerator))))
+//		{
+//			// get default output device
+//			FAILEDX2(deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &pRenderer));
+//
+//			// get device id
+//			WCHAR* pDeviceId = nullptr;
+//			FAILEDX2(pRenderer->GetId(&pDeviceId));
+//			FAILEDX2(pRenderer->GetState(&dwOutputState));
+//
+//			// copy to device info and free com pointer
+//			wcsncpy_s(OutputDeviceInfo.szDeviceId, pDeviceId, sizeof(WSTRING512) - 1);
+//			CoTaskMemFree(pDeviceId);
+//			_RELEASE(pRenderer);
+//		}
+//		else
+//		{
+//			return MXR_OSR_NO_OUT;
+//		}
+//	}
+//
+//	{
+//		IMMDevice* pCapturer = nullptr;
+//		
+//		// get default input device
+//		if (SUCCEEDED(deviceEnumerator->GetDefaultAudioEndpoint(eCapture, eMultimedia, &pCapturer)))
+//		{
+//			// get device id
+//			WCHAR* pDeviceId = nullptr;
+//			FAILEDX2(pCapturer->GetId(&pDeviceId));
+//			FAILEDX2(pCapturer->GetState(&dwInputState));
+//
+//			// copy to device info and free com pointer
+//			wcsncpy_s(InputDeviceInfo.szDeviceId, pDeviceId, sizeof(WSTRING512) - 1);
+//			CoTaskMemFree(pDeviceId);
+//			_RELEASE(pCapturer);
+//		}
+//	}
+//
+//	// get count of output devices
+//	FAILEDX2(deviceEnumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &pEndPoints));
+//	FAILEDX2(pEndPoints->GetCount((UINT*)&dwRenderCount));
+//	_RELEASE(pEndPoints);
+//
+//	// get count of all devices
+//	FAILEDX2(deviceEnumerator->EnumAudioEndpoints(eAll, DEVICE_STATE_ACTIVE, &pEndPoints));
+//	FAILEDX2(pEndPoints->GetCount((UINT*)&DeviceCount));
+//	DeviceCount += dwRenderCount;
+//
+//	_RELEASE(pEndPoints);
+//	_RELEASE(deviceEnumerator);
+//
+//	return OSR_SUCCESS;
+//}
+//
+//static REFERENCE_TIME MakeHnsPeriod(UINT32 nFrames, DWORD nSamplesPerSec)
+//{
+//	return (REFERENCE_TIME)((10000.0 * 1000 / nSamplesPerSec * nFrames) + 0.5);
+//}
+//
+//OSRCODE
+//IMEngine::CreateDefaultDevice(
+//	REFERENCE_TIME referTime
+//)
+//{
+//	HRESULT hr = 0;	
+//	DWORD dwFrames = 0;	
+//	PROPVARIANT value = {};	
+//	IMMDevice* pRenderer = nullptr;
+//	REFERENCE_TIME refTime = 0;
+//	IPropertyStore *pProperty = nullptr;
+//	IMMDeviceEnumerator*& deviceEnumerator = enumerator;
+//
+//	// create instance for enumerator
+//	if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&deviceEnumerator))))
+//	{
+//		// get default device
+//		FAILEDX2(deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &pRenderer));
+//		OutputDeviceInfo.device = pRenderer;
+//	}
+//	else
+//	{
+//		return MXR_OSR_NO_OUT;
+//	}
+//
+//	// activate audio client and get property to search a lot of information
+//	FAILEDX2(pRenderer->Activate(*GetAudioClientIID(), CLSCTX_ALL, nullptr, (LPVOID*)&pAudioClient));
+//	FAILEDX2(pRenderer->OpenPropertyStore(STGM_READ, &pProperty));
+//	
+//	// init variant to get WAVEFORMATEX
+//	PropVariantInit(&value);
+//	FAILEDX2(pProperty->GetValue(PKEY_AudioEngine_DeviceFormat, &value));
+//
+//	// copy our WAVEFORMAT to device format
+//	memcpy(&OutputDeviceInfo.waveFormat, value.blob.pBlobData, min(sizeof(OutputDeviceInfo.waveFormat), value.blob.cbSize));
+//	PropVariantClear(&value);
+//	_RELEASE(pProperty);
+//
+//	//#NOTE: can be failed on AC97. Be careful
+//	if (FAILED(pAudioClient->GetDevicePeriod(&OutputDeviceInfo.DefaultDevicePeriod, &OutputDeviceInfo.MinimumDevicePeriod)))
+//	{
+//		OutputDeviceInfo.DefaultDevicePeriod = 1000000;
+//		OutputDeviceInfo.MinimumDevicePeriod = 300000;
+//	}
+//
+//	WAVEFORMATEX* closeFormat = nullptr;
+//	pAudioClient->GetMixFormat(&closeFormat);
+//
+//	memcpy(&OutputDeviceInfo.waveFormat, closeFormat, sizeof(WAVEFORMATEX));
+//
+//	// init audio client
+//	hr = pAudioClient->Initialize(
+//		AUDCLNT_SHAREMODE_SHARED, 
+//		0,
+//		referTime,		
+//		0,
+//		closeFormat,
+//		nullptr
+//	);
+//
+//	// get current buffer size
+//	pAudioClient->GetBufferSize((UINT32*)&dwFrames);
+//
+//	//#NOTE: can be triggered on Windows 7+ systems
+//	if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED)
+//	{
+//		_RELEASE(pAudioClient);
+//
+//		// activate audio client
+//		pRenderer->Activate(*GetAudioClientIID(), CLSCTX_ALL, nullptr, (LPVOID*)&pAudioClient);
+//
+//		// create optimal period for device and init it
+//		refTime = MakeHnsPeriod(dwFrames, OutputDeviceInfo.waveFormat.nSamplesPerSec);
+//		hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTime, 0, closeFormat, nullptr);
+//		if (FAILED(hr)) { return MXR_OSR_NO_OUT; }
+//	}
+//
+//	pAudioClient->GetBufferSize((UINT32*)&dwFrames);
+//	BufferSize = dwFrames;
+//
+//	// get render client and set event for output
+//	FAILEDX2(pAudioClient->GetService(IID_PPV_ARGS(&pAudioRenderClient)));
+//
+//	hOutput = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+//	CoTaskMemFree(closeFormat);
+//
+//	return OSR_SUCCESS;
+//}
+//
+//ThreadSystem thread;
+//
+//OSRCODE
+//IMEngine::StartDevice(
+//	LPVOID pProc
+//)
+//{
+//	static DWORD dwStart = 0;
+//	WASAPI_SAMPLE_PROC* pProce = (WASAPI_SAMPLE_PROC*)pProc;
+//
+//	if (pProce->pLoopInfo->pSample)
+//	{
+//		if (!WasapiThread)
+//		{
+//			static const wchar_t* WasapiString = L"OSR WASAPI worker thread";
+//			WasapiThread = thread.CreateUserThread(nullptr, (ThreadFunc*)(WASAPIThreadProc), (LPVOID)pProc, WasapiString);
+//
+//			if (FAILED(pAudioClient->Start()))
+//			{
+//				return MXR_OSR_NO_OUT;
+//			}
+//
+//			if (hThreadExitEvent) { ResetEvent(hThreadExitEvent); }
+//			if (hThreadLoadSamplesEvent) { ResetEvent(hThreadLoadSamplesEvent); }
+//			SetEvent(hStart);
+//			SetEvent(hThreadLoadSamplesEvent);
+//		}
+//	}
+//
+//	dwStart++;
+//
+//	return OSR_SUCCESS;
+//}
+//
+//OSRCODE
+//IMEngine::StopDevice()
+//{
+//	if (pAudioClient)
+//	{
+//		if (FAILED(pAudioClient->Stop()))
+//		{
+//			return MXR_OSR_NO_OUT;
+//		}
+//	}
+//
+//	WasapiThread = 0;
+//
+//	if (hThreadLoadSamplesEvent)	{ ResetEvent(hThreadLoadSamplesEvent); }
+//	if (hThreadExitEvent)			{ SetEvent(hThreadExitEvent); }
+//	Sleep(100);
+//
+//	return OSR_SUCCESS;
+//}
