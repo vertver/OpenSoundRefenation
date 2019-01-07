@@ -21,46 +21,14 @@
 #include "AsyncReader.h"
 #include "MixerBase.h"
 
-class ISoundInterfaceWASAPI : ISoundInterface
+class ISoundInterfaceWASAPI : public ISoundInterface
 {
 public:
-	ISoundInterfaceWASAPI() : pInputClient(nullptr), pOutputClient(nullptr), pInputDevice(nullptr), pOutputDevice(nullptr), 
-		pRenderClient(nullptr), pCaptureClient(nullptr)
-	{
-		memset(&InputHost, 0, sizeof(AUDIO_HOST));
-		memset(&OutputHost, 0, sizeof(AUDIO_HOST));
-
-		hInputStart = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-		hOutputStart = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-		hInputExit = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-		hOutputExit = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-		hInputLoadEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-		hOutputLoadEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-	}
+	ISoundInterfaceWASAPI();
 
 	ISoundInterfaceWASAPI(IMMDevice* pInputDevice1, IMMDevice* pOutputDevice1, IAudioClient* pInputClient1,
 		IAudioClient* pOutputClient1, IAudioRenderClient* pRenderClient1, IAudioCaptureClient* pCaptureClient1,
-		AUDIO_HOST InputHost1, AUDIO_HOST OutputHost1)
-	{
-		pInputClient = pInputClient1;
-		pOutputClient = pOutputClient1;
-		
-		pInputDevice = pInputDevice1;
-		pOutputDevice = pOutputDevice1;
-
-		pRenderClient = pRenderClient1;
-		pCaptureClient = pCaptureClient1;
-
-		InputHost = InputHost1;
-		OutputHost = OutputHost1;
-
-		hInputStart = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-		hOutputStart = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-		hInputExit = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-		hOutputExit = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-		hInputLoadEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-		hOutputLoadEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-	}
+		AUDIO_HOST InputHost1, AUDIO_HOST OutputHost1);
 
 	OSRCODE EnumerateAudioInput(AUDIO_HOST** pHostsList, u32& HostCounts) override;
 	OSRCODE EnumerateAudioOutputs(AUDIO_HOST** pHostsList, u32& HostCounts) override;
@@ -96,30 +64,12 @@ public:
 	OSRCODE RecvPacket(void* pData, PacketType Type, size_t DataSize) override;
 	OSRCODE GetPacket(void*& pData, PacketType Type, size_t& DataSize) override;
 
-	OSRCODE GetLoadBuffer(void*& pData, size_t& BufferSize) override
-	{
-		pData = pOutputBuffer;
-		BufferSize = OutputBufferSize;
-	}
+	OSRCODE GetLoadBuffer(void*& pData, size_t& BufferSize) override;
 
-	void Release() override
-	{
-		StopHost();
+	void Release() override;
 
-		CloseCaptureSoundDevice();
-		CloseRenderSoundDevice();
+	IObject* CloneObject() override;
 
-		delete this;
-	}
-
-	IObject* CloneObject() override
-	{
-		return new ISoundInterfaceWASAPI(
-			pInputDevice, pOutputDevice, pInputClient, pOutputClient, pRenderClient, pCaptureClient, InputHost, OutputHost
-		);
-	}
-
-private:
 	IMMDevice* pInputDevice;
 	IMMDevice* pOutputDevice;
 
@@ -128,9 +78,6 @@ private:
 
 	IAudioRenderClient* pRenderClient;
 	IAudioCaptureClient* pCaptureClient;
-
-	AUDIO_HOST InputHost;
-	AUDIO_HOST OutputHost;
 
 	LPVOID pOutputBuffer;
 	size_t OutputBufferSize;

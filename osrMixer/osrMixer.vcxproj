@@ -94,6 +94,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AsyncMixer.h" />
     <ClInclude Include="AsyncReader.h" />
     <ClInclude Include="DirectSoundMain.h" />
     <ClInclude Include="IMWASAPI.h" />
@@ -106,12 +107,14 @@
     <ClInclude Include="XAudioMain.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AsyncMixer.cpp" />
     <ClCompile Include="AsyncReader.cpp" />
     <ClCompile Include="DirectSoundKernel.cpp" />
     <ClCompile Include="DirectSoundMixer.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="IMWASAPIKernel.cpp" />
     <ClCompile Include="LoopList.cpp" />
+    <ClCompile Include="MixerBase.cpp" />
     <ClCompile Include="osrMixer.cpp" />
     <ClCompile Include="SoundList.cpp" />
     <ClCompile Include="stdafx.cpp">

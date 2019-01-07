@@ -433,4 +433,3 @@ public:
 	virtual void Release() = 0;
 
 };
-

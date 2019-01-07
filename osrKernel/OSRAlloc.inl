@@ -75,6 +75,23 @@ MapFile(
 	return lpSharedMemory;
 }
 
+__forceinline
+LPVOID
+MapFile(
+	SIZE_T PointerSize,
+	LPCWSTR lpSharedMemoryName,
+	HANDLE FileHandle
+)
+{
+	LPVOID lpSharedMemory = nullptr;
+
+	// create file mapping at paging file
+	HANDLE hSharedMemory = CreateFileMappingW(FileHandle, NULL, PAGE_READONLY, NULL, (DWORD)PointerSize, lpSharedMemoryName);
+	lpSharedMemory = MapViewOfFile(hSharedMemory, FILE_MAP_ALL_ACCESS, NULL, NULL, PointerSize);
+
+	return lpSharedMemory;
+}
+
 /***********************************************************
 * WINDOWS FUNCTION
 * dwType reference:

@@ -1,5 +1,5 @@
 #pragma once
-#include <windows.h>
+#include "OSR.h"
 #define VSTHOST_API __declspec(dllexport)
 
 typedef struct  
@@ -9,7 +9,7 @@ typedef struct
 	bool isInstrument;
 } VSTPLUGIN_INFO;
 
-class IVSTHost
+class IVSTHost : public IObject
 {
 public:	
 	virtual int  LoadPlugin(LPCWSTR lpPathToPlugin) = 0;
@@ -66,7 +66,7 @@ public:
 	int  InitPlugin(DWORD dwSampleRate, DWORD dwBlockSize) override;
 	void ProcessAudio(float** pAudioInput, float** pAudioOutput, DWORD dwSampleFrames) override;
 
-	~IWin32VSTHost()
+	void Release() override
 	{
 		if (hPlugin)
 		{
@@ -78,6 +78,13 @@ public:
 		hPlugin = NULL;
 		PluginWindowHandle = NULL;
 		pUnknown = nullptr;
+
+		delete this;
+	}
+
+	IObject* CloneObject() override
+	{
+
 	}
 };
 #else
@@ -92,7 +99,6 @@ typedef struct PluginVst2xIdMembers
 
 #ifdef WIN32
 extern VSTHOST_API HANDLE hPluginHandle;
-extern VSTHOST_API IWin32VSTHost PluginHost;
 #else
 
 #endif

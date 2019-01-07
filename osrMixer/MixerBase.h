@@ -31,11 +31,11 @@ typedef enum
 
 typedef enum
 {
-	AcceptData,
-	DiscardData,
-	StartPlay,	
-	StopPlay,				// is not equ to "StopHost" function: just put 0 if this packet was accepted
-	FlushBuffers
+	AcceptData2,
+	DiscardData2,
+	StartPlay2,	
+	StopPlay2,				// is not equ to "StopHost" function: just put 0 if this packet was accepted
+	FlushBuffers2
 } OutputData;
 
 typedef enum HostDeviceType
@@ -55,6 +55,25 @@ typedef struct
 	i32 DeviceNumber;			// current device number
 } AUDIO_HOST;
 
+typedef struct
+{
+	STRING256 szTrackName;
+	IObject* pEffectHost[90];
+	size_t BufferSize;
+	void* pData;
+	f64 WideImaging;			// M = (L + R) / 2		S = (L - R) / 2
+	f32 GainLevel;
+	u32 ChannelRouting;			// LOWORD - Left, HIWORD - Right
+	u32 TrackNumber;
+	u32 SampleRate;
+	u16 Bits;
+	u16 Channels;
+	bool bMute;
+	bool bSolo;
+	bool bEffects;
+	bool isActivated;
+} TRACK_INFO;
+
 /**************************************************
 * RecvPacket() - Receive packet to output/input
 ***************************************************
@@ -65,6 +84,7 @@ typedef struct
 ***************************************************/
 class ISoundInterface : public IObject
 {
+public:
 	virtual OSRCODE EnumerateAudioInput(AUDIO_HOST** pHostsList, u32& HostCounts) = 0;
 	virtual OSRCODE EnumerateAudioOutputs(AUDIO_HOST** pHostsList, u32& HostCounts) = 0;
 
@@ -100,6 +120,47 @@ class ISoundInterface : public IObject
 	virtual OSRCODE GetPacket(void*& pData, PacketType Type, size_t& DataSize) = 0;
 
 	virtual OSRCODE GetLoadBuffer(void*& pData, size_t& BufferSize) = 0;
+
+	AUDIO_HOST InputHost;
+	AUDIO_HOST OutputHost;
+};
+
+class IMixerInterface : public IObject
+{
+public:
+	virtual OSRCODE start(int Device) = 0;
+	virtual OSRCODE start_delay(int Device, f64 HostDelay) = 0;
+	virtual OSRCODE restart(int Device) = 0;
+	virtual OSRCODE restart_delay(int Device, f64 HostDelay) = 0;
+	virtual OSRCODE close() = 0;
+	
+	virtual OSRCODE master_volume(f32 Volume) = 0;
+	virtual OSRCODE track_volume(u32 TrackNumber, f32& Volume) = 0;
+
+	virtual OSRCODE add_track(u8 Channels, u32 SampleRate, u32& TrackNumber) = 0;
+	virtual OSRCODE delete_track(u32 TrackNumber) = 0;
+
+	virtual OSRCODE add_effect(u32 TrackNumber, IObject* pEffectHost, size_t EffectSize, u32& EffectNumber) = 0;
+	virtual OSRCODE delete_effect(u32 TrackNumber, u32 EffectNumber) = 0;
+
+	virtual OSRCODE rout_solo(u32 TrackNumber, bool& isSolo) = 0;
+	virtual OSRCODE rout_mute(u32 TrackNumber, bool& isMuted) = 0;
+	virtual OSRCODE rout_effects(u32 TrackNumber, bool& isEffects) = 0;
+	virtual OSRCODE rout_activate(u32 TrackNumber, bool& isActivated) = 0;
+	virtual OSRCODE rout_channel(u32 TrackNumber, u32 ChannelRouting) = 0;
+	virtual OSRCODE rout_wide_image(u32 TrackNumber, f64 WideImaging) = 0;
+	virtual OSRCODE rout_track_number(u32& TrackNumber, u32 ToNumber) = 0;
+
+	virtual OSRCODE put_data(u32 TrackNumber, void* pData, size_t DataSize) = 0;
+
+	virtual OSRCODE play() = 0;
+	virtual OSRCODE stop() = 0;
+
+	ISoundInterface* pSound;
+	AUDIO_HOST HostsInfo[2];		// 0 - Input, 1 - Output
+	TRACK_INFO tracksInfo[256];
+	u32 EffectsNumber;
+	u32 TracksCount;
 };
 
 #ifdef WIN32
@@ -884,5 +945,7 @@ ConvertToWaveFormat(
 
 	waveFormat.nBlockAlign = waveFormat.nChannels * waveFormat.wBitsPerSample / 8;
 	waveFormat.nAvgBytesPerSec = waveFormat.nSamplesPerSec * waveFormat.nChannels * waveFormat.wBitsPerSample / 8;
+
+	return waveFormat;
 }
 #endif
